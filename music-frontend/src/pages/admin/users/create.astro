@@ -1,0 +1,180 @@
+---
+import '../../../styles/global.css'
+import Layout from '../../../layouts/Layout.astro'
+import AdminBack from '../../../components/AdminBack.astro'
+---
+
+<Layout title="Yönetici - Kullanıcı Oluştur">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Kullanıcı Oluştur</h1>
+        <AdminBack />
+
+        <p>Yeni bir kullanıcı oluştur.</p>
+
+        <div id="notice"></div>
+        <div id="actor">Yükleniyor...</div>
+
+        <div class="border border-slate-300 p-5 my-5 inline-block">
+            <label class="block">
+                Kullanıcı ID'si
+                <input id="user-id" class="border border-slate-200" placeholder="örnek: 123456" />
+            </label>
+            <label class="block mt-3">
+                İsim
+                <input id="user-name" class="border border-slate-200" placeholder="örnek: Ayşe Yılmaz" />
+            </label>
+
+            <div class="mt-3">
+                <div class="text-sm text-slate-600">Yetkiler</div>
+                <div id="perm-list" class="mt-2 flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="mt-4">
+                <button id="btn-create" class="bg-green-100 p-2 mx-1">Kullanıcı Oluştur</button>
+            </div>
+        </div>
+
+        <div id="result">...</div>
+    </div>
+
+    <script type="module">
+        const API_URL = "http://127.0.0.1:8000";
+        const RANKS = ["music", "musicpermanent", "moderator", "admin", "superadmin", "dev"];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const resultDiv = document.getElementById('result');
+            const idInput = document.getElementById('user-id');
+            const nameInput = document.getElementById('user-name');
+            const permList = document.getElementById('perm-list');
+            const createBtn = document.getElementById('btn-create');
+
+            if (!actorDiv || !noticeDiv || !resultDiv || !idInput || !nameInput || !permList || !createBtn) {
+                return;
+            }
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => { if (noticeDiv.innerHTML) noticeDiv.innerHTML = ''; }, 5000);
+            }
+
+            function renderActor(user) {
+                const name = user?.name || 'Kullanıcı';
+                const actorRank = highestRankIndex(user.permissions || []);
+                const actorStrongest = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${name}</strong> (${actorStrongest})`;
+            }
+
+            function highestRankIndex(perms) {
+                const idx = perms.map(p => RANKS.indexOf(p)).filter(i => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            function renderPermissions() {
+                permList.innerHTML = RANKS.map((perm) => {
+                    return `
+                        <label class="inline-flex items-center gap-2 border border-slate-200 px-2 py-1 text-sm">
+                            <input type="checkbox" value="${perm}" class="perm-checkbox" />
+                            <span>${perm}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            function selectedPermissions() {
+                return Array.from(permList.querySelectorAll('.perm-checkbox'))
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+            }
+
+            function renderPreview() {
+                const id = idInput.value.trim();
+                const name = nameInput.value.trim();
+                const perms = selectedPermissions();
+                const permsText = perms.length ? perms.join(', ') : 'yok';
+
+                if (!id && !name) {
+                    resultDiv.innerHTML = '<div class="text-slate-400 italic">(oluşturulacak kullanıcı burada gösterilir)</div>';
+                    return;
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="p-3 border rounded bg-white">
+                        <div class="font-medium">${name || 'İsim yok'} <span class="text-sm text-slate-600">(ID: ${id || '-'})</span></div>
+                        <div class="mt-1">Yetkiler: ${permsText}</div>
+                    </div>
+                `;
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+                try {
+                    const res = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                    if (!res.ok) {
+                        showNotice('Kullanıcı bilgisi alınamadı.', 'error');
+                        return;
+                    }
+                    const data = await res.json();
+                    renderActor(data);
+                } catch (err) {
+                    showNotice('Sunucuya bağlanılamadı.', 'error');
+                }
+            }
+
+            async function submit() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const id = idInput.value.trim();
+                const name = nameInput.value.trim();
+                const permissions = selectedPermissions();
+
+                if (!id) {
+                    showNotice('Kullanıcı ID\'si gerekli.', 'error');
+                    return;
+                }
+                if (!name) {
+                    showNotice('İsim gerekli.', 'error');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-ID': token
+                        },
+                        body: JSON.stringify({ id, name, permissions })
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Kullanıcı oluşturulamadı.', 'error');
+                        return;
+                    }
+
+                    showNotice('Kullanıcı oluşturuldu.');
+                    const user = data.user || { id, name, permissions };
+                    const permsText = (user.permissions || []).length ? user.permissions.join(', ') : 'yok';
+                    resultDiv.innerHTML = `
+                        <div class="p-3 border rounded bg-white">
+                            <div class="font-medium">${user.name || name} <span class="text-sm text-slate-600">(ID: ${user.id || id})</span></div>
+                            <div class="mt-1">Yetkiler: ${permsText}</div>
+                        </div>
+                    `;
+                } catch (err) {
+                    showNotice('Sunucu hatası.', 'error');
+                }
+            }
+
+            createBtn.addEventListener('click', submit);
+            idInput.addEventListener('input', renderPreview);
+            nameInput.addEventListener('input', renderPreview);
+            permList.addEventListener('change', renderPreview);
+
+            renderPermissions();
+            renderPreview();
+            loadActor();
+        });
+    </script>
+</Layout>

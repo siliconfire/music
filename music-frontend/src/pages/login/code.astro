@@ -1,0 +1,161 @@
+---
+import '../../styles/global.css'
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout>
+    <html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Giriş</title>
+    </head>
+    <body>
+    <p id="info"></p>
+    <div id="view-no-token" style="display: none;">
+        <h1 class="text-2xl text-slate-800 m-5 lg:m-10" id="title">Lütfen giriş kodunuzu girin.</h1>
+        <div id="error-box" class="hidden m-5 lg:m-10 p-3 border border-red-300 bg-red-100 text-red-700 rounded"></div>
+        <hr class="my-1">
+        <input type="text" id="user-id" class="m-2 p-0.5 border border-gray-200 rounded" placeholder="[ID gir]"/>
+        <input type="text" id="login-code" class="m-2 p-0.5 border border-gray-200 rounded" placeholder="[kod gir]"/>
+        <button id="btn-login" class="text-gray-900">[giriş yap]</button>
+        <div class="m-2 text-sm text-slate-600">
+            <a href="/login" class="underline text-blue-500">Benim şifrem var!</a>
+        </div>
+        <hr class="my-1">
+        <a href="/help" class="underline text-blue-500 mx-3 my-1 inline-block">Yardım</a>
+    </div>
+    <div id="view-invalid-token" style="display: none;">
+        <h1>Oturumunuzun süresi dolmuş.</h1>
+        <button class="btn-logout">[Çıkış yap]</button>
+    </div>
+    </body>
+    </html>
+
+    <script>
+        import {API_URL} from "../../lib/constants.ts";
+
+        const viewNoToken = document.getElementById('view-no-token');
+        const viewInvalidToken = document.getElementById('view-invalid-token');
+        const info = document.getElementById('info');
+        const errorBox = document.getElementById('error-box');
+
+        function showError(message) {
+            if (!errorBox) {
+                return;
+            }
+            errorBox.textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+
+        function clearError() {
+            if (!errorBox) {
+                return;
+            }
+            errorBox.textContent = '';
+            errorBox.classList.add('hidden');
+        }
+
+        async function updateUI() {
+            // reset
+            viewNoToken.style.display = 'none';
+            viewInvalidToken.style.display = 'none';
+            info.innerHTML = "";
+            clearError();
+
+            const token = localStorage.getItem('jwt_token');
+
+            if (!token) {
+                viewNoToken.style.display = 'block';
+                return;
+            }
+
+            info.innerHTML = "Oturumunuz kontrol ediliyor...";
+            try {
+                const res = await fetch(`${API_URL}/check`, {
+                    method: 'POST',
+                    headers: {'X-Session-ID': token}
+                });
+
+                const data = await res.json();
+
+                if (data.valid) {
+                    info.innerHTML = "Yönlendiriliyorsunuz...";
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+
+                } else {
+                    viewInvalidToken.style.display = 'block';
+                    info.innerHTML = "";
+                }
+            } catch (err) {
+                console.error("Connection failed", err);
+                viewNoToken.style.display = 'block';
+                showError("Bir hata oluştu, muhtemelen sunucuya bağlanamadım. Eğer başka cihazdan da girilmiyorsa çok büyük ihtimalle hata bende. Lütfen bunu bana bildirin.");
+            }
+        }
+
+        async function handleLogin() {
+            const usernameInput = document.getElementById('user-id') as HTMLInputElement;
+            const codeInput = document.getElementById('login-code') as HTMLInputElement;
+            const user_id = usernameInput.value;
+            const code = codeInput?.value || '';
+
+            clearError();
+
+            if (!user_id) {
+                showError("Kullanıcı ID'si gerekli.");
+                return;
+            }
+            if (!code) {
+                showError("Kod gerekli.");
+                return;
+            }
+            if (!code.trim().startsWith('74')) {
+                showError("Kodlar 74 ile başlamalı.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id, code })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('jwt_token', data.access_token);
+                    if (data.set_password === 'forced') {
+                        window.location.href = '/account/set-password?mode=forced';
+                        return;
+                    }
+                    if (data.set_password === 'nudge') {
+                        window.location.href = '/account/set-password?mode=nudge';
+                        return;
+                    }
+                    await updateUI();
+                } else {
+                    showError("Giriş başarısız. " + (data.detail || "Bilinmeyen hata") + ".");
+                }
+            } catch (err) {
+                console.error("Login fetch error:", err);
+                showError("Sunucu hatası. Lütfen daha sonra tekrar deneyin.");
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('jwt_token');
+            updateUI();
+        }
+
+        document.getElementById('btn-login')?.addEventListener('click', handleLogin);
+        const logoutButtons = document.querySelectorAll('.btn-logout');
+        logoutButtons.forEach(button => {
+            button.addEventListener('click', handleLogout);
+        });
+        document.getElementsByClassName('btn-logout').onclick = handleLogout;
+        updateUI()
+    </script>
+</Layout>

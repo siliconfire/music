@@ -1,0 +1,40 @@
+---
+---
+
+<html>
+    <head>
+        <title>Yetki hatası</title>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+        <h1>Bunu yapmak için yetkiniz yok.</h1>
+        <p id="message"> <!-- the script below fills this in --> </p>
+        <p id="messsage2" style="font-style: italic;"> <!-- same as above, mostly used for a more descriptive reason --> </p>
+        <p>Eğer bunun bir hata olabileceğini düşünüyorsanız <a href="/help">buraya</a> tıklayın.</p>
+        <hr>
+        <a href="/">ana sayfa</a> - <a href="/account">giriş/çıkış yap</a> - <a href="/help">yardım</a>
+    </body>
+</html>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    const loggedIn = params.get('loggedin');
+    const userPerms = params.get('userperms')
+    const neededPerm = params.get('neededperm')
+    const notSelected = params.get('notselected')
+    const msgElement = document.getElementById('message');
+
+    if (loggedIn === 'false') {
+        msgElement.innerHTML = 'Giriş yapılı gözükmüyorsunuz. <a href="/login">buraya</a> tıklayarak giriş yapmak, ardından tekrar denemek yardımcı olabilir.';
+    } else if (loggedIn === 'true') {
+        msgElement.textContent = `Bu işlemi yapmak için '${neededPerm}' yetkisine sahip olmanız lazım. (siz: ${userPerms})`;
+    } else {
+        msgElement.textContent = 'Bunu okuyorsan (ve kendin bu URL\'ye gitmediysen) demektir ki çok büyük bir hata yaptım, parametreleri koymayı unuttum. lütfen alttaki "yardım" tuşundan bunu bana bildirin.';
+    }
+
+    if (notSelected === 'true') {
+        const msgElement2 = document.getElementById('messsage2');
+        msgElement2.textContent = '(Bugün müziği değiştirmek için seçilmiş gözükmüyorsun, bunun sebebi bu olabilir mi?)';
+    }
+</script>

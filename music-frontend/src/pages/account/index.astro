@@ -1,0 +1,92 @@
+---
+import '../../styles/global.css'
+import Layout from '../../layouts/Layout.astro'
+import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
+---
+
+<Layout>
+    <div id="account-container" class="m-10">
+        <h1 class="text-2xl text-slate-800">Hesap bilgileri:</h1>
+
+        <div id="ban-info" class=""></div>
+        <div id="user-info" class="mx-2 mt-8 p-4 border border-blue-300 rounded-2xl bg-blue-100 inline-block">Loading user data...</div>
+        <br>
+
+        <SetPasswordPanel />
+        <br>
+
+        <button id="home-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Ana sayfaya dön</button>
+        <button id="logout-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Çıkış yap</button>
+    </div>
+
+    <script>
+        import { API_URL } from '../../lib/constants.ts';
+
+        async function loadAccount() {
+            const infoDiv = document.getElementById('user-info');
+            const banDiv = document.getElementById('ban-info');
+            const token = localStorage.getItem('jwt_token');
+
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/me`, {
+                    headers: {
+                        'X-Session-ID': token
+                    }
+                });
+
+                if (response.status === 403 || response.status === 401) {
+                    banDiv.innerHTML = "<p>ilginç bir hata, lütfen tekrar giriş yapın.</p>(<a href='/login'>BURAYA tıkla</a>)";
+                    return;
+                }
+
+                const user = await response.json();
+
+                console.log("response", user);
+                // check for ban
+                if (user.banned) {
+                    const reasonLine = user.reason ? `<div class='mt-1 text-sm'>Kapatılma sebebi: ${user.reason}</div>` : '';
+                    banDiv.innerHTML = `<p class='mt-6 p-3 bg-red-50 border border-red-200 text-red-700 font-medium'>Bu hesap kullanıma kapatıldı.${reasonLine}</p>`;
+                }
+
+                // find the stronger rank
+                let displayContent = `
+            <p>${user.name} (ID: ${user.id})</p>
+          `;
+
+                if (user.permissions.includes('admin') || user.permissions.includes('dev')) {
+                    // high perms
+                    displayContent += `<p>Yetkiler: ${user.permissions.join(', ')}</p>`;
+                } else if (user.permissions.includes('music') || user.permissions.includes('musicpermanent')) {
+                    // music
+                    displayContent += `<p>Müzik seçme için seçildi</p>`;
+                } else {
+                    // No perms
+                    displayContent += `<p>Normal kullanıcı<p>`;
+                }
+
+                infoDiv.innerHTML = displayContent;
+
+            } catch (err) {
+                infoDiv.innerHTML = "<p>sunucuya bağlanırken hata.</p>";
+            }
+        }
+
+
+        // buttons
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            localStorage.removeItem('jwt_token');
+            window.location.href = "/login";
+        });
+
+        document.getElementById('home-btn')?.addEventListener('click', () => {
+            window.location.href = "/";
+        });
+
+        loadAccount();
+    </script>
+</Layout>

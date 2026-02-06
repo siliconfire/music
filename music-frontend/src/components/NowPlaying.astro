@@ -1,0 +1,140 @@
+---
+// src/components/NowPlaying.astro
+---
+
+<div id="np-container" class="flex flex-col gap-2">
+    <div class="flex items-center gap-3">
+        <img id="np-art" src="" class="w-12 h-12 border hidden np-art" />
+        <div class="min-w-0">
+            <p id="np-name" class="font-bold truncate text-sm">Yükleniyor...</p>
+            <p id="np-artist" class="text-xs italic opacity-80 truncate"></p>
+        </div>
+    </div>
+
+    <div class="w-full h-1 mt-1 np-progress-track">
+        <div id="np-progress" class="h-full transition-all duration-1000 np-progress-bar" style="width: 0%"></div>
+    </div>
+</div>
+
+<script>
+    import { API_URL } from '../lib/constants';
+
+    const token = localStorage.getItem("jwt_token");
+    const nameEl = document.getElementById('np-name');
+    const artistEl = document.getElementById('np-artist');
+    const artEl = document.getElementById('np-art') as HTMLImageElement;
+    const progressEl = document.getElementById('np-progress');
+    const themeRoot = document.documentElement;
+    const fallbackAccent = { r: 161, g: 98, b: 7 };
+    let lastArtUrl = '';
+    let lastTrackId = '';
+
+    function setThemeColor(rgb = fallbackAccent) {
+        const accent = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        const muted = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+        const soft = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)`;
+        themeRoot.style.setProperty('--np-accent', accent);
+        themeRoot.style.setProperty('--np-accent-muted', muted);
+        themeRoot.style.setProperty('--np-accent-bg', soft);
+    }
+
+    function extractAverageColor(img) {
+        const canvas = document.createElement('canvas');
+        const size = 32;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return null;
+
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let count = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            if (alpha < 16) continue;
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count += 1;
+        }
+
+        if (!count) return null;
+        return {
+            r: Math.round(r / count),
+            g: Math.round(g / count),
+            b: Math.round(b / count)
+        };
+    }
+
+    function updateThemeFromArt() {
+        try {
+            const color = extractAverageColor(artEl);
+            if (color) {
+                setThemeColor(color);
+            } else {
+                setThemeColor();
+            }
+        } catch (e) {
+            setThemeColor();
+        }
+    }
+
+    async function updateStatus() {
+        try {
+            const res = await fetch(`${API_URL}/status`, {
+                headers: { 'X-Session-ID': token || '' }
+            });
+
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data && data.item) {
+                nameEl.innerText = data.item.name;
+                artistEl.innerText = data.item.artists[0].name;
+
+                const trackId = data.item.id || '';
+                const trackChanged = trackId && trackId !== lastTrackId;
+                if (trackChanged) {
+                    lastTrackId = trackId;
+                }
+
+                if (data.item.album.images[0]) {
+                    const artUrl = data.item.album.images[0].url;
+                    if (artUrl !== lastArtUrl) {
+                        lastArtUrl = artUrl;
+                        artEl.crossOrigin = 'anonymous';
+                        artEl.src = artUrl;
+                        artEl.classList.remove('hidden');
+                        artEl.onload = () => updateThemeFromArt();
+                        if (artEl.complete && artEl.naturalWidth > 0) {
+                            updateThemeFromArt();
+                        }
+                    } else if (trackChanged && artEl.complete && artEl.naturalWidth > 0) {
+                        updateThemeFromArt();
+                    }
+                }
+
+                const percent = (data.progress_ms / data.item.duration_ms) * 100;
+                if (progressEl) progressEl.style.width = `${percent}%`;
+                themeRoot.style.setProperty('--np-progress', `${percent}%`);
+
+            } else {
+                nameEl.innerText = "Müzik kapalı.";
+                artistEl.innerText = "";
+                artEl.classList.add('hidden');
+                setThemeColor();
+                themeRoot.style.setProperty('--np-progress', '0%');
+            }
+        } catch (e) {
+            console.error("Status check failed.");
+        }
+    }
+
+    setThemeColor();
+    setInterval(updateStatus, 3000);
+    updateStatus();
+</script>

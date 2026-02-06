@@ -1,0 +1,77 @@
+---
+// src/pages/spotify/callback.astro
+// This code runs on the server at build time or request time
+
+import {API_URL} from "../../lib/constants.ts";
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || `${API_URL}`;
+
+// No server-side fetching here; all client-side to include JWT
+---
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Spotify Callback</title>
+    <style>
+      body { font-family: sans-serif; margin: 40px; text-align: center; }
+      .error { color: red; }
+      .success { color: green; }
+    </style>
+</head>
+<body>
+<h1>Linking Spotify Account...</h1>
+<p>Please wait while we secure your connection.</p>
+<div id="status-message">Processing...</div>
+<div id="error-message" class="error"></div>
+
+<script is:inline>
+    // This script runs in the browser
+    const API_BASE_URL = `${API_URL}`;
+    const statusMessage = document.getElementById('status-message');
+    const errorMessageDiv = document.getElementById('error-message');
+
+    async function processSpotifyCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const jwt = localStorage.getItem('jwt_token'); // Get your backend JWT
+
+        if (!jwt) {
+            errorMessageDiv.innerText = "Error: Not logged into the backend. Cannot complete Spotify linking.";
+            statusMessage.style.display = 'none';
+            return;
+        }
+
+        if (!code) {
+            errorMessageDiv.innerText = "Error: No Spotify authorization code found in URL.";
+            statusMessage.style.display = 'none';
+            return;
+        }
+
+        try {
+            // Send the code AND your admin JWT to your backend's /callback
+            const response = await fetch(`${API_BASE_URL}ar/callback?code=${code}`, {
+                method: 'GET', // Or POST if you change your backend route
+                headers: {
+                    'X-Session-ID': jwt
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                statusMessage.innerHTML = `<span class="success">${data.status} Redirecting...</span>`;
+                // Redirect to your main app page after successful link
+                window.location.href = '/';
+            } else {
+                const errorData = await response.json();
+                errorMessageDiv.innerText = `Failed to link Spotify: ${errorData.detail || response.statusText}`;
+                statusMessage.style.display = 'none';
+            }
+        } catch (error) {
+            errorMessageDiv.innerText = `Network error: ${error.message}. Is your backend running?`;
+            statusMessage.style.display = 'none';
+        }
+    }
+
+    processSpotifyCallback();
+</script>
+</body>
+</html>

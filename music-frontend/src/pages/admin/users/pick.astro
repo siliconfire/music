@@ -1,0 +1,320 @@
+---
+import '../../../styles/global.css'
+import Layout from '../../../layouts/Layout.astro'
+import AdminBack from '../../../components/AdminBack.astro'
+---
+
+<Layout title="Yönetici - Kullanıcı Seç">
+    <div class="m-10 print-hidden">
+        <h1 class="text-2xl text-slate-800 mt-10">Müzik için seç</h1>
+        <div>
+            <AdminBack />
+        </div>
+
+        <p>Müzik için rastgele kullanıcılar seç veya kendin ID yaz.</p>
+
+        <div id="notice"></div>
+
+        <div class="border border-slate-300 p-5 my-5 inline-block">
+            <div class="font-medium text-slate-800">Seçim</div>
+            <label class="inline-flex items-center gap-2 mr-4 mt-2">
+                <input type="radio" name="mode" value="random" checked />
+                <span>Rastgele seç</span>
+            </label>
+            <br>
+            <label class="inline-flex items-center gap-2 mt-2">
+                <input type="radio" name="mode" value="choose" />
+                <span>Kendim seçeyim</span>
+            </label>
+
+            <div id="random-controls" class="mt-4">
+                <label class="block">
+                    Kaç kişi?
+                    <input id="count" type="number" min="1" value="2" class="border border-slate-200 px-2 py-1 w-24" />
+                </label>
+            </div>
+
+            <div id="choose-controls" class="mt-4 hidden">
+                <label class="block">
+                    Kullanıcı ID listesi (kişi başı bir satır. lütfen boşluk koyma.)
+                    <textarea id="ids" rows="4" class="border border-slate-200 px-2 py-1 w-full" placeholder="123\n456\n789"></textarea>
+                </label>
+            </div>
+
+            <div class="mt-4">
+                <button id="btn-build" class="bg-green-100 p-2 mx-1">Hazırla</button>
+                <button id="btn-print" class="border border-slate-300 p-2 mx-1">Yazdır</button>
+            </div>
+        </div>
+
+        <div id="summary" class="text-sm text-slate-600 mb-3"></div>
+
+        <div id="result" class="print-area">
+            <div id="result-table"></div>
+            <div id="result-widgets" class="mt-4"></div>
+        </div>
+    </div>
+
+    <div id="print-only" class="print-only m-6">
+        <div id="result-widgets-print"></div>
+    </div>
+
+    <style>
+        @media print {
+            .print-hidden {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+        @media screen {
+            .print-only {
+                display: none;
+            }
+        }
+    </style>
+
+    <script type="module">
+        const API_URL = "http://127.0.0.1:8000";
+
+        const noticeDiv = document.getElementById('notice');
+        const resultDiv = document.getElementById('result');
+        const summaryDiv = document.getElementById('summary');
+        const randomControls = document.getElementById('random-controls');
+        const chooseControls = document.getElementById('choose-controls');
+        const countInput = document.getElementById('count');
+        const idsInput = document.getElementById('ids');
+        const buildBtn = document.getElementById('btn-build');
+        const printBtn = document.getElementById('btn-print');
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+        const tableDiv = document.getElementById('result-table');
+        const widgetsDiv = document.getElementById('result-widgets');
+        const widgetsPrintDiv = document.getElementById('result-widgets-print');
+
+        if (!noticeDiv || !resultDiv || !summaryDiv || !randomControls || !chooseControls || !countInput || !idsInput || !buildBtn || !printBtn || !tableDiv || !widgetsDiv || !widgetsPrintDiv) {
+            throw new Error('missing elements');
+        }
+
+        let users = [];
+
+        function showNotice(msg, type = 'info') {
+            noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+            setTimeout(() => { if (noticeDiv.innerHTML) noticeDiv.innerHTML = ''; }, 5000);
+        }
+
+        function setMode(mode) {
+            if (mode === 'choose') {
+                chooseControls.classList.remove('hidden');
+                randomControls.classList.add('hidden');
+            } else {
+                randomControls.classList.remove('hidden');
+                chooseControls.classList.add('hidden');
+            }
+        }
+
+        function parseIds(text) {
+            return Array.from(new Set(text
+                .split(/[^0-9a-zA-Z]+/)
+                .map(v => v.trim())
+                .filter(Boolean)));
+        }
+
+        function pickRandom(list, count) {
+            const copy = [...list];
+            for (let i = copy.length - 1; i > 0; i -= 1) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy.slice(0, count);
+        }
+
+        function generateCode() {
+            const buffer = new Uint32Array(1);
+            crypto.getRandomValues(buffer);
+            const random = buffer[0] % 1000000;
+            const suffix = String(random).padStart(6, '0');
+            return `74${suffix}`;
+        }
+
+        function renderTable(rows) {
+            if (!rows.length) {
+                tableDiv.innerHTML = '<div class="text-slate-400 italic">(liste boş)</div>';
+                widgetsDiv.innerHTML = '';
+                widgetsPrintDiv.innerHTML = '';
+                summaryDiv.textContent = '';
+                return;
+            }
+
+            summaryDiv.textContent = `Toplam: ${rows.length}`;
+
+            tableDiv.innerHTML = `
+                <div class="overflow-auto border border-slate-200 rounded">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left">
+                            <tr>
+                                <th class="px-3 py-2">Ad</th>
+                                <th class="px-3 py-2">ID</th>
+                                <th class="px-3 py-2">Kod / Not</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((row) => `
+                                <tr class="border-t">
+                                    <td class="px-3 py-2">${row.name || '-'}</td>
+                                    <td class="px-3 py-2 font-mono text-xs">${row.id || '-'}</td>
+                                    <td class="px-3 py-2 font-mono text-xs">${row.note || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            const cards = rows.map((row) => `
+                <div class="border border-slate-700 inline-block m-5 p-5">
+                    <div class="text-xl font-semibold">${row.name || '-'}</div>
+                    <div class="border border-slate-400 my-2 p-2">
+                        <div class="text-lg font-semibold">ID: ${row.id || '-'}</div>
+                        Giriş kodu: <span class="text-xs bg-black text-slate-700 p-1">${row.note || '-'}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            widgetsDiv.innerHTML = cards;
+            widgetsPrintDiv.innerHTML = cards;
+        }
+
+        async function loadUsers() {
+            const token = localStorage.getItem('jwt_token') || '';
+            try {
+                const res = await fetch(`${API_URL}/admin/users`, { headers: { 'X-Session-ID': token } });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotice(data.detail || 'Liste alınamadı.', 'error');
+                    return;
+                }
+                users = data.users || [];
+            } catch (err) {
+                showNotice('Sunucuya bağlanılamadı.', 'error');
+            }
+        }
+
+        async function ensureUsers() {
+            if (!users.length) {
+                await loadUsers();
+            }
+        }
+
+        async function createLoginCode(userId, code) {
+            const token = localStorage.getItem('jwt_token') || '';
+            const res = await fetch(`${API_URL}/admin/users/${encodeURIComponent(userId)}/login-code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': token
+                },
+                body: JSON.stringify({
+                    code,
+                    remaining_usage: -1,
+                    set_password: 'disabled',
+                    valid_until: null
+                })
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.detail || 'Kod oluşturulamadı');
+            }
+        }
+
+        async function grantMusicPermission(user) {
+            if (!user || !user.id) {
+                return true;
+            }
+            if ((user.permissions || []).includes('music')) {
+                return true;
+            }
+            const token = localStorage.getItem('jwt_token') || '';
+            const res = await fetch(`${API_URL}/admin/users/${encodeURIComponent(user.id)}/permissions?permission=music`, {
+                method: 'POST',
+                headers: {
+                    'X-Session-ID': token
+                }
+            });
+            return res.ok;
+        }
+
+        async function buildList() {
+            await ensureUsers();
+            if (!users.length) {
+                showNotice('Kullanıcı listesi boş.', 'error');
+                renderTable([]);
+                return;
+            }
+
+            const mode = document.querySelector('input[name="mode"]:checked')?.value || 'random';
+            let selected = [];
+
+            if (mode === 'choose') {
+                const ids = parseIds(idsInput.value || '');
+                if (!ids.length) {
+                    showNotice('En az bir ID girin.', 'error');
+                    return;
+                }
+                selected = ids.map((id) => {
+                    const found = users.find(u => String(u.id) === String(id));
+                    return found ? found : { id, name: null, has_password: null, not_found: true };
+                });
+            } else {
+                const count = Number(countInput.value);
+                if (!Number.isInteger(count) || count < 1) {
+                    showNotice('En az 1 kişi seçmelisin.', 'error');
+                    return;
+                }
+                const safeCount = Math.min(count, users.length);
+                selected = pickRandom(users, safeCount);
+            }
+
+            const rows = [];
+            for (const user of selected) {
+                if (user.not_found) {
+                    rows.push({ id: user.id, name: '-', note: 'Kullanıcı bulunamadı' });
+                    continue;
+                }
+
+                const musicGranted = await grantMusicPermission(user);
+
+                if (user.has_password) {
+                    const note = musicGranted ? 'Şifreniz var' : 'Şifre belirlemiş. (music eklenemedi)';
+                    rows.push({ id: user.id, name: user.name || '-', note });
+                    continue;
+                }
+
+                const code = generateCode();
+                try {
+                    await createLoginCode(user.id, code);
+                    const note = musicGranted ? `${code}` : `${code} (music eklenemedi)`;
+                    rows.push({ id: user.id, name: user.name || '-', note });
+                } catch (err) {
+                    const note = musicGranted ? 'Kod oluşturulamadı' : 'Kod oluşturulamadı (music eklenemedi)';
+                    rows.push({ id: user.id, name: user.name || '-', note });
+                }
+            }
+
+            renderTable(rows);
+        }
+
+        modeRadios.forEach((radio) => {
+            radio.addEventListener('change', (event) => {
+                const value = event.target?.value || 'random';
+                setMode(value);
+            });
+        });
+
+        buildBtn.addEventListener('click', buildList);
+        printBtn.addEventListener('click', () => window.print());
+
+        setMode('random');
+        loadUsers();
+    </script>
+</Layout>

@@ -1,0 +1,167 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Search from '../components/Search.astro';
+import Queue from '../components/Queue.astro';
+import NowPlaying from '../components/NowPlaying.astro';
+import Item from '../components/Item.astro';
+---
+
+<Layout title="Bartın Lisesi Müzik Sistemi">
+	<h1 class="text-2xl text-slate-800 m-10" id="title">Müzik Sistemi</h1>
+	<div class="flex flex-wrap m-5 lg:m-10 gap-5">
+	<fieldset id="div-lockdown" class="hidden p-5 border border-red-500 bg-red-100 w-75 lg:w-100">
+			<legend class="text-red-700 font-bold">Dikkat</legend>
+			<p class="text-red-700">Sistem kilitlendi.</p>
+			<p class="text-red-700">Lütfen kilidin kaldırılması için bir öğretmenden yardım isteyin.</p>
+
+	</fieldset>
+		<Item title="Kontroller">
+			<button id="btn-play" class="border border-slate-300 p-3 mx-2">Başlat</button>
+			<button id="btn-pause" class="border border-slate-300 p-3 mx-2">Durdur</button>
+			<button id="btn-next" class="border border-slate-300 p-3 mx-2">Atla</Button>
+		</Item>
+		<Item title="Çalıyor" className="item-card">
+			<NowPlaying />
+		</Item>
+		<Item title="Ara">
+			<Search />
+		</Item>
+		<Item title="Kuyruk">
+			<Queue />
+		</Item>
+	</div>
+
+	<div class="m-5 lg:m-10 lg:mt-10 mt-10">
+		<fieldset class="p-5 border border-gray-500 inline-block bg-gray-50"><span id="username">Yükleniyor...</span>
+			<legend>Hesabınız</legend>
+
+			<button id="btn-account" class="m-2 border border-slate-500 p-2 rounded">
+				Hesabım
+			</button>
+
+			<button id="btn-logout" class="m-2 border border-slate-500 p-2 rounded">
+				Çıkış yap
+			</button>
+
+			<div id="div-mod" class="hidden">
+				<button class="m-2 border border-slate-500 bg-green-100 p-2 rounded" id="btn-mod">
+					Moderator Paneli
+				</button>
+			</div>
+
+			<div id="div-admin" class="hidden">
+				<button class="m-2 border border-slate-500 p-2 bg-red-100 rounded" id="btn-admin">
+					Yönetici Paneli
+				</button>
+			</div>
+
+		</fieldset>
+	</div>
+
+
+
+
+	<script>
+		import { API_URL } from '../lib/constants';
+
+		const token = localStorage.getItem("jwt_token");
+		if (!token) {
+			window.location.href = '/login';
+		} else {
+			handleUserInfo();
+		}
+
+		async function handleUserInfo() {
+			const response = await fetch(`${API_URL}/me`, {headers: {'X-Session-ID': token}});
+			const user_info = await response.json();
+			console.log(user_info)
+			if (user_info.real === false) {
+				window.location.href = '/login';
+				return;
+			}
+			if (user_info.banned === true) {
+				window.location.href = '/account';
+				return;
+			}
+			if (user_info.permissions.includes('admin')) {
+				document.getElementById("div-admin").classList.remove("hidden");
+				document.getElementById("btn-admin").addEventListener("click", () => {
+					window.location.href = '/admin';
+				});
+			}
+
+			if (user_info.permissions.includes('moderator')) {
+				document.getElementById("div-mod").classList.remove("hidden");
+				document.getElementById("btn-mod").addEventListener("click", () => {
+					window.location.href = '/mod';
+				});
+			}
+
+			document.getElementById("username").innerText = user_info.name;
+		}
+
+		async function loadLockdown() {
+			const lockdownDiv = document.getElementById("div-lockdown");
+			if (!lockdownDiv) {
+				return;
+			}
+			try {
+				const res = await fetch(`${API_URL}/lockdown`);
+				if (!res.ok) {
+					return;
+				}
+				const data = await res.json();
+				if (data.locked) {
+					lockdownDiv.classList.remove("hidden");
+				} else {
+					lockdownDiv.classList.add("hidden");
+				}
+			} catch (err) {
+				lockdownDiv.classList.add("hidden");
+			}
+		}
+
+		loadLockdown();
+
+		document.getElementById("btn-play").addEventListener("click", async () => {
+			await fetch(`${API_URL}/resume`, { headers: { 'X-Session-ID': token }, method: 'POST' }
+		)});
+
+		document.getElementById("btn-pause").addEventListener("click", async () => {
+			await fetch(`${API_URL}/pause`, { headers: { 'X-Session-ID': token }, method: 'POST' }
+		)});
+
+		document.getElementById("btn-next").addEventListener("click", async () => {
+			await fetch(`${API_URL}/next`, { headers: { 'X-Session-ID': token }, method: 'POST' }
+		)
+		})
+		document.getElementById("btn-account").addEventListener("click", () => {
+			window.location.href = '/account';
+		});
+
+		document.getElementById("btn-logout").addEventListener("click", () => {
+			localStorage.removeItem("jwt_token");
+			window.location.href = '/login';
+		});
+
+	</script>
+</Layout>
+
+
+
+
+
+
+
+
+
+
+
+<!-- saving for later -->
+<!--
+ 		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Müzik Sistemi</title>
+-->

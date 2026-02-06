@@ -1,0 +1,79 @@
+---
+// src/pages/spotify/connect.astro
+// This code runs on the server at build time or request time (if SSR enabled)
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
+let spotifyLoginUrl = null;
+let errorMessage = null;
+
+// This script will run on the client-side to fetch the link
+// and then the actual connection will happen on the client
+---
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Connect Spotify (Admin)</title>
+    <style>
+      body { font-family: sans-serif; margin: 40px; }
+      .error { color: red; }
+      .success { color: green; }
+      button { padding: 10px 15px; background-color: #1DB954; color: white; border: none; border-radius: 5px; cursor: pointer; }
+      a { text-decoration: none; color: #1DB954; }
+    </style>
+</head>
+<body>
+<h1>Spotify Admin Connection</h1>
+<p>This page allows the admin to link this backend to Spotify.</p>
+
+<div id="status-message">Loading...</div>
+<div id="login-link-container" style="display:none;">
+    <button id="connect-spotify-btn">Connect Spotify Account</button>
+</div>
+<div id="error-message" class="error"></div>
+
+<script is:inline>
+    // This script runs in the browser
+    const API_BASE_URL = "http://127.0.0.1:8000"; // Ensure this matches your backend
+    const statusMessage = document.getElementById('status-message');
+    const loginLinkContainer = document.getElementById('login-link-container');
+    const connectSpotifyBtn = document.getElementById('connect-spotify-btn');
+    const errorMessageDiv = document.getElementById('error-message');
+
+    async function fetchSpotifyLoginUrl() {
+        const jwt = localStorage.getItem('jwt_token');
+        if (!jwt) {
+            errorMessageDiv.innerText = "Error: Not logged into the backend. Please log in first.";
+            statusMessage.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/spotify/login`, {
+                headers: {
+                    'X-Session-ID': jwt
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                connectSpotifyBtn.onclick = () => {
+                    window.location.href = data.login_uri; // Redirect to Spotify
+                };
+                loginLinkContainer.style.display = 'block';
+                statusMessage.style.display = 'none';
+                errorMessageDiv.innerText = ''; // Clear previous errors
+            } else {
+                const errorData = await response.json();
+                errorMessageDiv.innerText = `Failed to get Spotify login URL: ${errorData.detail || response.statusText}`;
+                statusMessage.style.display = 'none';
+            }
+        } catch (error) {
+            errorMessageDiv.innerText = `Network error: ${error.message}. Is your backend running?`;
+            statusMessage.style.display = 'none';
+        }
+    }
+
+    fetchSpotifyLoginUrl();
+</script>
+</body>
+</html>

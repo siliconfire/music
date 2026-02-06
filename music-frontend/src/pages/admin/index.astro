@@ -1,0 +1,40 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Yönetici">
+    <div class="m-10">
+
+        <h1 class="text-2xl text-slate-800 mt-10">Yönetici sayfası</h1>
+        <a href="/" class="mb-10 inline-block text-sm text-blue-500 hover:underline">
+            (ana sayfaya geri dön)
+        </a>
+
+        <fieldset class="border border-slate-500 p-5 my-5">
+            <legend>Müzik Yönetimi</legend>
+            <div class="flex gap-3">
+                <a href="/mod" class="border border-slate-400 inline-block p-3">Müzik Kontrolleri</a>
+            </div>
+        </fieldset>
+
+        <fieldset class="border border-slate-500 p-5 my-5">
+            <legend>Kullanıcı Yönetimi</legend>
+            <div class="flex gap-3">
+                <a href="/admin/users/" class="border border-slate-400 inline-block p-3">Kullanıcıları Listele</a>
+                <a href="/admin/users/create" class="border border-slate-400 inline-block p-3">Kullanıcı Oluştur</a>
+                <a href="/admin/users/change-permission" class="border border-slate-400 inline-block p-3">Yetkileri düzenle</a>
+                <a href="/admin/users/ban" class="border border-slate-400 inline-block p-3">Hesabını kapat</a>
+                <a href="/admin/users/password" class="border border-slate-400 inline-block p-3">Şifre Değiştir</a>
+                <a href="/admin/users/login-code" class="border border-slate-400 inline-block p-3">Giriş Kodu</a>
+                <a href="/admin/users/delete" class="border border-slate-400 inline-block p-3">Kullanıcıyı sil</a>
+            </div>
+        </fieldset>
+
+        <fieldset class="border border-slate-500 p-5 my-5">
+            <legend>Spotify</legend>
+            <div class="flex gap-3">
+                <a href="/spotify/connect" class="border border-slate-400 inline-block p-3">Spotify hesabını tekrardan bağla</a>
+            </div>
+        </fieldset>
+    </div>
+</Layout>

@@ -1,0 +1,226 @@
+---
+import '../../../styles/global.css'
+import Layout from '../../../layouts/Layout.astro'
+import AdminBack from '../../../components/AdminBack.astro'
+---
+
+<Layout title="Yönetici - Kullanıcı Sil">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Kullanıcı Sil</h1>
+        <AdminBack />
+
+        <p>Bir kullanıcıyı kalıcı olarak sil. Bu işlem geri alınamaz.</p>
+        <p>Lütfen kullanmadan önce <a href="/admin/users/ban" class="text-blue-500">hesabını kapatma</a> aracını da değerlendirin.</p>
+
+        <div id="notice"></div>
+        <div id="actor">Yükleniyor...</div>
+
+        <div class="border border-slate-300 p-5 my-5 inline-block">
+            <label class="block">
+                Kullanıcı ID'si
+                <input id="target-id" class="border border-slate-200" placeholder="örnek: 123456" />
+            </label>
+
+            <label class="inline-flex items-center gap-2 mt-3">
+                <input id="confirm" type="checkbox" />
+                <span class="text-sm">eminim son kararım</span>
+            </label>
+
+            <div class="mt-4">
+                <button id="btn-delete" class="bg-red-100 p-2 mx-1">Kullanıcıyı Sil</button>
+            </div>
+        </div>
+
+        <div id="result">...</div>
+    </div>
+
+    <script type="module">
+        const API_URL = "http://127.0.0.1:8000";
+        const RANKS = ["music", "musicpermanent", "moderator", "admin", "superadmin", "dev"];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const resultDiv = document.getElementById('result');
+            const targetInput = document.getElementById('target-id');
+            const confirmInput = document.getElementById('confirm');
+            const deleteBtn = document.getElementById('btn-delete');
+
+            if (!actorDiv || !noticeDiv || !resultDiv || !targetInput || !confirmInput || !deleteBtn) {
+                return;
+            }
+
+            let actor = null;
+            let lastUser = null;
+            let lookupTimer = null;
+            let lookupAbort = null;
+
+            function highestRankIndex(perms) {
+                const idx = perms.map(p => RANKS.indexOf(p)).filter(i => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => { if (noticeDiv.innerHTML) noticeDiv.innerHTML = ''; }, 5000);
+            }
+
+            function renderActor() {
+                const actorRank = highestRankIndex(actor.permissions || []);
+                const actorRankName = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${actor.name}</strong> (${actor.id}/${actorRankName})`;
+            }
+
+            function renderLookupPlaceholder() {
+                resultDiv.innerHTML = '<div class="text-slate-400 italic">(kullanıcı bilgilerini görmek için yukarıya ID numarasını girin...)</div>';
+            }
+
+            function renderNotFound() {
+                resultDiv.innerHTML = '<div class="text-slate-400 italic">(böyle bir kullanıcı bulunamadı.)</div>';
+            }
+
+            function renderLoading() {
+                resultDiv.innerHTML = '<div class="text-slate-400 italic">(kullanıcı aranıyor...)</div>';
+            }
+
+            function renderUser(user) {
+                lastUser = user;
+                const bannedText = user.banned ? 'evet' : 'hayır';
+                const reasonText = user.reason ? user.reason : '-';
+                resultDiv.innerHTML = `
+                    <div class="p-3 border rounded bg-white">
+                        <div class="font-medium">${user.name || 'Kullanıcı'} <span class="text-sm text-slate-600">(ID: ${user.id || targetInput.value.trim()})</span></div>
+                        <div class="mt-1">Yetkiler: ${user.permissions?.join(', ') || 'yok'}</div>
+                        <div class="mt-1">Hesabı kapalı?: ${bannedText}</div>
+                        <div class="mt-1">Sebep: ${reasonText}</div>
+                        <p class="mt-3 p-3 bg-red-50 border border-red-200 text-red-700 font-medium">Bu kullanıcıyı sileceksiniz. Eğer devam ederseniz bu işlemi geri alamazsınız.</p>
+                    </div>
+                `;
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+
+                try {
+                    const meRes = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                    if (!meRes.ok) {
+                        throw new Error('me request failed');
+                    }
+
+                    actor = await meRes.json();
+                    renderActor();
+                    deleteBtn.disabled = false;
+                } catch (err) {
+                    console.error(err);
+                    actorDiv.innerHTML = 'Sunucuya bağlanırken hata oluştu.';
+                    showNotice('Sunucuya bağlanırken hata oluştu.', 'error');
+                    deleteBtn.disabled = true;
+                }
+            }
+
+            async function lookupUser() {
+                const targetId = targetInput.value.trim();
+                if (!targetId) {
+                    renderLookupPlaceholder();
+                    return;
+                }
+
+                const token = localStorage.getItem('jwt_token') || '';
+
+                if (lookupAbort) {
+                    lookupAbort.abort();
+                }
+                lookupAbort = new AbortController();
+
+                try {
+                    renderLoading();
+                    const res = await fetch(`${API_URL}/admin/users/${encodeURIComponent(targetId)}`, {
+                        headers: { 'X-Session-ID': token },
+                        signal: lookupAbort.signal
+                    });
+
+                    if (res.status === 404) {
+                        renderNotFound();
+                        lastUser = null;
+                        return;
+                    }
+
+                    if (!res.ok) {
+                        renderLookupPlaceholder();
+                        lastUser = null;
+                        return;
+                    }
+
+                    const data = await res.json();
+                    if (data?.user) {
+                        renderUser(data.user);
+                    } else {
+                        renderNotFound();
+                        lastUser = null;
+                    }
+                } catch (err) {
+                    if (err?.name !== 'AbortError') {
+                        renderLookupPlaceholder();
+                        lastUser = null;
+                    }
+                }
+            }
+
+            function scheduleLookup() {
+                if (lookupTimer) {
+                    clearTimeout(lookupTimer);
+                }
+                const targetId = targetInput.value.trim();
+                if (!targetId) {
+                    renderLookupPlaceholder();
+                    return;
+                }
+                renderLoading();
+                lookupTimer = setTimeout(lookupUser, 300);
+            }
+
+            async function submitDelete() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const targetId = targetInput.value.trim();
+
+                if (!targetId) {
+                    showNotice('niye kullanıcının ID\'sini girmedin? :(', 'error');
+                    return;
+                }
+
+                if (!confirmInput.checked) {
+                    showNotice('lütfen emin olunca tekrar deneyin.', 'error');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/users/${encodeURIComponent(targetId)}`, {
+                        method: 'DELETE',
+                        headers: { 'X-Session-ID': token }
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Kullanıcı silinemedi.', 'error');
+                        return;
+                    }
+
+                    showNotice('Kullanıcı silindi.');
+                    lastUser = null;
+                    confirmInput.checked = false;
+                    renderLookupPlaceholder();
+                } catch (err) {
+                    console.error(err);
+                    showNotice('Sunucu hatası.', 'error');
+                }
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.addEventListener('click', submitDelete);
+            targetInput.addEventListener('input', scheduleLookup);
+
+            renderLookupPlaceholder();
+            loadActor();
+        });
+    </script>
+</Layout>

@@ -1,0 +1,91 @@
+---
+const { title = "Bartın Lisesi" } = Astro.props;
+import '@fontsource/google-sans-flex/400.css';
+import '@fontsource/google-sans-flex/500.css';
+import '@fontsource/google-sans-flex/700.css';
+import '@fontsource/google-sans-flex/900.css';
+import '../styles/global.css'
+---
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+    </head>
+    <body class="bg-background text-foreground antialiased">
+        <div id="authbounce-warning"></div>
+        <slot />
+    </body>
+</html>
+
+<script>
+    import {API_URL} from "../lib/constants.ts";
+
+    async function authBouncer() {
+        const path = window.location.pathname;
+        const token = localStorage.getItem('jwt_token');
+
+        // page exceptions
+        if (path === '/login' || path === '/login/code' || path === '/stats') {
+            return;
+        }
+
+        // if no token navigate away
+        if (!token) {
+            console.log("no token")
+            window.location.href = '/permission-error?loggedin=false';
+            return;
+        }
+
+        // token validation, if invalid navigate to /login
+        try {
+            const res = await fetch(`${API_URL}/check`, {
+                method: 'POST',
+                headers: { 'X-Session-ID': token }
+            });
+            const data = await res.json(); // Expecting { valid: bool, role: string }
+
+            if (!data.valid) {
+                localStorage.removeItem('jwt_token');
+                window.location.href = '/login';
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/me`, {
+                headers: {
+                    'X-Session-ID': token
+                }
+            });
+
+            const user_info = await response.json();
+
+            if (path.startsWith("/admin/dev") && !user_info.permissions.includes('dev')) {
+                console.log("Auth bounce, page: " + path + ", user perms: " + user_info.permissions + ", needed: dev");
+                window.location.href = '/permission-error?loggedin=true&userperms=' + user_info.permissions + '&neededperm=dev';
+                return;
+            } else if (/^\/(admin|spotify)/.test(path) && !user_info.permissions.includes('admin')) {
+                console.log("Auth bounce, page: " + path + ", user perms: " + user_info.permissions + ", needed: admin");
+                window.location.href = '/permission-error?loggedin=true&userperms=' + user_info.permissions + '&neededperm=admin';
+                return;
+            } else if (path.startsWith("/mod") && !user_info.permissions.includes('moderator')) {
+                console.log("Auth bounce, page: " + path + ", user perms: " + user_info.permissions + ", needed: admin");
+                window.location.href = '/permission-error?loggedin=true&userperms=' + user_info.permissions + '&neededperm=admin';
+                return;
+            } else if (path === '/' && !['music', 'musicpermanent'].some(p => user_info.permissions.includes(p))) {
+                console.log("Auth bounce, page: " + path + ", user perms: " + user_info.permissions + ", needed: music");
+                window.location.href = '/permission-error?loggedin=true&userperms=' + user_info.permissions + '&neededperm=music&notselected=true';
+                return;
+            }
+
+        } catch (e) {
+            console.error("Auth server down, it seems.", e);
+            const warning = document.getElementById('authbounce-warning');
+            if (warning) {
+                warning.innerHTML = "<div class='m-1'>authBouncer hatası. bunu okuyorsanız ya sunucu kapalıdır ya da <a href='/account'>profilinizde</a> sistemsel bir hata vardır (iki türlü de düzeltme görevi bana düşüyor). Lütfen sayfayı yenilemeyi deneyin.</div><hr>";
+            }
+        }
+    }
+
+    authBouncer();
+</script>

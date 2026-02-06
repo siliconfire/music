@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/google-sans.ttf') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Jetbrains Mono';
+  src: url('/jetbrains-mono.ttf') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family: 'Google Sans', sans-serif;
+  --np-accent: #a16207;
+  --np-accent-muted: rgba(161, 98, 7, 0.2);
+  --np-accent-bg: rgba(161, 98, 7, 0.06);
+  --np-progress: 0%;
+}
+
+.item-shell {
+  border-radius: 4px;
+  border-image: conic-gradient(
+      var(--np-accent-muted, rgba(161, 98, 7, 0.2)) 0 calc(100% - var(--np-progress, 0%)),
+      var(--np-accent, #a16207) 0 100%
+    ) 1;
+  border-color: var(--np-accent, #a16207);
+  background-color: color-mix(in srgb, var(--np-accent) 6%, white);
+}
+
+
+.np-art {
+  border-color: var(--np-accent, #a16207);
+}
+
+.np-progress-track {
+  background-color: var(--np-accent-muted, rgba(161, 98, 7, 0.2));
+}
+
+.np-progress-bar {
+  background-color: var(--np-accent, #a16207);
+}
+
+fieldset {
+  padding: 1.5rem 2rem;
+  border-radius: 4px;
+}
+
+legend {
+  padding: 0 10px;
+}

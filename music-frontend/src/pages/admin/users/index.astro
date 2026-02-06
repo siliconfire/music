@@ -1,0 +1,191 @@
+---
+import '../../../styles/global.css'
+import Layout from '../../../layouts/Layout.astro'
+import AdminBack from '../../../components/AdminBack.astro'
+---
+
+<Layout title="Yönetici - Kullanıcılar">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Kullanıcılar</h1>
+        <AdminBack />
+
+        <p>Kullanıcı listesini görüntüle.</p>
+
+        <div id="notice"></div>
+
+        <div class="flex flex-wrap items-center gap-3 my-4">
+            <div id="actor" class="text-sm text-slate-600">Yukleniyor...</div>
+            <button id="btn-refresh" class="border border-slate-300 bg-gray-100 px-3 py-1">Yenile</button>
+            <input id="filter" class="border border-slate-200 px-2 py-1" placeholder="ara... (isim/id/yetki)" />
+        </div>
+
+        <div id="summary" class="text-sm text-slate-600 mb-2"></div>
+
+        <div class="overflow-auto border border-slate-200 rounded">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left">
+                    <tr>
+                        <th class="px-3 py-2">ID</th>
+                        <th class="px-3 py-2">Ad</th>
+                        <th class="px-3 py-2">Yetkiler</th>
+                        <th class="px-3 py-2">Hesap?</th>
+                        <th class="px-3 py-2">Sebep</th>
+                        <th class="px-3 py-2">Kısayol</th>
+                    </tr>
+                </thead>
+                <tbody id="rows">
+                    <tr>
+                        <td class="px-3 py-3 text-slate-500" colspan="6">Yukleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        const API_URL = "http://127.0.0.1:8000";
+        const RANKS = ["music", "musicpermanent", "moderator", "admin", "superadmin", "dev"];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const rowsBody = document.getElementById('rows');
+            const summaryDiv = document.getElementById('summary');
+            const filterInput = document.getElementById('filter');
+            const refreshBtn = document.getElementById('btn-refresh');
+
+            if (!actorDiv || !noticeDiv || !rowsBody || !summaryDiv || !filterInput || !refreshBtn) {
+                return;
+            }
+
+            let users = [];
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => { if (noticeDiv.innerHTML) noticeDiv.innerHTML = ''; }, 5000);
+            }
+
+            function renderActor(user) {
+                const name = user?.name || 'Kullanici';
+                console.log(user)
+                const actorRank = highestRankIndex(user.permissions || []);
+                const actorStrongest = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${name}</strong> (${actorStrongest})`;
+            }
+
+            function renderSummary(list) {
+                const total = list.length;
+                const banned = list.filter(u => u.banned).length;
+                summaryDiv.textContent = `Toplam: ${total} | Kapalı: ${banned}`;
+            }
+
+            function badge(text, tone = 'slate') {
+                return `<span class="inline-block px-2 py-0.5 mr-1 mb-1 rounded border text-xs bg-${tone}-50 border-${tone}-200 text-${tone}-700">${text}</span>`;
+            }
+
+            function renderRows(list) {
+                if (!list.length) {
+                    rowsBody.innerHTML = `<tr><td class="px-3 py-3 text-slate-500" colspan="6">Eşleşen bir kullanıcı bulunamadı.</td></tr>`;
+                    return;
+                }
+
+                rowsBody.innerHTML = list.map((user) => {
+                    const perms = (user.permissions || []).map(p => badge(p, 'slate')).join('') || badge('yok', 'gray');
+                    const banLabel = user.banned ? badge('kapalı', 'red') : badge('aktif', 'green');
+                    const reason = user.reason ? user.reason : '-';
+                    return `
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-mono text-xs">${user.id}</td>
+                            <td class="px-3 py-2">${user.name || '-'}</td>
+                            <td class="px-3 py-2">${perms}</td>
+                            <td class="px-3 py-2">${banLabel}</td>
+                            <td class="px-3 py-2 max-w-xs truncate" title="${reason}">${reason}</td>
+                            <td class="px-3 py-2">
+                                <button data-copy="${user.id}" class="border border-slate-200 px-2 py-1 text-xs">ID Kopyala</button>
+                                <a class="border border-slate-200 px-2 py-1 text-xs" href="/admin/users/change-permission">Yetki Değiştir</a>
+                                <a class="border border-slate-200 px-2 py-1 text-xs" href="/admin/users/ban">Hesabını Kapat</a>
+                                <a class="border border-slate-200 px-2 py-1 text-xs" href="/admin/users/password">Şifre Değiştir</a>
+                                <a class="border border-slate-200 px-2 py-1 text-xs" href="/admin/users/login-code">Giriş Kodu</a>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                rowsBody.querySelectorAll('[data-copy]').forEach((btn) => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.getAttribute('data-copy');
+                        try {
+                            await navigator.clipboard.writeText(id || '');
+                            showNotice('kopyalandı.');
+                        } catch (err) {
+                            showNotice('metin kopyalarken bir hata oldu.', 'error');
+                        }
+                    });
+                });
+            }
+
+            function applyFilter() {
+                const q = filterInput.value.trim().toLowerCase();
+                if (!q) {
+                    renderSummary(users);
+                    renderRows(users);
+                    return;
+                }
+                const filtered = users.filter((user) => {
+                    const haystack = [
+                        user.id,
+                        user.name,
+                        ...(user.permissions || [])
+                    ].join(' ').toLowerCase();
+                    return haystack.includes(q);
+                });
+                renderSummary(filtered);
+                renderRows(filtered);
+            }
+
+            function highestRankIndex(perms) {
+                const idx = perms.map(p => RANKS.indexOf(p)).filter(i => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+                try {
+                    const res = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                    if (!res.ok) {
+                        showNotice('Kullanici bilgisi alinmadi.', 'error');
+                        return;
+                    }
+                    const data = await res.json();
+                    renderActor(data);
+                } catch (err) {
+                    showNotice('Sunucuya baglanilamadi.', 'error');
+                }
+            }
+
+            async function loadUsers() {
+                const token = localStorage.getItem('jwt_token') || '';
+                rowsBody.innerHTML = `<tr><td class="px-3 py-3 text-slate-500" colspan="6">Yukleniyor...</td></tr>`;
+                try {
+                    const res = await fetch(`${API_URL}/admin/users`, { headers: { 'X-Session-ID': token } });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Liste alinamadi.', 'error');
+                        return;
+                    }
+                    users = data.users || [];
+                    renderSummary(users);
+                    applyFilter();
+                } catch (err) {
+                    showNotice('Sunucu hatasi.', 'error');
+                }
+            }
+
+            filterInput.addEventListener('input', applyFilter);
+            refreshBtn.addEventListener('click', loadUsers);
+
+            loadActor();
+            loadUsers();
+        });
+    </script>
+</Layout>

@@ -1,0 +1,64 @@
+---
+---
+
+<div class="flex justify-between items-center mb-2 border-b border-yellow-700 pb-1">
+    <p class="font-bold text-sm">Sıradaki Şarkılar</p>
+    <button id="btn-refresh-queue" class="text-xs hover:underline cursor-pointer">[Yenile]</button>
+</div>
+
+<div id="queue-container" class="text-xs flex flex-col gap-2">
+    <span class="italic text-gray-600">Yükleniyor...</span>
+</div>
+
+<script>
+    import { API_URL } from '../lib/constants';
+
+    const token = localStorage.getItem("jwt_token");
+    const container = document.getElementById('queue-container');
+    const refreshBtn = document.getElementById('btn-refresh-queue');
+
+    async function updateQueue() {
+        if (!container) return;
+
+        try {
+            const res = await fetch(`${API_URL}/list-queue`, {
+                headers: { 'X-Session-ID': token || '' }
+            });
+
+            if (!res.ok) throw new Error();
+
+            const data = await res.json();
+            const queue = data.queue || []; // Your backend returns the queue object
+
+            if (queue.length === 0) {
+                container.innerHTML = "Sıra boş. Şarkı ekle!";
+                return;
+            }
+
+            container.innerHTML = ""; // Clear existing
+
+            // We'll show the top 5 tracks in the queue
+            queue.slice(0, 5).forEach((track: any, index: number) => {
+                const item = document.createElement('div');
+                item.className = "flex gap-2 opacity-80";
+                item.innerHTML = `
+          <span class="font-mono text-yellow-800">${index + 1}.</span>
+          <span class="truncate"><b>${track.name}</b> - ${track.artists[0].name}</span>
+        `;
+                container.appendChild(item);
+            });
+
+        } catch (e) {
+            container.innerHTML = "<span class='text-red-600'>Sıra alınamadı.</span>";
+        }
+    }
+
+    // Initial load
+    updateQueue();
+
+    // Manual refresh
+    refreshBtn?.addEventListener('click', updateQueue);
+
+    // refresh every 10 seconds
+    setInterval(updateQueue, 10000);
+</script>

@@ -1,0 +1,31 @@
+{
+    "_info": "DO NOT use // comments here. Use '_note' keys instead.",
+    "users": {
+        "0": {
+            "name": "Çınar Mert Çeçen",
+            "permissions": [
+                "music",
+                "moderator",
+                "admin",
+                "dev"
+            ],
+            "banned": false,
+            "reason": null,
+            "password": "e314ccfe245d718677020bc373c1394a$fa9e78165f10de4e683b4fad674df369c4d648908b08f03c5b422cca8212250c"
+        },
+        "100": {
+            "name": "Nejat Demir Vural",
+            "permissions": [
+                "music"
+            ],
+            "banned": false,
+            "reason": null,
+            "login_code": {
+                "code": "74681407",
+                "remaining_usage": -1,
+                "set_password": "disabled",
+                "valid_until": null
+            }
+        }
+    }
+}

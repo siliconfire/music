@@ -1,0 +1,23 @@
+---
+// 1. Grab the 'query' value from the URL search params
+const { searchParams } = Astro.url;
+const query = searchParams.get('query') || '';
+
+// Note: Usually, {query} would be auto-escaped.
+// We use set:html to intentionally force the vulnerability.
+---
+
+<html>
+<head>
+    <title>Search Results</title>
+</head>
+<body>
+<h1>Search results for:</h1>
+
+<div set:html={query} />
+
+<hr />
+<p>Try this URL to see the exploit:</p>
+<code>?query=&lt;img src=x onerror=alert('Hacked!')&gt;</code>
+</body>
+</html>
