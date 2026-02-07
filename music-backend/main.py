@@ -2,13 +2,14 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth, CacheFileHandler
 
 import cors
 import users
 from jwt import get_current_user, create_access_token, is_token_valid
+import board
 
 load_dotenv()
 app = FastAPI()
@@ -73,6 +74,31 @@ class LoginCodeRequest(BaseModel):
 
 class KillLoginCodeRequest(BaseModel):
     mode: str
+
+
+class BoardUpdateRequest(BaseModel):
+    widgets: list[dict] | None = None
+    order: list[str] | None = None
+    pinned: list[str] | None = None
+
+
+class BoardPollVoteRequest(BaseModel):
+    widget_key: str
+    option_id: str
+
+
+class BoardConfettiRequest(BaseModel):
+    particle_count: int | None = Field(default=None, alias="particleCount")
+    duration_ms: int | None = Field(default=None, alias="durationMs")
+    spawn_duration_ms: int | None = Field(default=None, alias="spawnDurationMs")
+    spread: float | None = None
+    size_scale: float | None = Field(default=None, alias="sizeScale")
+    upward_boost: float | None = Field(default=None, alias="upwardBoost")
+
+    class Config:
+        allow_population_by_field_name = True
+        populate_by_name = True
+        extra = "ignore"
 
 
 @app.post("/token")
@@ -365,3 +391,41 @@ def set_lockdown(req: LockdownRequest | None = None, locked: bool | None = None,
     global LOCKDOWN
     LOCKDOWN = bool(value)
     return {"locked": LOCKDOWN}
+
+
+@app.get("/board")
+def get_board():
+    return board.load_board()
+
+
+@app.put("/board")
+def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(user_id, "music"):
+        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    if req.pinned is not None and not users.check_user_perm(user_id, "admin"):
+        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+    return board.update_board(
+        widgets=req.widgets,
+        order_ids=req.order,
+        pinned_ids=req.pinned,
+        updated_by=user_id
+    )
+
+
+@app.post("/board/poll/vote")
+def vote_on_poll(req: BoardPollVoteRequest):
+    updated = board.vote_poll(req.widget_key, req.option_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Poll option not found")
+    return {"option": updated}
+
+
+@app.post("/board/confetti")
+def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(user_id, "music"):
+        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    config = req.dict(by_alias=True, exclude_none=True)
+    trigger = board.set_confetti_trigger(config=config, updated_by=user_id)
+    return {"ok": True, "trigger": trigger}

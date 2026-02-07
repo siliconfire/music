@@ -1,0 +1,485 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NowPlaying from '../../components/NowPlaying.astro';
+import Queue from '../../components/Queue.astro';
+---
+
+<Layout title="Bartın Lisesi (/board)">
+    <h1 class="text-2xl text-slate-800 m-10" id="title">Bartın Lisesi</h1>
+
+    <div class="m-5 lg:m-10">
+        <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+        <div id="board-error" class="hidden">
+            <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
+                <p class="text-6xl">Hata düzeldi.</p>
+                <p class="text-sm">5 saniye içinde yeniden başlatılıyor...</p>
+            </div>
+            <div class="border border-red-700 bg-red-200 p-10">
+                <div class="lg:float-right border border-red-700 p-2" id="div-retrying">
+                    <img src="/loading.svg" alt="loading" class="w-10 inline" />
+                    Tekrar deneniyor...
+                </div>
+                <p class="text-5xl">Bir hata oluştu.</p>
+                <p class="text-3xl">Muhtemelen sunucu kapalı yada veritabanında bir sıkıntı var.</p>
+                <img class="lg:float-end m-1 border border-red-700" id="error-qr" alt="Scan me!" src="/loading.svg" />
+                <br>
+                <p class="text-xl">Lütfen bu hatayı karekodu okutarak bana bildirin.</p>
+                <p class="text-xl">Çınar Mert Çeçen - cinar@cinarcecen.dev</p>
+                <br>
+                <p class="text-xs">Eğer bunun kurulumu ile sorumlu iseniz, lütfen önce bu sayfayı yenilemeyi deneyin. eğer olmaz ise sunucunun çalışıyor olduğundan, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve board.json veritabanının geçerli bir json dosyası olduğundan emin olun. (tereddüt ederseniz board.json dosyasını silebilirsiniz, sunucu kendi tekrardan oluşturacaktır.) Bunlar düzeltmez ise hem tarayıcının hemde frontend/backend'in konsollarına göz atmalısınız, hatalar görürseniz (bazen hatalar çok yukarılarda olabilir) bu size ipucunuzu verecektir.</p>
+                <p class="text-sm">Bu yazı hata düzelince kendiliğinden de gitmeli, fakat gitmez ise sayfayı yenilemek yardımcı olabilir.</p>
+            </div>
+            <div class="border border-yellow-700 bg-yellow-50 p-3">
+                <span id="error-info">(hata bilgileri...)</span>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="m-5 lg:m-10">
+        <div id="board-widgets" class="flex flex-wrap gap-5"></div>
+    </div>
+
+    <template id="tpl-now-playing">
+        <NowPlaying />
+    </template>
+    <template id="tpl-queue">
+        <Queue showControls={false} showHeader={false} />
+    </template>
+    <script>
+        import { API_URL } from '../../lib/constants';
+
+        const statusEl = document.getElementById('board-status');
+        const errorEl = document.getElementById('board-error');
+        const errorInfoEl = document.getElementById('error-info');
+        const errorQrEl = document.getElementById('error-qr');
+        const widgetsEl = document.getElementById('board-widgets');
+        const nowPlayingTemplate = document.getElementById('tpl-now-playing');
+        const queueTemplate = document.getElementById('tpl-queue');
+        const errorFixedEl = document.getElementById('board-error-fixed');
+        const retryingEl = document.getElementById('div-retrying');
+
+        const mailtoConfig = {
+            email: 'cinar@cinarcecen.dev',
+            subject: 'Tahta hatası #74100',
+            body: 'Eğer bu hata hakkında bilgiye sahipseniz lütfen aşağıdaki çizginin altına yazın. Değilseniz böyle da gönderebilirsiniz. Teşekkürler.\n----------'
+        };
+
+        function buildMailto(extraInfo = '') {
+            const details = extraInfo ? `${extraInfo}\n\n` : '';
+            const body = `${details}${mailtoConfig.body}`;
+            return `mailto:${mailtoConfig.email}?subject=${encodeURIComponent(mailtoConfig.subject)}&body=${encodeURIComponent(body)}`;
+        }
+
+        async function renderErrorQr(extraInfo = '') {
+            if (!errorQrEl) return;
+            try {
+                const { default: QRCode } = await import('qrcode');
+                const dataUri = await QRCode.toDataURL(buildMailto(extraInfo));
+                // show error info on screen
+                if (errorInfoEl) {
+                    errorInfoEl.textContent = extraInfo;
+                }
+                // sorry for the delay, but i spent a while on the loading svg so i HAVE to show it off
+                setTimeout(() => {
+                    errorQrEl.src = dataUri;
+                }, 1500);
+            } catch (err) {
+                errorQrEl.removeAttribute('src');
+            }
+        }
+
+        renderErrorQr();
+
+        const typeLabels = {
+            'controls': 'Kontroller',
+            'now-playing': 'Şimdi Çalıyor',
+            'search': 'Ara',
+            'queue': 'Kuyruk',
+            'text-block': 'Metin'
+        };
+
+        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'cover-art']);
+
+        let boardData = null;
+        let lastUpdatedAt = null;
+        let lastWidgetStamp = null;
+        let voteCooldownUntil = 0;
+        let coverArtEl = null;
+        let coverArtTimer = null;
+        let refreshTimer = null;
+        let retryTimer = null;
+        let hideErrorTimer = null;
+        let errorVisible = false;
+        let confettiCanvas = null;
+        let confettiActive = false;
+        let lastConfettiId = null;
+
+        function ensureCoverArtEl() {
+            if (coverArtEl) return;
+            coverArtEl = document.createElement('div');
+            coverArtEl.id = 'board-cover-art';
+            coverArtEl.className = 'fixed inset-0 bg-black z-0';
+            const img = document.createElement('img');
+            img.id = 'board-cover-art-img';
+            img.className = 'w-full h-full object-contain';
+            img.alt = 'Kapak';
+            coverArtEl.appendChild(img);
+            document.body.appendChild(coverArtEl);
+        }
+
+        async function updateCoverArt() {
+            if (!coverArtEl) return;
+            const img = coverArtEl.querySelector('#board-cover-art-img');
+            if (!img) return;
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const image = data?.item?.album?.images?.[0]?.url || '';
+                if (image) {
+                    img.src = image;
+                    coverArtEl.classList.remove('hidden');
+                } else {
+                    coverArtEl.classList.add('hidden');
+                }
+            } catch (err) {
+                coverArtEl.classList.add('hidden');
+            }
+        }
+
+        function setCoverArtEnabled(enabled) {
+            if (!enabled) {
+                if (widgetsEl) widgetsEl.classList.remove('hidden');
+                if (coverArtEl) coverArtEl.classList.add('hidden');
+                if (coverArtTimer) {
+                    clearInterval(coverArtTimer);
+                    coverArtTimer = null;
+                }
+                return;
+            }
+            ensureCoverArtEl();
+            if (widgetsEl) widgetsEl.classList.add('hidden');
+            updateCoverArt();
+            if (!coverArtTimer) {
+                coverArtTimer = setInterval(updateCoverArt, 5000);
+            }
+        }
+
+        function setVoteCooldown(ms) {
+            voteCooldownUntil = Date.now() + ms;
+            updateVoteButtons();
+            setTimeout(updateVoteButtons, ms + 50);
+        }
+
+        function updateVoteButtons() {
+            const disabled = Date.now() < voteCooldownUntil;
+            document.querySelectorAll('[data-poll-vote]')
+                .forEach((btn) => {
+                    btn.disabled = disabled;
+                    btn.classList.toggle('opacity-50', disabled);
+                });
+        }
+
+        async function voteOnOption(widgetKey, optionId) {
+            if (Date.now() < voteCooldownUntil) {
+                return;
+            }
+            setVoteCooldown(5000);
+            try {
+                const res = await fetch(`${API_URL}/board/poll/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ widget_key: widgetKey, option_id: optionId })
+                });
+                if (!res.ok) {
+                    throw new Error();
+                }
+                await refreshBoard();
+            } catch (err) {
+                showStatus('Oy verilemedi.', true);
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            if (!statusEl) return
+            statusEl.textContent = message;
+            statusEl.classList.remove('hidden');
+            statusEl.classList.toggle('border-red-400', isError);
+            statusEl.classList.toggle('bg-red-50', isError);
+        }
+
+        function showLonelyText(extraInfo = '') {
+            if (!errorEl) return;
+            const wasVisible = errorVisible;
+            errorVisible = true;
+            if (hideErrorTimer) {
+                clearTimeout(hideErrorTimer);
+                hideErrorTimer = null;
+            }
+            if (!wasVisible) {
+                if (errorFixedEl) {
+                    // errorFixedEl.classList.add('hidden');
+                }
+                if (retryingEl) {
+                    retryingEl.innerHTML = '<img src="/loading.svg" alt="loading" class="w-10 inline" /> Tekrar deneniyor...';
+                }
+                errorEl.classList.remove('hidden');
+            }
+            renderErrorQr(extraInfo);
+            if (!refreshTimer && !retryTimer) {
+                retryTimer = setInterval(refreshBoard, 5000);
+            }
+        }
+
+        function scheduleReloadAfterRecovery() {
+            if (hideErrorTimer) {
+                return;
+            }
+            if (errorFixedEl) {
+                errorFixedEl.classList.remove('hidden');
+            }
+            if (retryingEl) {
+                retryingEl.textContent = 'Düzeldi.';
+            }
+            popConfetti();
+            hideErrorTimer = setTimeout(() => {
+                location.reload();
+            }, 10000);
+        }
+
+        function clearStatus() {
+            if (!statusEl) return;
+            statusEl.classList.add('hidden');
+            statusEl.textContent = '';
+            statusEl.classList.remove('border-red-400', 'bg-red-50');
+        }
+
+        async function loadBoard() {
+            const res = await fetch(`${API_URL}/board`);
+            if (!res.ok) {
+                throw new Error(`Board load failed (${res.status})`);
+            }
+            return await res.json();
+        }
+
+        function renderBoard() {
+            if (!widgetsEl || !boardData) return;
+            widgetsEl.innerHTML = '';
+
+            const pinned = boardData.widgets.filter((widget) => widget.pinned);
+            const unpinned = boardData.widgets.filter((widget) => !widget.pinned);
+            const ordered = [...pinned, ...unpinned].filter((widget) => displayTypes.has(widget.type));
+
+            const hasCoverArt = ordered.some((widget) => widget.type === 'cover-art');
+            if (hasCoverArt) {
+                setCoverArtEnabled(true);
+                return;
+            }
+
+            setCoverArtEnabled(false);
+
+            ordered.forEach((widget) => {
+                const card = document.createElement('div');
+                card.className = 'border border-slate-400 p-4 bg-white flex-1 min-w-[16rem] max-w-[26rem]';
+                if (widget.pinned) {
+                    card.classList.add('bg-green-50', 'border-green-300');
+                }
+
+                const header = document.createElement('div');
+                header.className = 'flex items-start justify-between gap-2';
+
+                const title = document.createElement('div');
+                title.className = 'font-semibold text-slate-800';
+                title.textContent = widget.title || widget.type || widget.key;
+
+                const badge = document.createElement('span');
+                badge.className = 'text-xs border border-slate-400 px-2 py-0.5';
+                badge.textContent = widget.pinned ? 'Pinned' : 'Widget';
+                if (!widget.pinned) {
+                    badge.classList.add('hidden');
+                }
+
+                header.appendChild(title);
+                header.appendChild(badge);
+                card.appendChild(header);
+
+
+                const body = document.createElement('div');
+                body.className = 'mt-2';
+
+                if (widget.type === 'now-playing') {
+                    body.appendChild(nowPlayingTemplate?.content.cloneNode(true));
+                } else if (widget.type === 'queue') {
+                    body.appendChild(queueTemplate?.content.cloneNode(true));
+                } else if (widget.type === 'text-block') {
+                    body.classList.add('text-sm', 'text-slate-700', 'whitespace-pre-line');
+                    body.textContent = widget.content || '';
+                } else if (widget.type === 'poll') {
+                    const question = document.createElement('div');
+                    question.className = 'font-semibold text-slate-800';
+                    question.textContent = widget.question || 'Anket';
+                    body.appendChild(question);
+
+                    const optionsWrap = document.createElement('div');
+                    optionsWrap.className = 'mt-2 flex flex-col gap-2';
+                    (widget.options || []).forEach((option) => {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between gap-2';
+
+                        const label = document.createElement('div');
+                        label.className = 'text-sm text-slate-700';
+                        label.textContent = option.label || 'Seçenek';
+
+                        const voteBtn = document.createElement('button');
+                        voteBtn.className = 'border border-slate-300 px-2 py-1 text-xs';
+                        voteBtn.textContent = `Oy ver (${option.votes || 0})`;
+                        voteBtn.dataset.pollVote = 'true';
+                        voteBtn.addEventListener('click', () => voteOnOption(widget.key, option.id));
+
+                        row.appendChild(label);
+                        row.appendChild(voteBtn);
+                        optionsWrap.appendChild(row);
+                    });
+                    body.appendChild(optionsWrap);
+                } else {
+                    body.classList.add('text-xs', 'text-slate-500');
+                    body.textContent = widget.type ? `Widget content goes here. (${widget.type})` : 'Widget content goes here.';
+                }
+
+                card.appendChild(body);
+                widgetsEl.appendChild(card);
+            });
+
+            updateVoteButtons();
+        }
+
+        async function refreshBoard() {
+            try {
+                const data = await loadBoard();
+                const widgetStamp = JSON.stringify(data.widgets || []);
+                const stamp = data.updated_at || widgetStamp;
+                if (boardData && widgetStamp === lastWidgetStamp) {
+                    clearStatus();
+                    if (errorVisible) {
+                        scheduleReloadAfterRecovery();
+                    }
+                    if (data?.confetti_trigger?.id && data.confetti_trigger.id !== lastConfettiId) {
+                        lastConfettiId = data.confetti_trigger.id;
+                        popConfetti(data.confetti_trigger.config || {});
+                    }
+                    return;
+                }
+                lastUpdatedAt = stamp;
+                lastWidgetStamp = widgetStamp;
+                boardData = data;
+                renderBoard();
+                clearStatus();
+                if (errorVisible) {
+                    scheduleReloadAfterRecovery();
+                }
+                if (data?.confetti_trigger?.id && data.confetti_trigger.id !== lastConfettiId) {
+                    lastConfettiId = data.confetti_trigger.id;
+                    popConfetti(data.confetti_trigger.config || {});
+                }
+                if (retryTimer && !refreshTimer) {
+                    // keep retry timer running only if there is no main refresh loop
+                } else if (retryTimer) {
+                    clearInterval(retryTimer);
+                    retryTimer = null;
+                }
+            } catch (err) {
+                const info = [
+                    `error: ${err?.message || 'board load failed'}`,
+                    `page: ${location.href}`,
+                    `agent: ${navigator.userAgent}`,
+                    `time: ${new Date().toISOString()}`
+                ].join('\n');
+                showLonelyText(info);
+            }
+        }
+
+        function ensureConfettiCanvas() {
+            if (confettiCanvas) return confettiCanvas;
+            const canvas = document.createElement('canvas');
+            canvas.id = 'board-confetti-canvas';
+            canvas.className = 'fixed inset-0 pointer-events-none z-50';
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            document.body.appendChild(canvas);
+            confettiCanvas = canvas;
+            window.addEventListener('resize', () => {
+                if (!confettiCanvas) return;
+                confettiCanvas.width = window.innerWidth;
+                confettiCanvas.height = window.innerHeight;
+            });
+            return canvas;
+        }
+
+        function popConfetti(options = {}) {
+            const opts = typeof options === 'number' ? { particleCount: options } : options;
+            const {
+                durationMs = 10000,
+                particleCount = 5000,
+                spread = 0.55,
+                sizeScale = 4.0,
+                spawnDurationMs = 1200,
+                upwardBoost = 1.5
+            } = opts;
+            if (confettiActive) return;
+            confettiActive = true;
+            const canvas = ensureConfettiCanvas();
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                confettiActive = false;
+                return;
+            }
+            const colors = ['#22c55e', '#16a34a', '#a3e635', '#86efac', '#4ade80', '#10b981'];
+            const particles = Array.from({ length: particleCount }, () => ({
+                x: canvas.width * (0.05 + Math.random() * 0.9),
+                y: canvas.height * (0.78 + Math.random() * 0.18),
+                vx: (Math.random() - 0.5) * canvas.width * spread * 0.002,
+                vy: (Math.random() * -0.9 - 0.4) * canvas.height * 0.0025 * upwardBoost,
+                size: (10 + Math.random() * 16) * sizeScale,
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.7,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                delay: Math.random() * spawnDurationMs
+            }));
+            const gravity = 0.0016 * canvas.height;
+            const start = performance.now();
+
+            function tick(now) {
+                const elapsed = now - start;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p) => {
+                    if (elapsed < p.delay) {
+                        return;
+                    }
+                    p.vy += gravity * 0.025;
+                    p.x += p.vx * 16;
+                    p.y += p.vy * 16;
+                    p.rot += p.vr;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.75);
+                    ctx.restore();
+                });
+                if (elapsed < durationMs) {
+                    requestAnimationFrame(tick);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    confettiActive = false;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        window.popConfetti = popConfetti;
+
+        refreshBoard();
+        refreshTimer = setInterval(refreshBoard, 2000);
+    </script>
+</Layout>

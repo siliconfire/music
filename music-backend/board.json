@@ -1,0 +1,50 @@
+{
+    "widgets": [
+        {
+            "key": "text-block-mlclqfgt-ua39l",
+            "type": "text-block",
+            "title": "Metin",
+            "pinned": true,
+            "content": "Bugün kantinde yemek verilmeyecek"
+        },
+        {
+            "key": "now-playing-mlclo9yk-hjjlw",
+            "type": "now-playing",
+            "title": "Şimdi Çalıyor",
+            "pinned": false
+        },
+        {
+            "key": "queue-mlclopir-4jh9f",
+            "type": "queue",
+            "title": "Kuyruk",
+            "pinned": false
+        },
+        {
+            "key": "poll-mlclral8-clt66",
+            "type": "poll",
+            "title": "Anket",
+            "pinned": false,
+            "question": "kim yenecek",
+            "options": [
+                {
+                    "id": "mlclrr9q-6nq8o",
+                    "label": "erdogan",
+                    "votes": 4
+                },
+                {
+                    "id": "mlclrrni-94zzl",
+                    "label": "tayyip",
+                    "votes": 1
+                }
+            ]
+        }
+    ],
+    "updated_by": "0",
+    "updated_at": "2026-02-07T20:24:10.993557+00:00",
+    "confetti_trigger": {
+        "id": "2026-02-07T20:24:10.993557+00:00",
+        "created_at": "2026-02-07T20:24:10.993557+00:00",
+        "config": {},
+        "created_by": "0"
+    }
+}

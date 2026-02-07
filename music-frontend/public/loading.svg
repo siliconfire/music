@@ -1,0 +1,12 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M100 20 A80 80 0 0 1 180 100" fill="none" stroke="#b91c1c" stroke-width="10" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="0.2s" repeatCount="indefinite" />
+        <animateTransform
+                attributeName="transform"
+                type="scale"
+                values="1; 0.6; 1"
+                additive="sum"
+                dur="3s"
+                repeatCount="indefinite" />
+    </path>
+</svg>

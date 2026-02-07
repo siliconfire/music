@@ -27,7 +27,20 @@ import Item from '../components/Item.astro';
 			<Search />
 		</Item>
 		<Item title="Kuyruk">
-			<Queue />
+			<Queue showHeader={false} />
+		</Item>
+		<Item title="Ekran">
+			<button class="border border-slate-300 p-3 m-2" id="btn-edit">Kontroller</button>
+			<details class="border border-slate-300 p-3 m-2">
+				<summary>Konfeti fırlat...</summary>
+				<button class="border border-slate-300 p-3 m-2" id="btn-normal-confetti">Normal</button>
+				<button class="border border-slate-300 p-3 m-2" id="btn-faster-confetti">Normalden daha hızlı</button>
+				<button class="border border-slate-300 p-3 m-2" id="btn-less-confetti">Normalden daha az</button>
+				<button class="border border-slate-300 p-3 m-2" id="btn-many-confetti">Bol keseden</button>
+				<br>
+				<p class="m-3">Daha çok seçenek için lütfen Kontroller menüsüne gidin.</p>
+			</details>
+
 		</Item>
 	</div>
 
@@ -142,6 +155,82 @@ import Item from '../components/Item.astro';
 		document.getElementById("btn-logout").addEventListener("click", () => {
 			localStorage.removeItem("jwt_token");
 			window.location.href = '/login';
+		});
+
+		document.getElementById("btn-less-confetti").addEventListener("click", async () => {
+			await fetch(`${API_URL}/board/confetti`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Session-ID': token
+				},
+				body: JSON.stringify({
+					particleCount: 10,
+					sizeScale: 2,
+					spread: 1,
+					durationMs: 2000,
+					spawnDurationMs: 1000,
+					upwardBoost: 1
+				})
+			});
+		});
+
+		document.getElementById("btn-normal-confetti").addEventListener("click", async () => {
+			await fetch(`${API_URL}/board/confetti`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Session-ID': token
+				},
+				body: JSON.stringify({
+					particleCount: 3000,
+					sizeScale: 4,
+					spread: 0.5,
+					durationMs: 10000,
+					spawnDurationMs: 1500,
+					upwardBoost: 1.5
+				})
+			});
+		});
+
+		document.getElementById("btn-faster-confetti").addEventListener("click", async () => {
+			await fetch(`${API_URL}/board/confetti`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Session-ID': token
+				},
+				body: JSON.stringify({
+					particleCount: 3000,
+					sizeScale: 4,
+					spread: 0.5,
+					durationMs: 10000,
+					spawnDurationMs: 1500,
+					upwardBoost: 1.5
+				})
+			});
+		});
+
+		document.getElementById("btn-many-confetti").addEventListener("click", async () => {
+			await fetch(`${API_URL}/board/confetti`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Session-ID': token
+				},
+				body: JSON.stringify({
+					particleCount: 10000,
+					sizeScale: 10,
+					spread: 2,
+					durationMs: 8500,
+					spawnDurationMs: 5000,
+					upwardBoost: 3
+				})
+			});
+		});
+
+		document.getElementById("btn-edit").addEventListener("click", () => {
+			window.location.href = '/board/edit';
 		});
 
 	</script>

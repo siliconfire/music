@@ -26,6 +26,12 @@
                 "set_password": "disabled",
                 "valid_until": null
             }
+        },
+        "101": {
+            "name": "Furkan Kırıl",
+            "permissions": [],
+            "banned": false,
+            "reason": null
         }
     }
 }
