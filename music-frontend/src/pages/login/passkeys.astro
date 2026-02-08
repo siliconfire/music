@@ -1,0 +1,130 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Passkey Girişi">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800">Passkey ile giriş</h1>
+        <p class="text-sm text-slate-600">Desteklenen bir cihazda passkey ile giriş yap.</p>
+
+        <div class="mt-4 border border-slate-300 rounded p-4 inline-block">
+             <div class="mt-3 flex items-center gap-2">
+                 <button id="passkey-login-btn" class="border border-slate-300 rounded px-3 py-2">Passkey ile giriş</button>
+                 <span id="passkey-status" class="text-sm text-slate-600"></span>
+             </div>
+         </div>
+
+         <div class="mt-6">
+             <a class="text-sm text-slate-600 underline" href="/login">Şifre ile girişe dön</a>
+         </div>
+     </div>
+
+     <script>
+         import { API_URL } from '../../lib/constants.ts';
+
+        function base64UrlToBytes(value) {
+            const padded = value + '='.repeat((4 - (value.length % 4)) % 4);
+            const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function bytesToBase64Url(bytes) {
+            const binary = String.fromCharCode(...bytes);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+
+        function setStatus(message, isError = false) {
+            const statusEl = document.getElementById('passkey-status');
+            if (!statusEl) return;
+            statusEl.textContent = message || '';
+            statusEl.classList.toggle('text-red-600', isError);
+            statusEl.classList.toggle('text-slate-600', !isError);
+        }
+
+        function normalizeAuthenticationOptions(options) {
+            const normalized = { ...options };
+            normalized.challenge = base64UrlToBytes(options.challenge);
+            if (Array.isArray(normalized.allowCredentials)) {
+                normalized.allowCredentials = normalized.allowCredentials.map((cred) => ({
+                    ...cred,
+                    id: base64UrlToBytes(cred.id)
+                }));
+            }
+            return normalized;
+        }
+
+        function serializeAssertion(credential) {
+            const response = credential.response;
+            return {
+                id: credential.id,
+                rawId: bytesToBase64Url(new Uint8Array(credential.rawId)),
+                type: credential.type,
+                response: {
+                    clientDataJSON: bytesToBase64Url(new Uint8Array(response.clientDataJSON)),
+                    authenticatorData: bytesToBase64Url(new Uint8Array(response.authenticatorData)),
+                    signature: bytesToBase64Url(new Uint8Array(response.signature)),
+                    userHandle: response.userHandle ? bytesToBase64Url(new Uint8Array(response.userHandle)) : null
+                }
+            };
+        }
+
+        async function loginWithPasskey() {
+            if (!window.PublicKeyCredential) {
+                setStatus('Bu tarayıcı passkey desteklemiyor.', true);
+                return;
+            }
+            const btn = document.getElementById('passkey-login-btn');
+            const btnEl = btn instanceof HTMLButtonElement ? btn : null;
+            if (btnEl) btnEl.disabled = true;
+            setStatus('Passkey doğrulaması hazırlanıyor...');
+            try {
+                const optionsRes = await fetch(`${API_URL}/login/passkeys/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                if (!optionsRes.ok) {
+                    const data = await optionsRes.json().catch(() => ({}));
+                    throw new Error(data.detail || 'Passkey seçenekleri alınamadı.');
+                }
+                const optionsData = await optionsRes.json();
+                const publicKey = normalizeAuthenticationOptions(optionsData.options);
+                const credential = await navigator.credentials.get({ publicKey });
+                if (!credential) {
+                    throw new Error('Passkey doğrulaması iptal edildi.');
+                }
+
+                const verifyRes = await fetch(`${API_URL}/login/passkeys/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        challenge_id: optionsData.challenge_id,
+                        credential: serializeAssertion(credential)
+                    })
+                });
+                if (!verifyRes.ok) {
+                    const data = await verifyRes.json().catch(() => ({}));
+                    throw new Error(data.detail || 'Passkey doğrulanamadı.');
+                }
+                const result = await verifyRes.json();
+                if (result?.access_token) {
+                    localStorage.setItem('jwt_token', result.access_token);
+                    window.location.href = '/';
+                    return;
+                }
+                setStatus('Giriş tamamlandı.', false);
+            } catch (err) {
+                setStatus(err?.message || 'Passkey girişi başarısız.', true);
+            } finally {
+                if (btnEl) btnEl.disabled = false;
+            }
+        }
+
+        document.getElementById('passkey-login-btn')?.addEventListener('click', loginWithPasskey);
+     </script>
+</Layout>

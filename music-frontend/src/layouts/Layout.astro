@@ -27,7 +27,7 @@ import '../styles/global.css'
         const token = localStorage.getItem('jwt_token');
 
         // page exceptions
-        if (path === '/login' || path === '/login/code' || path === '/stats') {
+        if (path === '/login' || path === '/login/code' || path === '/login/passkeys' || path === '/stats') {
             return;
         }
 

@@ -1,10 +1,31 @@
 import os
+import base64
+import json
+import time
+import uuid
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Header, Security
 from pydantic import BaseModel, Field
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth, CacheFileHandler
+from webauthn import (
+    generate_registration_options,
+    generate_authentication_options,
+    verify_registration_response,
+    verify_authentication_response,
+    options_to_json
+)
+from webauthn.helpers.structs import (
+    RegistrationCredential,
+    AuthenticationCredential,
+    PublicKeyCredentialDescriptor,
+    PublicKeyCredentialType,
+    UserVerificationRequirement,
+    ResidentKeyRequirement,
+    AuthenticatorSelectionCriteria,
+    AttestationConveyancePreference
+)
 
 import cors
 import users
@@ -20,6 +41,13 @@ cache_handler = CacheFileHandler(cache_path=".spotify_cache")
 
 LOCKDOWN = False
 BOARD_LOCKDOWN = False
+
+PASSKEY_RP_ID = os.getenv("PASSKEY_RP_ID", "localhost")
+PASSKEY_RP_ORIGIN = os.getenv("PASSKEY_RP_ORIGIN", "http://localhost:4321")
+PASSKEY_RP_NAME = os.getenv("PASSKEY_RP_NAME", "Music Board")
+PASSKEY_CHALLENGE_TTL_SEC = 300
+PASSKEY_REGISTER_CHALLENGES: dict[str, dict] = {}
+PASSKEY_LOGIN_CHALLENGES: dict[str, dict] = {}
 
 
 def get_auth_manager():
@@ -116,6 +144,20 @@ class BoardPasskeysRequest(BaseModel):
     passkeys: list[str] | None = None
 
 
+class PasskeyRegistrationVerifyRequest(BaseModel):
+    challenge_id: str
+    credential: dict
+
+
+class PasskeyAuthenticationOptionsRequest(BaseModel):
+    user_id: str | None = None
+
+
+class PasskeyAuthenticationVerifyRequest(BaseModel):
+    challenge_id: str
+    credential: dict
+
+
 @app.post("/token")
 def login_to_app(user_id: str | None = None, password: str | None = None, code: str | None = None, req: LoginRequest | None = None):
     if req is not None:
@@ -157,6 +199,49 @@ def check_session(x_session_id: str = Header(None)):
     return {"valid": valid}
 
 
+def _base64url_encode(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
+def _base64url_decode(value: str) -> bytes:
+    padded = value + "=" * ((4 - len(value) % 4) % 4)
+    return base64.urlsafe_b64decode(padded)
+
+
+def _store_challenge(store: dict, payload: dict) -> str:
+    challenge_id = uuid.uuid4().hex
+    payload["created_at"] = time.time()
+    store[challenge_id] = payload
+    return challenge_id
+
+
+def _load_challenge(store: dict, challenge_id: str) -> dict | None:
+    payload = store.get(challenge_id)
+    if not payload:
+        return None
+    created_at = payload.get("created_at", 0)
+    if time.time() - float(created_at) > PASSKEY_CHALLENGE_TTL_SEC:
+        store.pop(challenge_id, None)
+        return None
+    return payload
+
+
+def _cleanup_challenges(store: dict):
+    now = time.time()
+    for key, payload in list(store.items()):
+        created_at = payload.get("created_at", 0)
+        if now - float(created_at) > PASSKEY_CHALLENGE_TTL_SEC:
+            store.pop(key, None)
+
+
+def _parse_registration_credential(payload: dict) -> RegistrationCredential:
+    return RegistrationCredential.parse_raw(json.dumps(payload))
+
+
+def _parse_authentication_credential(payload: dict) -> AuthenticationCredential:
+    return AuthenticationCredential.parse_raw(json.dumps(payload))
+
+
 @app.get("/me")
 def get_me(payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
@@ -175,22 +260,148 @@ def get_me(payload: dict = Depends(get_current_user)):
     }
 
 
-@app.post("/me/password")
-def set_my_password(req: SetPasswordRequest, payload: dict = Depends(get_current_user)):
-    if req.confirm is not None and req.password != req.confirm:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
+@app.post("/account/passkeys/options")
+def get_account_passkey_options(payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
-    users.set_user_password(user_id, req.password)
-    return {"ok": True}
+    user = users.get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        raise HTTPException(status_code=403, detail="User not allowed")
+
+    exclude_credentials = []
+    for entry in users.get_user_passkeys(user):
+        try:
+            exclude_credentials.append(
+                PublicKeyCredentialDescriptor(
+                    type=PublicKeyCredentialType.PUBLIC_KEY,
+                    id=_base64url_decode(entry["id"])
+                )
+            )
+        except Exception:
+            continue
+
+    options = generate_registration_options(
+        rp_id=PASSKEY_RP_ID,
+        rp_name=PASSKEY_RP_NAME,
+        user_id=str(user_id),
+        user_name=user.get("name") or str(user_id),
+        user_display_name=user.get("name") or str(user_id),
+        exclude_credentials=exclude_credentials,
+        attestation=AttestationConveyancePreference.NONE,
+        authenticator_selection=AuthenticatorSelectionCriteria(
+            resident_key=ResidentKeyRequirement.REQUIRED,
+            user_verification=UserVerificationRequirement.DISCOURAGED
+        )
+    )
+
+    _cleanup_challenges(PASSKEY_REGISTER_CHALLENGES)
+    challenge_id = _store_challenge(PASSKEY_REGISTER_CHALLENGES, {
+        "user_id": user_id,
+        "challenge": options.challenge
+    })
+
+    return {
+        "challenge_id": challenge_id,
+        "options": json.loads(options_to_json(options))
+    }
 
 
-@app.get("/me/login-code")
-def get_my_login_code(payload: dict = Depends(get_current_user)):
+@app.post("/account/passkeys/verify")
+def verify_account_passkey(req: PasskeyRegistrationVerifyRequest, payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
-    info = users.get_login_code_info(user_id)
-    if not info:
-        return {"has_code": False}
-    return {"has_code": True, "login_code": info}
+    user = users.get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        raise HTTPException(status_code=403, detail="User not allowed")
+
+    stored = _load_challenge(PASSKEY_REGISTER_CHALLENGES, req.challenge_id)
+    if not stored or stored.get("user_id") != user_id:
+        raise HTTPException(status_code=400, detail="Challenge expired or invalid")
+
+    credential = _parse_registration_credential(req.credential)
+    info = verify_registration_response(
+        credential=credential,
+        expected_challenge=stored["challenge"],
+        expected_rp_id=PASSKEY_RP_ID,
+        expected_origin=PASSKEY_RP_ORIGIN,
+        require_user_verification=False
+    )
+
+    credential_id = _base64url_encode(info.credential_id)
+    public_key = _base64url_encode(info.credential_public_key)
+    users.add_user_passkey(user_id, credential_id, public_key, info.sign_count)
+    PASSKEY_REGISTER_CHALLENGES.pop(req.challenge_id, None)
+    return {"ok": True, "credential_id": credential_id}
+
+
+@app.post("/login/passkeys/options")
+def get_login_passkey_options(req: PasskeyAuthenticationOptionsRequest | None = None):
+    user_id = req.user_id if req else None
+    allow_credentials = []
+    if user_id:
+        user = users.get_user_by_id(user_id)
+        if not user or user.get("banned"):
+            raise HTTPException(status_code=403, detail="User not allowed")
+        for entry in users.get_user_passkeys(user):
+            try:
+                allow_credentials.append(
+                    PublicKeyCredentialDescriptor(
+                        type=PublicKeyCredentialType.PUBLIC_KEY,
+                        id=_base64url_decode(entry["id"])
+                    )
+                )
+            except Exception:
+                continue
+
+    options = generate_authentication_options(
+        rp_id=PASSKEY_RP_ID,
+        user_verification=UserVerificationRequirement.DISCOURAGED,
+        allow_credentials=allow_credentials or None
+    )
+
+    _cleanup_challenges(PASSKEY_LOGIN_CHALLENGES)
+    challenge_id = _store_challenge(PASSKEY_LOGIN_CHALLENGES, {
+        "challenge": options.challenge,
+        "user_id": user_id
+    })
+
+    return {
+        "challenge_id": challenge_id,
+        "options": json.loads(options_to_json(options))
+    }
+
+
+@app.post("/login/passkeys/verify")
+def verify_login_passkey(req: PasskeyAuthenticationVerifyRequest):
+    stored = _load_challenge(PASSKEY_LOGIN_CHALLENGES, req.challenge_id)
+    if not stored:
+        raise HTTPException(status_code=400, detail="Challenge expired or invalid")
+
+    credential = _parse_authentication_credential(req.credential)
+    credential_id = _base64url_encode(credential.raw_id)
+    user_id, user, entry = users.find_user_by_passkey_id(credential_id)
+    if not user or not entry:
+        raise HTTPException(status_code=401, detail="Unknown credential")
+    if user.get("banned"):
+        raise HTTPException(status_code=403, detail="User is banned")
+
+    public_key_bytes = _base64url_decode(entry["public_key"])
+    info = verify_authentication_response(
+        credential=credential,
+        expected_challenge=stored["challenge"],
+        expected_rp_id=PASSKEY_RP_ID,
+        expected_origin=PASSKEY_RP_ORIGIN,
+        credential_public_key=public_key_bytes,
+        credential_current_sign_count=entry.get("sign_count", 0),
+        require_user_verification=False
+    )
+
+    users.update_passkey_sign_count(user_id, credential_id, info.new_sign_count)
+    PASSKEY_LOGIN_CHALLENGES.pop(req.challenge_id, None)
+
+    access_token = create_access_token(user_id)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @app.get("/admin/spotify/login")
@@ -430,37 +641,6 @@ def get_board():
     return board.load_board()
 
 
-@app.get("/board/passkeys")
-def get_board_passkeys():  # no auth (local-first debug sync)
-    return {"passkeys": board.get_debug_passkeys()}
-
-
-@app.post("/board/passkeys")
-def update_board_passkeys(req: BoardPasskeysRequest | None = None, passkeys: list[str] | None = None):  # no auth (local-first debug sync)
-    incoming = req.passkeys if req is not None else passkeys
-    updated = board.update_debug_passkeys(incoming or [])
-    return {"passkeys": updated}
-
-
-@app.get("/board/last-change")
-def get_board_last_change(payload: dict = Depends(get_current_user)):
-    if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
-        raise HTTPException(status_code=403, detail="You don't have the 'moderator' permission.")
-    data = board.load_board()
-    updated_by = data.get("updated_by")
-    updated_at = data.get("updated_at")
-    updated_by_name = None
-    if updated_by:
-        user = users.get_user_by_id(updated_by)
-        if user:
-            updated_by_name = user.get("name")
-    return {
-        "updated_by": updated_by,
-        "updated_by_name": updated_by_name,
-        "updated_at": updated_at
-    }
-
-
 @app.put("/board")
 def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
@@ -478,11 +658,7 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
 
 
 @app.post("/board/poll/vote")
-def vote_on_poll(req: BoardPollVoteRequest, token: str = Security(api_key_header)):
-    if BOARD_LOCKDOWN:
-        payload = get_current_user(token)
-        if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
-            raise HTTPException(status_code=403, detail="Board is locked. Moderator or higher required.")
+def vote_on_poll(req: BoardPollVoteRequest):
     updated = board.vote_poll(req.widget_key, req.option_id)
     if not updated:
         raise HTTPException(status_code=404, detail="Poll option not found")
@@ -508,3 +684,4 @@ def trigger_board_restart(payload: dict = Depends(get_current_user)):
     ensure_board_edit(payload)
     trigger = board.set_restart_trigger(updated_by=user_id)
     return {"ok": True, "trigger": trigger}
+

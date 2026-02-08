@@ -11,7 +11,8 @@
             ],
             "banned": false,
             "reason": null,
-            "password": "e314ccfe245d718677020bc373c1394a$fa9e78165f10de4e683b4fad674df369c4d648908b08f03c5b422cca8212250c"
+            "password": "e314ccfe245d718677020bc373c1394a$fa9e78165f10de4e683b4fad674df369c4d648908b08f03c5b422cca8212250c",
+            "passkeys": []
         },
         "100": {
             "name": "Nejat Demir Vural",
@@ -30,6 +31,14 @@
         "101": {
             "name": "Furkan Kırıl",
             "permissions": [],
+            "banned": false,
+            "reason": null
+        },
+        "100000": {
+            "name": "board",
+            "permissions": [
+                "board"
+            ],
             "banned": false,
             "reason": null
         }

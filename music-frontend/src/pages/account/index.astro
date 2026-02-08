@@ -15,12 +15,129 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
         <SetPasswordPanel />
         <br>
 
+        <div class="mt-4 border border-slate-300 rounded p-4 inline-block">
+            <div class="text-sm text-slate-600">Passkey</div>
+            <div class="mt-2 flex items-center gap-2">
+                <button id="passkey-enroll-btn" class="border border-slate-300 rounded px-3 py-2">Passkey kaydet</button>
+                <div id="passkey-status" class="text-sm text-slate-600"></div>
+            </div>
+            <div class="text-xs text-slate-500 mt-2">Eğer cihazınız passkey destekliyor ise, giriş yaparken onu da kullanabilirsiniz.</div>
+        </div>
+        <br>
+
         <button id="home-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Ana sayfaya dön</button>
         <button id="logout-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Çıkış yap</button>
     </div>
 
     <script>
         import { API_URL } from '../../lib/constants.ts';
+
+        function base64UrlToBytes(value) {
+            const padded = value + '='.repeat((4 - (value.length % 4)) % 4);
+            const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function bytesToBase64Url(bytes) {
+            const binary = String.fromCharCode(...bytes);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+
+        function setPasskeyStatus(message, isError = false) {
+            const statusEl = document.getElementById('passkey-status');
+            if (!statusEl) return;
+            statusEl.textContent = message || '';
+            statusEl.classList.toggle('text-red-600', isError);
+            statusEl.classList.toggle('text-slate-600', !isError);
+        }
+
+        function normalizeRegistrationOptions(options) {
+            const normalized = { ...options };
+            normalized.challenge = base64UrlToBytes(options.challenge);
+            if (normalized.user && normalized.user.id) {
+                normalized.user = { ...normalized.user, id: base64UrlToBytes(normalized.user.id) };
+            }
+            if (Array.isArray(normalized.excludeCredentials)) {
+                normalized.excludeCredentials = normalized.excludeCredentials.map((cred) => ({
+                    ...cred,
+                    id: base64UrlToBytes(cred.id)
+                }));
+            }
+            return normalized;
+        }
+
+        function serializeAttestation(credential) {
+            const response = credential.response;
+            return {
+                id: credential.id,
+                rawId: bytesToBase64Url(new Uint8Array(credential.rawId)),
+                type: credential.type,
+                response: {
+                    clientDataJSON: bytesToBase64Url(new Uint8Array(response.clientDataJSON)),
+                    attestationObject: bytesToBase64Url(new Uint8Array(response.attestationObject))
+                }
+            };
+        }
+
+        async function enrollPasskey() {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            if (!window.PublicKeyCredential) {
+                setPasskeyStatus('Bu tarayıcı passkey desteklemiyor.', true);
+                return;
+            }
+            const btn = document.getElementById('passkey-enroll-btn');
+            if (btn) btn.disabled = true;
+            setPasskeyStatus('Passkey kaydı hazırlanıyor...');
+            try {
+                const res = await fetch(`${API_URL}/account/passkeys/options`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    }
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.detail || 'Passkey seçenekleri alınamadı.');
+                }
+                const data = await res.json();
+                const publicKey = normalizeRegistrationOptions(data.options);
+                const credential = await navigator.credentials.create({ publicKey });
+                if (!credential) {
+                    throw new Error('Passkey kaydı iptal edildi.');
+                }
+                const payload = {
+                    challenge_id: data.challenge_id,
+                    credential: serializeAttestation(credential)
+                };
+                const verifyRes = await fetch(`${API_URL}/account/passkeys/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!verifyRes.ok) {
+                    const verifyData = await verifyRes.json().catch(() => ({}));
+                    throw new Error(verifyData.detail || 'Passkey kaydı doğrulanamadı.');
+                }
+                setPasskeyStatus('Passkey kaydedildi.');
+            } catch (err) {
+                setPasskeyStatus(err?.message || 'Passkey kaydı başarısız.', true);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
 
         async function loadAccount() {
             const infoDiv = document.getElementById('user-info');
@@ -87,6 +204,9 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
             window.location.href = "/";
         });
 
+        document.getElementById('passkey-enroll-btn')?.addEventListener('click', enrollPasskey);
+
         loadAccount();
     </script>
 </Layout>
+

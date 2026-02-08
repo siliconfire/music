@@ -1,19 +1,28 @@
 <div id="board-restart-pane" class="hidden m-5 lg:m-10 border border-yellow-700 bg-yellow-50 p-4 relative">
     <button id="board-restart-close" class="absolute top-2 right-2 border border-yellow-700 px-2 py-1 text-sm" aria-label="Kapat">X</button>
     <div id="board-debug-pin" class="hidden mb-3">
-        <div id="board-debug-pin-display" class="mt-1 border border-yellow-700 bg-white px-3 py-2 text-sm min-h-8"><i>1453...? devamı neydi?</i></div>
+        <div id="board-debug-pin-display" class="mt-1 border border-yellow-700 bg-white px-3 py-2 text-xl tracking-wide min-h-8"><i>bin dört yüz elli üç? ve ardından kare?</i></div>
         <div id="board-debug-pin-error" class="mt-1 text-xs text-red-600 hidden">PIN hatalı.</div>
-        <div class="mt-2 grid grid-cols-3 gap-2 max-w-40">
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="1">1</button>
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="2">2</button>
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="3">3</button>
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="4">4</button>
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="5">5</button>
-            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="6">6</button>
-        </div>
-        <div class="mt-2 flex gap-2">
-            <button id="board-pin-clear" class="border border-yellow-700 px-2 p-1 text-2xl">*</button>
-            <button id="board-pin-submit" class="border border-yellow-700 px-2 p-1 text-2xl">#</button>
+        <div class="mt-2 flex flex-wrap gap-4 items-start">
+            <div>
+                <div class="grid grid-cols-3 gap-2 max-w-40">
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="1">1</button>
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="2">2</button>
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="3">3</button>
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="4">4</button>
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="5">5</button>
+                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="6">6</button>
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button id="board-pin-clear" class="border border-yellow-700 px-2 p-1 text-2xl">*</button>
+                    <button id="board-pin-submit" class="border border-yellow-700 px-2 p-1 text-2xl">#</button>
+                </div>
+            </div>
+            <div class="hidden sm:block w-px bg-yellow-700 self-stretch"></div>
+            <div class="flex flex-col gap-2">
+                <textarea id="board-pin-freeform" class="border border-yellow-700 bg-white px-3 py-2 text-2xl min-w-[40rem] min-h-[6rem] font-mono" placeholder="Serbest giriş"></textarea>
+                <button id="board-pin-freeform-send" class="border border-yellow-700 px-3 py-2 text-sm">Gönder</button>
+            </div>
         </div>
     </div>
     <div id="board-restart-controls" class="flex flex-wrap gap-2 hidden">
@@ -42,17 +51,22 @@
     const debugPinButtons = document.querySelectorAll('.board-pin-btn');
     const debugPinClearEl = document.getElementById('board-pin-clear');
     const debugPinSubmitEl = document.getElementById('board-pin-submit');
+    const debugPinFreeformEl = document.getElementById('board-pin-freeform');
+    const debugPinFreeformSendEl = document.getElementById('board-pin-freeform-send');
     const debugControlsEl = document.getElementById('board-restart-controls');
     const secretPhotoEl = document.getElementById('board-secret-photo');
     const secretPhotoImgEl = document.getElementById('board-secret-photo-img');
 
-    const tapPattern = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2];
+    const tapPattern = [1];
     let tapHistory = [];
     let restartPaneTimer = null;
     let pinUnlocked = false;
     let enteredPin = '';
     const debugPinValue = '64531221';
+    const debugPinTwoValue = '91732847848741294632217461239374';
+    const debugTotpSecret = localStorage.getItem('board_debug_totp') || '';
     let secretPhotoTimer = null;
+    let freeformRaw = '';
 
     function showRestartSplash(delayMs) {
         if (restartSplashEl) {
@@ -91,13 +105,114 @@
 
     function updatePinDisplay() {
         if (!debugPinDisplayEl) return;
-        const masked = enteredPin ? '•'.repeat(enteredPin.length) : '----';
+        const masked = enteredPin ? buildPixelMask(enteredPin.length) : 'bin dört yüz elli üç? ve ardından kare?';
         debugPinDisplayEl.textContent = masked;
     }
 
     function setPinError(show) {
         if (!debugPinErrorEl) return;
         debugPinErrorEl.classList.toggle('hidden', !show);
+    }
+
+    function buildPixelMask(length) {
+        // const symbols = ['▣', '▤', '▥', '▦', '▧', '▨', '▩', '■'];
+        // const symbols = ['←', '↑', '→', '↓']
+        const symbols = ['←', '↑', '→', '↓', '↔', '↕', '↖', '↗', '↘', '↙', '↚', '↛', '↜', '↝', '↞', '↟', '↠', '↡', '↢', '↣', '↤', '↥', '↦', '↧', '↨', '↩', '↪', '↫', '↬', '↭', '↮', '↯', '↰', '↱', '↲', '↳', '↴', '↵', '↶', '↷', '↸', '↹', '↺', '↻', '↼', '↽', '↾', '↿', '⇀', '⇁', '⇂', '⇃', '⇄', '⇅', '⇆', '⇇', '⇈', '⇉', '⇊', '⇋', '⇌', '⇍', '⇎', '⇏', '⇐', '⇑', '⇒', '⇓', '⇔', '⇕', '⇖', '⇗', '⇘', '⇙', '⇚', '⇛', '⇜', '⇝', '⇞', '⇟', '⇠', '⇡', '⇢', '⇣', '⇤', '⇥', '⇦', '⇧', '⇨', '⇩', '⇪', '⇫', '⇬', '⇭', '⇮', '⇯', '⇰', '⇱', '⇲', '⇳', '⇴', '⇵', '⇶', '⇷', '⇸', '⇹', '⇺', '⇻', '⇼', '⇽', '⇾', '⇿']
+        let result = '';
+        for (let i = 0; i < length; i += 1) {
+            result += symbols[Math.floor(Math.random() * symbols.length)];
+        }
+        return result;
+    }
+
+    function renderFreeform() {
+        if (!debugPinFreeformEl) return;
+        const masked = freeformRaw.length <= 1
+            ? freeformRaw
+            : `${buildPixelMask(freeformRaw.length - 1)}${freeformRaw.slice(-1)}`;
+        debugPinFreeformEl.value = masked;
+    }
+
+    function base32ToBytes(input) {
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        const clean = String(input || '').toUpperCase().replace(/=+$/g, '').replace(/\s+/g, '');
+        let bits = '';
+        for (let i = 0; i < clean.length; i += 1) {
+            const idx = alphabet.indexOf(clean[i]);
+            if (idx === -1) continue;
+            bits += idx.toString(2).padStart(5, '0');
+        }
+        const bytes = [];
+        for (let i = 0; i + 8 <= bits.length; i += 8) {
+            bytes.push(parseInt(bits.slice(i, i + 8), 2));
+        }
+        return new Uint8Array(bytes);
+    }
+
+    async function hotp(secretBytes, counter) {
+        const counterBuf = new ArrayBuffer(8);
+        const view = new DataView(counterBuf);
+        const high = Math.floor(counter / 0x100000000);
+        const low = counter >>> 0;
+        view.setUint32(0, high);
+        view.setUint32(4, low);
+        const key = await crypto.subtle.importKey(
+            'raw',
+            secretBytes,
+            { name: 'HMAC', hash: 'SHA-1' },
+            false,
+            ['sign']
+        );
+        const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, counterBuf));
+        const offset = sig[sig.length - 1] & 0x0f;
+        const code = ((sig[offset] & 0x7f) << 24)
+            | ((sig[offset + 1] & 0xff) << 16)
+            | ((sig[offset + 2] & 0xff) << 8)
+            | (sig[offset + 3] & 0xff);
+        return String(code % 1000000).padStart(6, '0');
+    }
+
+    async function verifyTotp(code) {
+        if (!debugTotpSecret) return false;
+        const secretBytes = base32ToBytes(debugTotpSecret);
+        const cleanCode = String(code || '').trim();
+        if (!cleanCode) return false;
+        const counter = Math.floor(Date.now() / 1000 / 30);
+        for (let offset = -1; offset <= 1; offset += 1) {
+            const expected = await hotp(secretBytes, counter + offset);
+            if (expected === cleanCode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async function submitPin(value) {
+        if (pinUnlocked) return;
+        const nextValue = value ? String(value).trim() : '';
+        enteredPin = nextValue;
+        updatePinDisplay();
+        if (!nextValue) {
+            setPinError(true);
+            return;
+        }
+        if (nextValue === debugPinValue) {
+            showDebugControls();
+            return;
+        }
+        if (nextValue === debugPinTwoValue) {
+            showDebugControls();
+            return;
+        }
+        if (await verifyTotp(nextValue)) {
+            showDebugControls();
+            return;
+        }
+        if (nextValue === '1453') {
+            showSecretPhoto();
+            return;
+        }
+        setPinError(true);
     }
 
     function showDebugControls() {
@@ -111,6 +226,8 @@
         enteredPin = '';
         updatePinDisplay();
         setPinError(false);
+        freeformRaw = '';
+        renderFreeform();
         if (debugPinEl) debugPinEl.classList.remove('hidden');
         if (debugControlsEl) debugControlsEl.classList.add('hidden');
     }
@@ -221,20 +338,34 @@
 
     if (debugPinSubmitEl) {
         debugPinSubmitEl.addEventListener('click', () => {
+            void submitPin(enteredPin);
+          });
+      }
+
+    if (debugPinFreeformSendEl) {
+        debugPinFreeformSendEl.addEventListener('click', () => {
             if (pinUnlocked) return;
-            if (!enteredPin) {
-                setPinError(true);
+            void submitPin(freeformRaw);
+        });
+    }
+
+    if (debugPinFreeformEl) {
+        debugPinFreeformEl.addEventListener('beforeinput', (event) => {
+            if (!event || !event.inputType) {
                 return;
             }
-            if (enteredPin === debugPinValue) {
-                showDebugControls();
-                return;
-            }
-            if (enteredPin === '1453') {
-                showSecretPhoto();
-                return;
-            }
-            setPinError(true);
+            event.preventDefault();
+            applyFreeformInput(event.inputType, event.data);
+        });
+        debugPinFreeformEl.addEventListener('input', () => {
+            // Fallback path for browsers without beforeinput/inputType support.
+            freeformRaw = debugPinFreeformEl.value || '';
+            renderFreeform();
+        });
+        debugPinFreeformEl.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            void submitPin(freeformRaw);
         });
     }
 </script>

@@ -112,6 +112,70 @@ def get_passkey_users_public():
     return rows
 
 
+def add_user_passkey(user_id: str, credential_id: str, public_key: str, sign_count: int = 0):
+    db = load_db()
+    user = db.get("users", {}).get(str(user_id))
+    if not user:
+        return None
+    passkeys = get_user_passkeys(user)
+    for entry in passkeys:
+        if entry.get("id") == credential_id:
+            return entry
+    entry = {
+        "id": credential_id,
+        "public_key": public_key,
+        "sign_count": int(sign_count) if isinstance(sign_count, int) and sign_count >= 0 else 0,
+        "created_at": user.get("passkey_created_at") or None
+    }
+    passkeys.append(entry)
+    user["passkeys"] = passkeys
+    save_db(db)
+    return entry
+
+
+def remove_user_passkey(user_id: str, credential_id: str):
+    db = load_db()
+    user = db.get("users", {}).get(str(user_id))
+    if not user:
+        return False
+    passkeys = get_user_passkeys(user)
+    next_passkeys = [entry for entry in passkeys if entry.get("id") != credential_id]
+    if len(next_passkeys) == len(passkeys):
+        return False
+    user["passkeys"] = next_passkeys
+    save_db(db)
+    return True
+
+
+def find_user_by_passkey_id(credential_id: str):
+    db = load_db()
+    users = db.get("users", {})
+    for user_id, user in users.items():
+        for entry in get_user_passkeys(user):
+            if entry.get("id") == credential_id:
+                return str(user_id), user, entry
+    return None, None, None
+
+
+def update_passkey_sign_count(user_id: str, credential_id: str, new_count: int):
+    db = load_db()
+    user = db.get("users", {}).get(str(user_id))
+    if not user:
+        return False
+    passkeys = get_user_passkeys(user)
+    updated = False
+    for entry in passkeys:
+        if entry.get("id") == credential_id:
+            entry["sign_count"] = int(new_count) if isinstance(new_count, int) and new_count >= 0 else 0
+            updated = True
+            break
+    if not updated:
+        return False
+    user["passkeys"] = passkeys
+    save_db(db)
+    return True
+
+
 def check_user_perm(user_id: str, required_perm: str) -> bool:
     user = get_user_by_id(user_id)
 
