@@ -72,6 +72,11 @@ import Layout from '../../layouts/Layout.astro';
                 </details>
             </fieldset>
             <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                <legend>Yeniden başlat</legend>
+                <button id="board-restart-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Ekranı yeniden başlat</button>
+                <p class="mx-3 mt-4">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
+            </fieldset>
+            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
                 <legend>Yardım</legend>
                 <details class="m-2 p-3 border border-green-500 hidden" id="moderator-help">
                     <summary>Moderatör yardımı</summary>
@@ -137,6 +142,7 @@ import Layout from '../../layouts/Layout.astro';
         const confettiDurationEl = document.getElementById('confetti-duration');
         const confettiSpawnEl = document.getElementById('confetti-spawn');
         const confettiUpEl = document.getElementById('confetti-up');
+        const restartBtnEl = document.getElementById('board-restart-btn');
 
         function showPermissionError(message) {
             if (editorRootEl) editorRootEl.classList.add('hidden');
@@ -576,19 +582,46 @@ import Layout from '../../layouts/Layout.astro';
                     return;
                 }
                 if (!res.ok) {
-                    showStatus('Konfeti gonderilemedi.', true);
+                    showStatus('Konfeti gönderilemedi.', true);
                     return;
                 }
-                showStatus('Konfeti gonderildi.');
+                showStatus('Konfeti gönderildi.');
             } catch (err) {
-                showStatus('Konfeti gonderilemedi.', true);
+                showStatus('Konfeti gönderilemedi.', true);
             }
         }
 
-        if (confettiBtnEl) {
-            confettiBtnEl.addEventListener('click', triggerConfetti);
+        async function triggerBoardRestart() {
+            try {
+                const res = await fetch(`${API_URL}/board/restart`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    }
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Ekran yeniden başlatılamadı.', true);
+                    return;
+                }
+                showStatus('Ekrana yeniden başlama komutu gönderildi.');
+            } catch (err) {
+                showStatus('Ekran yeniden başlatılamadı.', true);
+            }
         }
 
-        init();
-    </script>
-</Layout>
+         if (confettiBtnEl) {
+             confettiBtnEl.addEventListener('click', triggerConfetti);
+         }
+
+         if (restartBtnEl) {
+             restartBtnEl.addEventListener('click', triggerBoardRestart);
+         }
+
+         init();
+     </script>
+ </Layout>

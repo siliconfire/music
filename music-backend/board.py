@@ -117,6 +117,7 @@ def load_board():
             "widgets": _default_widgets(),
             "updated_by": None,
             "updated_at": None,
+            "debug_passkeys": []
         }
         save_board(data)
         return data
@@ -126,6 +127,7 @@ def load_board():
 
     raw_widgets = data.get("widgets")
     data["widgets"] = _normalize_widgets(raw_widgets, include_defaults=raw_widgets is None)
+    data["debug_passkeys"] = _normalize_passkeys(data.get("debug_passkeys"))
     return data
 
 
@@ -262,3 +264,45 @@ def set_confetti_trigger(config=None, updated_by=None):
     data["updated_by"] = updated_by
     save_board(data)
     return data["confetti_trigger"]
+
+
+def set_restart_trigger(updated_by=None):
+    data = load_board()
+    trigger_id = datetime.now(timezone.utc).isoformat()
+    data["restart_trigger"] = {
+        "id": trigger_id,
+        "created_at": trigger_id,
+        "created_by": updated_by
+    }
+    data["updated_at"] = trigger_id
+    data["updated_by"] = updated_by
+    save_board(data)
+    return data["restart_trigger"]
+
+
+def _normalize_passkeys(raw):
+    if not isinstance(raw, list):
+        return []
+    seen = set()
+    result = []
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        cleaned = item.strip()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        result.append(cleaned)
+    return result
+
+
+def get_debug_passkeys():
+    data = load_board()
+    return _normalize_passkeys(data.get("debug_passkeys"))
+
+
+def update_debug_passkeys(passkeys):
+    data = load_board()
+    data["debug_passkeys"] = _normalize_passkeys(passkeys)
+    save_board(data)
+    return data["debug_passkeys"]

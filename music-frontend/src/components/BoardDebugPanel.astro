@@ -1,0 +1,240 @@
+<div id="board-restart-pane" class="hidden m-5 lg:m-10 border border-yellow-700 bg-yellow-50 p-4 relative">
+    <button id="board-restart-close" class="absolute top-2 right-2 border border-yellow-700 px-2 py-1 text-sm" aria-label="Kapat">X</button>
+    <div id="board-debug-pin" class="hidden mb-3">
+        <div id="board-debug-pin-display" class="mt-1 border border-yellow-700 bg-white px-3 py-2 text-sm min-h-8"><i>1453...? devamı neydi?</i></div>
+        <div id="board-debug-pin-error" class="mt-1 text-xs text-red-600 hidden">PIN hatalı.</div>
+        <div class="mt-2 grid grid-cols-3 gap-2 max-w-40">
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="1">1</button>
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="2">2</button>
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="3">3</button>
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="4">4</button>
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="5">5</button>
+            <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="6">6</button>
+        </div>
+        <div class="mt-2 flex gap-2">
+            <button id="board-pin-clear" class="border border-yellow-700 px-2 p-1 text-2xl">*</button>
+            <button id="board-pin-submit" class="border border-yellow-700 px-2 p-1 text-2xl">#</button>
+        </div>
+    </div>
+    <div id="board-restart-controls" class="flex flex-wrap gap-2 hidden">
+        <button id="board-restart-btn-manual" class="border border-yellow-700 px-3 py-2">Yeniden başlat</button>
+        <button id="board-fullscreen-enter" class="border border-yellow-700 px-3 py-2">Tam ekrana gir</button>
+        <button id="board-fullscreen-exit" class="border border-yellow-700 px-3 py-2">Tam ekrandan çık</button>
+    </div>
+</div>
+
+<div id="board-secret-photo" class="hidden fixed inset-0 z-40 bg-black/90 flex items-center justify-center">
+    <img id="board-secret-photo-img" data-photo-src="/special.jpg" alt="Foto" class="max-w-[90vw] max-h-[90vh] object-contain" />
+</div>
+
+<script>
+    const tapFirstEl = document.getElementById('tap-bartin');
+    const tapSecondEl = document.getElementById('tap-lisesi');
+    const restartPaneEl = document.getElementById('board-restart-pane');
+    const restartBtnEl = document.getElementById('board-restart-btn-manual');
+    const restartCloseEl = document.getElementById('board-restart-close');
+    const restartSplashEl = document.getElementById('board-restart-splash');
+    const fullscreenEnterEl = document.getElementById('board-fullscreen-enter');
+    const fullscreenExitEl = document.getElementById('board-fullscreen-exit');
+    const debugPinEl = document.getElementById('board-debug-pin');
+    const debugPinDisplayEl = document.getElementById('board-debug-pin-display');
+    const debugPinErrorEl = document.getElementById('board-debug-pin-error');
+    const debugPinButtons = document.querySelectorAll('.board-pin-btn');
+    const debugPinClearEl = document.getElementById('board-pin-clear');
+    const debugPinSubmitEl = document.getElementById('board-pin-submit');
+    const debugControlsEl = document.getElementById('board-restart-controls');
+    const secretPhotoEl = document.getElementById('board-secret-photo');
+    const secretPhotoImgEl = document.getElementById('board-secret-photo-img');
+
+    const tapPattern = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2];
+    let tapHistory = [];
+    let restartPaneTimer = null;
+    let pinUnlocked = false;
+    let enteredPin = '';
+    const debugPinValue = '64531221';
+    let secretPhotoTimer = null;
+
+    function showRestartSplash(delayMs) {
+        if (restartSplashEl) {
+            restartSplashEl.classList.remove('hidden');
+        }
+        setTimeout(() => {
+            location.reload();
+        }, delayMs);
+    }
+
+    window.boardShowRestartSplash = showRestartSplash;
+
+    function showSecretPhoto() {
+        if (!secretPhotoEl) return;
+        if (secretPhotoImgEl) {
+            const src = secretPhotoImgEl.getAttribute('data-photo-src');
+            if (src) {
+                secretPhotoImgEl.setAttribute('src', src);
+            }
+        }
+        secretPhotoEl.classList.remove('hidden');
+        if (secretPhotoTimer) {
+            clearTimeout(secretPhotoTimer);
+        }
+        secretPhotoTimer = setTimeout(hideSecretPhoto, 5000);
+    }
+
+    function hideSecretPhoto() {
+        if (!secretPhotoEl) return;
+        secretPhotoEl.classList.add('hidden');
+        if (secretPhotoTimer) {
+            clearTimeout(secretPhotoTimer);
+            secretPhotoTimer = null;
+        }
+    }
+
+    function updatePinDisplay() {
+        if (!debugPinDisplayEl) return;
+        const masked = enteredPin ? '•'.repeat(enteredPin.length) : '----';
+        debugPinDisplayEl.textContent = masked;
+    }
+
+    function setPinError(show) {
+        if (!debugPinErrorEl) return;
+        debugPinErrorEl.classList.toggle('hidden', !show);
+    }
+
+    function showDebugControls() {
+        pinUnlocked = true;
+        if (debugPinEl) debugPinEl.classList.add('hidden');
+        if (debugControlsEl) debugControlsEl.classList.remove('hidden');
+    }
+
+    function resetPinpad() {
+        pinUnlocked = false;
+        enteredPin = '';
+        updatePinDisplay();
+        setPinError(false);
+        if (debugPinEl) debugPinEl.classList.remove('hidden');
+        if (debugControlsEl) debugControlsEl.classList.add('hidden');
+    }
+
+    function hideRestartPane() {
+        if (restartPaneEl) {
+            restartPaneEl.classList.add('hidden');
+        }
+        if (restartPaneTimer) {
+            clearTimeout(restartPaneTimer);
+            restartPaneTimer = null;
+        }
+        resetPinpad();
+    }
+
+    function showRestartPane() {
+        if (restartPaneEl) {
+            restartPaneEl.classList.remove('hidden');
+        }
+        if (restartPaneTimer) {
+            clearTimeout(restartPaneTimer);
+        }
+        resetPinpad();
+        restartPaneTimer = setTimeout(hideRestartPane, 60000);
+    }
+
+    function recordTap(value) {
+        tapHistory.push(value);
+        if (tapHistory.length > tapPattern.length) {
+            tapHistory = tapHistory.slice(-tapPattern.length);
+        }
+        if (tapHistory.length !== tapPattern.length) {
+            return;
+        }
+        for (let i = 0; i < tapPattern.length; i += 1) {
+            if (tapHistory[i] !== tapPattern[i]) {
+                return;
+            }
+        }
+        tapHistory = [];
+        showRestartPane();
+    }
+
+    if (tapFirstEl) {
+        tapFirstEl.addEventListener('click', () => recordTap(1));
+    }
+
+    if (tapSecondEl) {
+        tapSecondEl.addEventListener('click', () => recordTap(2));
+    }
+
+    if (restartBtnEl) {
+        restartBtnEl.addEventListener('click', () => showRestartSplash(500));
+    }
+
+    if (restartCloseEl) {
+        restartCloseEl.addEventListener('click', hideRestartPane);
+    }
+
+    async function enterFullscreen() {
+        if (document.fullscreenElement) return;
+        try {
+            await document.documentElement.requestFullscreen();
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    async function exitFullscreen() {
+        if (!document.fullscreenElement) return;
+        try {
+            await document.exitFullscreen();
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    if (fullscreenEnterEl) {
+        fullscreenEnterEl.addEventListener('click', enterFullscreen);
+    }
+
+    if (fullscreenExitEl) {
+        fullscreenExitEl.addEventListener('click', exitFullscreen);
+    }
+
+    if (debugPinButtons) {
+        debugPinButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (pinUnlocked) return;
+                const value = btn.getAttribute('data-pin');
+                if (!value) return;
+                if (enteredPin.length >= 8) return;
+                enteredPin += value;
+                updatePinDisplay();
+                setPinError(false);
+            });
+        });
+    }
+
+    if (debugPinClearEl) {
+        debugPinClearEl.addEventListener('click', () => {
+            if (pinUnlocked) return;
+            enteredPin = '';
+            updatePinDisplay();
+            setPinError(false);
+        });
+    }
+
+    if (debugPinSubmitEl) {
+        debugPinSubmitEl.addEventListener('click', () => {
+            if (pinUnlocked) return;
+            if (!enteredPin) {
+                setPinError(true);
+                return;
+            }
+            if (enteredPin === debugPinValue) {
+                showDebugControls();
+                return;
+            }
+            if (enteredPin === '1453') {
+                showSecretPhoto();
+                return;
+            }
+            setPinError(true);
+        });
+    }
+</script>

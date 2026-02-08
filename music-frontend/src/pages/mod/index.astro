@@ -4,18 +4,37 @@ import Layout from '../../layouts/Layout.astro';
 
 <Layout title="Mod Paneli">
     <div class="m-10">
-        <h1 class="text-2xl text-slate-800 mt-10">Mod Paneli</h1>
-        <p>Müzik sistemi kilidini buradan yönetebilirsin.</p>
-
+        <h1 class="text-2xl text-slate-800 mt-10">Moderatör Paneli</h1>
+        <a href="/" class="mb-10 inline-block text-sm text-blue-500 hover:underline">
+            (ana sayfaya geri dön)
+        </a>
         <div id="notice"></div>
         <div id="actor" class="text-sm text-slate-600">Yükleniyor...</div>
+        <div class="flex flex-wrap gap-5">
+            <div class="border border-slate-300 p-5 my-5 inline-block">
+                <div class="text-sm text-slate-600">Müziği kilitle</div>
+                <p class="text-sm">(Kilitlerseniz ana sayfada uyarı gözükecektir.)</p>
+                <div id="lockdown-status" class="font-medium">Yükleniyor...</div>
 
-        <div class="border border-slate-300 p-5 my-5 inline-block">
-            <div class="text-sm text-slate-600">Kilit durumu</div>
-            <div id="lockdown-status" class="font-medium">Yükleniyor...</div>
+                <div class="mt-3">
+                    <button id="btn-lockdown" class="border border-slate-300 bg-red-100 px-3 py-2">Kilitle</button>
+                </div>
+            </div>
 
-            <div class="mt-3">
-                <button id="btn-lockdown" class="border border-slate-300 bg-red-100 px-3 py-2">Kilitle</button>
+            <div class="border border-slate-300 p-5 my-5 inline-block">
+                <div class="text-sm text-slate-600">Ekranı düzenlemeyi kilitle</div>
+                <p class="text-sm">(Kilitlerseniz en başta bir uyarı görmezler, fakat kaydederken yetki hatası alırlar.)</p>
+                <div id="board-lockdown-status" class="font-medium">Yükleniyor...</div>
+
+                <div class="mt-3">
+                    <button id="btn-board-lockdown" class="border border-slate-300 bg-red-100 px-3 py-2">Kilitle</button>
+                </div>
+            </div>
+
+            <div class="border border-slate-300 p-5 my-5 inline-block">
+                <div class="text-sm text-slate-600">Ekran için son değişiklik</div>
+                <div id="last-change-user" class="font-medium">Yükleniyor...</div>
+                <div id="last-change-time" class="text-xs text-slate-600"></div>
             </div>
         </div>
     </div>
@@ -28,12 +47,17 @@ import Layout from '../../layouts/Layout.astro';
             const noticeDiv = document.getElementById('notice');
             const statusDiv = document.getElementById('lockdown-status');
             const lockBtn = document.getElementById('btn-lockdown');
+            const boardStatusDiv = document.getElementById('board-lockdown-status');
+            const boardLockBtn = document.getElementById('btn-board-lockdown');
+            const lastChangeUserDiv = document.getElementById('last-change-user');
+            const lastChangeTimeDiv = document.getElementById('last-change-time');
 
-            if (!actorDiv || !noticeDiv || !statusDiv || !lockBtn) {
+            if (!actorDiv || !noticeDiv || !statusDiv || !lockBtn || !boardStatusDiv || !boardLockBtn || !lastChangeUserDiv || !lastChangeTimeDiv) {
                 return;
             }
 
             let locked = false;
+            let boardLocked = false;
 
             function showNotice(msg, type = 'info') {
                 noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
@@ -46,6 +70,27 @@ import Layout from '../../layouts/Layout.astro';
                 lockBtn.className = locked
                     ? 'border border-slate-300 bg-green-100 px-3 py-2'
                     : 'border border-slate-300 bg-red-100 px-3 py-2';
+            }
+
+            function renderBoardLockdown() {
+                boardStatusDiv.textContent = boardLocked ? 'Kilitli' : 'Açık';
+                boardLockBtn.textContent = boardLocked ? 'Kilidi Aç' : 'Kilitle';
+                boardLockBtn.className = boardLocked
+                    ? 'border border-slate-300 bg-green-100 px-3 py-2'
+                    : 'border border-slate-300 bg-red-100 px-3 py-2';
+            }
+
+            function renderLastChange(data) {
+                const who = data.updated_by_name || data.updated_by || 'Bilinmiyor';
+                lastChangeUserDiv.textContent = `Son değişiklik: ${who}`;
+                if (data.updated_at) {
+                    const date = new Date(data.updated_at);
+                    lastChangeTimeDiv.textContent = Number.isNaN(date.getTime())
+                        ? data.updated_at
+                        : date.toLocaleString('tr-TR');
+                } else {
+                    lastChangeTimeDiv.textContent = '';
+                }
             }
 
             async function loadActor() {
@@ -78,6 +123,36 @@ import Layout from '../../layouts/Layout.astro';
                 }
             }
 
+            async function loadBoardLockdown() {
+                try {
+                    const res = await fetch(`${API_URL}/board/lockdown`);
+                    if (!res.ok) {
+                        showNotice('Ekran kilidi durumu alınamadı.', 'error');
+                        return;
+                    }
+                    const data = await res.json();
+                    boardLocked = !!data.locked;
+                    renderBoardLockdown();
+                } catch (err) {
+                    showNotice('Sunucu hatası.', 'error');
+                }
+            }
+
+            async function loadLastChange() {
+                const token = localStorage.getItem('jwt_token') || '';
+                try {
+                    const res = await fetch(`${API_URL}/board/last-change`, { headers: { 'X-Session-ID': token } });
+                    if (!res.ok) {
+                        showNotice('Son değişiklik bilgisi alınamadı.', 'error');
+                        return;
+                    }
+                    const data = await res.json();
+                    renderLastChange(data);
+                } catch (err) {
+                    showNotice('Sunucu hatası.', 'error');
+                }
+            }
+
             async function toggleLockdown() {
                 const token = localStorage.getItem('jwt_token') || '';
                 try {
@@ -96,15 +171,43 @@ import Layout from '../../layouts/Layout.astro';
 
                     locked = !!data.locked;
                     renderLockdown();
-                    showNotice(locked ? 'Sistem kilitlendi.' : 'Sistem kilidi kaldırıldı.');
+                    showNotice(locked ? 'Kilitlendi.' : 'Kilit kaldırıldı.');
+                } catch (err) {
+                    showNotice('Sunucu hatası.', 'error');
+                }
+            }
+
+            async function toggleBoardLockdown() {
+                const token = localStorage.getItem('jwt_token') || '';
+                try {
+                    const res = await fetch(`${API_URL}/board/lockdown?locked=${!boardLocked}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Session-ID': token
+                        }
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Ekran kilidi değiştirilemedi.', 'error');
+                        return;
+                    }
+
+                    boardLocked = !!data.locked;
+                    renderBoardLockdown();
+                    showNotice(boardLocked ? 'Ekran kilitlendi.' : 'Ekran kilidi kaldırıldı.');
                 } catch (err) {
                     showNotice('Sunucu hatası.', 'error');
                 }
             }
 
             lockBtn.addEventListener('click', toggleLockdown);
+            boardLockBtn.addEventListener('click', toggleBoardLockdown);
             loadActor();
             loadLockdown();
+            loadBoardLockdown();
+            loadLastChange();
         });
     </script>
 </Layout>
+

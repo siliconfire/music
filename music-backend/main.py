@@ -1,14 +1,14 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi import FastAPI, Depends, HTTPException, Header, Security
 from pydantic import BaseModel, Field
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth, CacheFileHandler
 
 import cors
 import users
-from jwt import get_current_user, create_access_token, is_token_valid
+from jwt import get_current_user, create_access_token, is_token_valid, api_key_header
 import board
 
 load_dotenv()
@@ -19,6 +19,7 @@ cors.setup(app)
 cache_handler = CacheFileHandler(cache_path=".spotify_cache")
 
 LOCKDOWN = False
+BOARD_LOCKDOWN = False
 
 
 def get_auth_manager():
@@ -50,7 +51,17 @@ def ensure_music_control(payload: dict):
         raise HTTPException(status_code=403, detail="System is locked. Moderator or higher required.")
 
 
+def ensure_board_edit(payload: dict):
+    user_id = payload.get("sub")
+    if BOARD_LOCKDOWN and not users.check_user_rank_or_higher(user_id, "moderator"):
+        raise HTTPException(status_code=403, detail="Board is locked. Moderator or higher required.")
+
+
 class LockdownRequest(BaseModel):
+    locked: bool
+
+
+class BoardLockdownRequest(BaseModel):
     locked: bool
 
 
@@ -99,6 +110,10 @@ class BoardConfettiRequest(BaseModel):
         allow_population_by_field_name = True
         populate_by_name = True
         extra = "ignore"
+
+
+class BoardPasskeysRequest(BaseModel):
+    passkeys: list[str] | None = None
 
 
 @app.post("/token")
@@ -393,9 +408,57 @@ def set_lockdown(req: LockdownRequest | None = None, locked: bool | None = None,
     return {"locked": LOCKDOWN}
 
 
+@app.get("/board/lockdown")
+def get_board_lockdown():  # no auth
+    return {"locked": BOARD_LOCKDOWN}
+
+
+@app.post("/board/lockdown")
+def set_board_lockdown(req: BoardLockdownRequest | None = None, locked: bool | None = None, payload: dict = Depends(get_current_user)):
+    if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
+        raise HTTPException(status_code=403, detail="You don't have the 'moderator' permission.")
+    value = req.locked if req is not None else locked
+    if value is None:
+        raise HTTPException(status_code=400, detail="Missing 'locked' value.")
+    global BOARD_LOCKDOWN
+    BOARD_LOCKDOWN = bool(value)
+    return {"locked": BOARD_LOCKDOWN}
+
+
 @app.get("/board")
 def get_board():
     return board.load_board()
+
+
+@app.get("/board/passkeys")
+def get_board_passkeys():  # no auth (local-first debug sync)
+    return {"passkeys": board.get_debug_passkeys()}
+
+
+@app.post("/board/passkeys")
+def update_board_passkeys(req: BoardPasskeysRequest | None = None, passkeys: list[str] | None = None):  # no auth (local-first debug sync)
+    incoming = req.passkeys if req is not None else passkeys
+    updated = board.update_debug_passkeys(incoming or [])
+    return {"passkeys": updated}
+
+
+@app.get("/board/last-change")
+def get_board_last_change(payload: dict = Depends(get_current_user)):
+    if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
+        raise HTTPException(status_code=403, detail="You don't have the 'moderator' permission.")
+    data = board.load_board()
+    updated_by = data.get("updated_by")
+    updated_at = data.get("updated_at")
+    updated_by_name = None
+    if updated_by:
+        user = users.get_user_by_id(updated_by)
+        if user:
+            updated_by_name = user.get("name")
+    return {
+        "updated_by": updated_by,
+        "updated_by_name": updated_by_name,
+        "updated_at": updated_at
+    }
 
 
 @app.put("/board")
@@ -403,6 +466,7 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
     user_id = payload.get("sub")
     if not users.check_user_rank_or_higher(user_id, "music"):
         raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    ensure_board_edit(payload)
     if req.pinned is not None and not users.check_user_perm(user_id, "admin"):
         raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
     return board.update_board(
@@ -414,7 +478,11 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
 
 
 @app.post("/board/poll/vote")
-def vote_on_poll(req: BoardPollVoteRequest):
+def vote_on_poll(req: BoardPollVoteRequest, token: str = Security(api_key_header)):
+    if BOARD_LOCKDOWN:
+        payload = get_current_user(token)
+        if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
+            raise HTTPException(status_code=403, detail="Board is locked. Moderator or higher required.")
     updated = board.vote_poll(req.widget_key, req.option_id)
     if not updated:
         raise HTTPException(status_code=404, detail="Poll option not found")
@@ -426,6 +494,17 @@ def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(ge
     user_id = payload.get("sub")
     if not users.check_user_rank_or_higher(user_id, "music"):
         raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    ensure_board_edit(payload)
     config = req.dict(by_alias=True, exclude_none=True)
     trigger = board.set_confetti_trigger(config=config, updated_by=user_id)
+    return {"ok": True, "trigger": trigger}
+
+
+@app.post("/board/restart")
+def trigger_board_restart(payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(user_id, "music"):
+        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    ensure_board_edit(payload)
+    trigger = board.set_restart_trigger(updated_by=user_id)
     return {"ok": True, "trigger": trigger}

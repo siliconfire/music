@@ -2,13 +2,22 @@
 import Layout from '../../layouts/Layout.astro';
 import NowPlaying from '../../components/NowPlaying.astro';
 import Queue from '../../components/Queue.astro';
+import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 ---
 
 <Layout title="Bartın Lisesi (/board)">
-    <h1 class="text-2xl text-slate-800 m-10" id="title">Bartın Lisesi</h1>
+    <h1 class="text-2xl text-slate-800 m-10" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
+    <BoardDebugPanel />
 
     <div class="m-5 lg:m-10">
         <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+        <div id="board-restart-splash" class="hidden fixed inset-0 z-40 bg-white/80 m-3 p-3">
+            <div class="m-10 p-3 border border-yellow-700 bg-yellow-50">
+                <img src="/loading.svg" alt="loading" class="float-end" />
+                <p class="text-4xl">Yeniden başlatılıyor...</p>
+                <p>Eğer bu ekranda takılıp kalırsa lütfen yardım isteyin.</p>
+            </div>
+        </div>
         <div id="board-error" class="hidden">
             <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
                 <p class="text-6xl">Hata düzeldi.</p>
@@ -58,6 +67,34 @@ import Queue from '../../components/Queue.astro';
         const queueTemplate = document.getElementById('tpl-queue');
         const errorFixedEl = document.getElementById('board-error-fixed');
         const retryingEl = document.getElementById('div-retrying');
+        let confettiCanvas = null;
+        let confettiActive = false;
+        let lastConfettiId = null;
+        const restartStorageKey = 'board.restartTriggerId';
+        let lastRestartId = sessionStorage.getItem(restartStorageKey);
+
+        function handleRestartTrigger(data) {
+            const restartId = data?.restart_trigger?.id;
+            if (!restartId) {
+                return false;
+            }
+            if (!lastRestartId) {
+                lastRestartId = restartId;
+                sessionStorage.setItem(restartStorageKey, restartId);
+                return false;
+            }
+            if (restartId !== lastRestartId) {
+                lastRestartId = restartId;
+                sessionStorage.setItem(restartStorageKey, restartId);
+                if (window.boardShowRestartSplash) {
+                    window.boardShowRestartSplash(500);
+                } else {
+                    location.reload();
+                }
+                return true;
+            }
+            return false;
+        }
 
         const mailtoConfig = {
             email: 'cinar@cinarcecen.dev',
@@ -111,9 +148,6 @@ import Queue from '../../components/Queue.astro';
         let retryTimer = null;
         let hideErrorTimer = null;
         let errorVisible = false;
-        let confettiCanvas = null;
-        let confettiActive = false;
-        let lastConfettiId = null;
 
         function ensureCoverArtEl() {
             if (coverArtEl) return;
@@ -295,7 +329,7 @@ import Queue from '../../components/Queue.astro';
 
                 const badge = document.createElement('span');
                 badge.className = 'text-xs border border-slate-400 px-2 py-0.5';
-                badge.textContent = widget.pinned ? 'Pinned' : 'Widget';
+                badge.textContent = widget.pinned ? 'Sabitli' : 'Widget';
                 if (!widget.pinned) {
                     badge.classList.add('hidden');
                 }
@@ -368,6 +402,9 @@ import Queue from '../../components/Queue.astro';
                         lastConfettiId = data.confetti_trigger.id;
                         popConfetti(data.confetti_trigger.config || {});
                     }
+                    if (handleRestartTrigger(data)) {
+                        return;
+                    }
                     return;
                 }
                 lastUpdatedAt = stamp;
@@ -381,6 +418,9 @@ import Queue from '../../components/Queue.astro';
                 if (data?.confetti_trigger?.id && data.confetti_trigger.id !== lastConfettiId) {
                     lastConfettiId = data.confetti_trigger.id;
                     popConfetti(data.confetti_trigger.config || {});
+                }
+                if (handleRestartTrigger(data)) {
+                    return;
                 }
                 if (retryTimer && !refreshTimer) {
                     // keep retry timer running only if there is no main refresh loop
@@ -478,6 +518,16 @@ import Queue from '../../components/Queue.astro';
         }
 
         window.popConfetti = popConfetti;
+        const initialConfettiPreset = {
+            particleCount: 3200,
+            durationMs: 8000,
+            spawnDurationMs: 1000,
+            spread: 0.45,
+            sizeScale: 3.5,
+            upwardBoost: 1.2
+        };
+
+        popConfetti(initialConfettiPreset);
 
         refreshBoard();
         refreshTimer = setInterval(refreshBoard, 2000);

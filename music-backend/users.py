@@ -62,6 +62,56 @@ def list_users():
     return rows
 
 
+def _normalize_passkeys(passkeys):
+    if not isinstance(passkeys, list):
+        return []
+    seen = set()
+    rows = []
+    for item in passkeys:
+        if not isinstance(item, dict):
+            continue
+        cred_id = item.get("id")
+        public_key = item.get("public_key") or item.get("publicKey")
+        if not isinstance(cred_id, str) or not cred_id.strip():
+            continue
+        if not isinstance(public_key, str) or not public_key.strip():
+            continue
+        if cred_id in seen:
+            continue
+        rows.append({
+            "id": cred_id.strip(),
+            "public_key": public_key.strip(),
+            "sign_count": int(item.get("sign_count", 0)) if str(item.get("sign_count", "")).isdigit() else 0
+        })
+        seen.add(cred_id)
+    return rows
+
+
+def get_user_passkeys(user: dict | None):
+    if not user:
+        return []
+    return _normalize_passkeys(user.get("passkeys"))
+
+
+def get_passkey_users_public():
+    db = load_db()
+    users = db.get("users", {})
+    rows = []
+    for user_id, user in users.items():
+        passkeys = get_user_passkeys(user)
+        if not passkeys:
+            continue
+        rows.append({
+            "id": str(user_id),
+            "name": user.get("name"),
+            "permissions": user.get("permissions", []),
+            "banned": user.get("banned", False),
+            "passkeys": passkeys
+        })
+    rows.sort(key=lambda row: row.get("name") or row.get("id"))
+    return rows
+
+
 def check_user_perm(user_id: str, required_perm: str) -> bool:
     user = get_user_by_id(user_id)
 
