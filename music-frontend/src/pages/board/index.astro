@@ -9,41 +9,59 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
     <h1 class="text-2xl text-slate-800 m-10" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
     <BoardDebugPanel />
 
-    <div class="m-5 lg:m-10">
-        <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
-        <div id="board-restart-splash" class="hidden fixed inset-0 z-40 bg-white/80 m-3 p-3">
-            <div class="m-10 p-3 border border-yellow-700 bg-yellow-50">
-                <img src="/loading.svg" alt="loading" class="float-end" />
-                <p class="text-4xl">Yeniden başlatılıyor...</p>
-                <p>Eğer bu ekranda takılıp kalırsa lütfen yardım isteyin.</p>
-            </div>
-        </div>
-        <div id="board-error" class="hidden">
-            <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
-                <p class="text-6xl">Hata düzeldi.</p>
-                <p class="text-sm">5 saniye içinde yeniden başlatılıyor...</p>
-            </div>
-            <div class="border border-red-700 bg-red-200 p-10">
-                <div class="lg:float-right border border-red-700 p-2" id="div-retrying">
-                    <img src="/loading.svg" alt="loading" class="w-10 inline" />
-                    Tekrar deneniyor...
-                </div>
-                <p class="text-5xl">Bir hata oluştu.</p>
-                <p class="text-3xl">Muhtemelen sunucu kapalı yada veritabanında bir sıkıntı var.</p>
-                <img class="lg:float-end m-1 border border-red-700" id="error-qr" alt="Scan me!" src="/loading.svg" />
-                <br>
-                <p class="text-xl">Lütfen bu hatayı karekodu okutarak bana bildirin.</p>
-                <p class="text-xl">Çınar Mert Çeçen - cinar@cinarcecen.dev</p>
-                <br>
-                <p class="text-xs">Eğer bunun kurulumu ile sorumlu iseniz, lütfen önce bu sayfayı yenilemeyi deneyin. eğer olmaz ise sunucunun çalışıyor olduğundan, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve board.json veritabanının geçerli bir json dosyası olduğundan emin olun. (tereddüt ederseniz board.json dosyasını silebilirsiniz, sunucu kendi tekrardan oluşturacaktır.) Bunlar düzeltmez ise hem tarayıcının hemde frontend/backend'in konsollarına göz atmalısınız, hatalar görürseniz (bazen hatalar çok yukarılarda olabilir) bu size ipucunuzu verecektir.</p>
-                <p class="text-sm">Bu yazı hata düzelince kendiliğinden de gitmeli, fakat gitmez ise sayfayı yenilemek yardımcı olabilir.</p>
-            </div>
-            <div class="border border-yellow-700 bg-yellow-50 p-3">
-                <span id="error-info">(hata bilgileri...)</span>
-            </div>
-
+    <button id="board-qr-toggle" class="fixed bottom-4 right-4 z-40 border border-slate-300 bg-white/90 px-3 py-2 text-sm">QR kodu göster</button>
+    <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50">
+        <div class="border border-slate-300 bg-white p-4 text-center shadow-lg">
+            <div class="text-sm">Telefonunuz ile tarayın:</div>
+            <img id="board-qr-img" alt="QR" class="mt-2 h-64 w-64 border border-slate-200" />
+            <div id="board-qr-label" class="mt-2 text-sm text-slate-700"></div>
         </div>
     </div>
+
+    <div class="m-5 lg:m-10">
+        <div id="board-auth-warning" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+            <div class="border border-yellow-700 bg-yellow-50 p-4 text-sm max-w-xl">
+                <p>Bu sayfa tahtada kullanılması için var. Eğer kendi cihazınızdan buraya geldiyseniz lütfen ana sayfaya dönün. Eğer bu ekran tahta ise lütfen çıkış yapıp tekrar deneyin.</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <a class="underline" href="/">Ana sayfaya dön</a>
+                    <button id="board-auth-logout" class="border border-yellow-700 px-2 py-1">Çıkış yap</button>
+                </div>
+            </div>
+        </div>
+         <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+         <div id="board-restart-splash" class="hidden fixed inset-0 z-40 bg-white/80 m-3 p-3">
+             <div class="m-10 p-3 border border-yellow-700 bg-yellow-50">
+                 <img src="/loading.svg" alt="loading" class="float-end" />
+                 <p class="text-4xl">Yeniden başlatılıyor...</p>
+                 <p>Eğer bu ekranda takılıp kalırsa lütfen yardım isteyin.</p>
+             </div>
+         </div>
+         <div id="board-error" class="hidden">
+             <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
+                 <p class="text-6xl">Hata düzeldi.</p>
+                 <p class="text-sm">5 saniye içinde yeniden başlatılıyor...</p>
+             </div>
+             <div class="border border-red-700 bg-red-200 p-10">
+                 <div class="lg:float-right border border-red-700 p-2" id="div-retrying">
+                     <img src="/loading.svg" alt="loading" class="w-10 inline" />
+                     Tekrar deneniyor...
+                 </div>
+                 <p class="text-5xl">Bir hata oluştu.</p>
+                 <p class="text-3xl">Muhtemelen sunucu kapalı yada veritabanında bir sıkıntı var.</p>
+                 <img class="lg:float-end m-1 border border-red-700" id="error-qr" alt="Scan me!" src="/loading.svg" />
+                 <br>
+                 <p class="text-xl">Lütfen bu hatayı karekodu okutarak bana bildirin.</p>
+                 <p class="text-xl">Çınar Mert Çeçen - cinar@cinarcecen.dev</p>
+                 <br>
+                 <p class="text-xs">Eğer bunun kurulumu ile sorumlu iseniz, lütfen önce bu sayfayı yenilemeyi deneyin. eğer olmaz ise sunucunun çalışıyor olduğundan, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve board.json veritabanının geçerli bir json dosyası olduğundan emin olun. (tereddüt ederseniz board.json dosyasını silebilirsiniz, sunucu kendi tekrardan oluşturacaktır.) Bunlar düzeltmez ise hem tarayıcının hemde frontend/backend'in konsollarına göz atmalısınız, hatalar görürseniz (bazen hatalar çok yukarılarda olabilir) bu size ipucunuzu verecektir.</p>
+                 <p class="text-sm">Bu yazı hata düzelince kendiliğinden de gitmeli, fakat gitmez ise sayfayı yenilemek yardımcı olabilir.</p>
+             </div>
+             <div class="border border-yellow-700 bg-yellow-50 p-3">
+                 <span id="error-info">(hata bilgileri...)</span>
+             </div>
+
+         </div>
+     </div>
 
     <div class="m-5 lg:m-10">
         <div id="board-widgets" class="flex flex-wrap gap-5"></div>
@@ -65,8 +83,18 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         const widgetsEl = document.getElementById('board-widgets');
         const nowPlayingTemplate = document.getElementById('tpl-now-playing');
         const queueTemplate = document.getElementById('tpl-queue');
+        const authWarningEl = document.getElementById('board-auth-warning');
+        const authLogoutEl = document.getElementById('board-auth-logout');
         const errorFixedEl = document.getElementById('board-error-fixed');
         const retryingEl = document.getElementById('div-retrying');
+        const qrToggleEl = document.getElementById('board-qr-toggle');
+        const qrOverlayEl = document.getElementById('board-qr-overlay');
+        const qrImgEl = document.getElementById('board-qr-img');
+        const qrLabelEl = document.getElementById('board-qr-label');
+        const qrHideEl = document.getElementById('board-qr-hide');
+        const hideQrButtonKey = 'board.hideQrButton';
+        let qrReady = false;
+        let qrAutoHideTimer = null;
         let confettiCanvas = null;
         let confettiActive = false;
         let lastConfettiId = null;
@@ -519,17 +547,133 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 
         window.popConfetti = popConfetti;
         const initialConfettiPreset = {
-            particleCount: 3200,
+            particleCount: 1600,
             durationMs: 8000,
             spawnDurationMs: 1000,
-            spread: 0.45,
+            spread: 0.3,
             sizeScale: 3.5,
-            upwardBoost: 1.2
+            upwardBoost: 2
         };
 
         popConfetti(initialConfettiPreset);
 
-        refreshBoard();
-        refreshTimer = setInterval(refreshBoard, 2000);
+        async function checkBoardAuth() {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                location.href = '/board/auth';
+                return false;
+            }
+            try {
+                const res = await fetch(`${API_URL}/me`, {
+                    headers: { 'X-Session-ID': token }
+                });
+                if (!res.ok) {
+                    localStorage.removeItem('jwt_token');
+                    location.href = '/board/auth';
+                    return false;
+                }
+                const user = await res.json();
+                const isBoardUser = String(user?.id) === '100000' || (user?.permissions || []).includes('board');
+                if (authWarningEl) {
+                    authWarningEl.classList.toggle('hidden', isBoardUser);
+                }
+                return isBoardUser;
+            } catch (err) {
+                location.href = '/board/auth';
+                return false;
+            }
+        }
+
+        if (authLogoutEl) {
+            authLogoutEl.addEventListener('click', () => {
+                localStorage.removeItem('jwt_token');
+                location.href = '/board/auth';
+            });
+        }
+
+        (async () => {
+            const ok = await checkBoardAuth();
+            if (!ok) {
+                return;
+            }
+            refreshBoard();
+            refreshTimer = setInterval(refreshBoard, 2000);
+        })();
+
+        function getBoardDomain() {
+            return window.location.host;
+        }
+
+        function updateQrToggleLabel() {
+            if (!qrToggleEl || !qrOverlayEl) return;
+            const isHidden = qrOverlayEl.classList.contains('hidden');
+            qrToggleEl.textContent = isHidden ? 'QR kodu göster' : 'Gizle';
+        }
+
+        async function ensureBoardQr() {
+            if (!qrImgEl || qrReady) return;
+            try {
+                const { default: QRCode } = await import('qrcode');
+                const dataUri = await QRCode.toDataURL(getBoardDomain());
+                qrImgEl.src = dataUri;
+                qrReady = true;
+            } catch (err) {
+                qrImgEl.removeAttribute('src');
+            }
+            if (qrLabelEl) {
+                qrLabelEl.textContent = getBoardDomain();
+            }
+        }
+
+        function showBoardQr() {
+            if (!qrOverlayEl) return;
+            qrOverlayEl.classList.remove('hidden');
+            updateQrToggleLabel();
+            ensureBoardQr();
+            if (qrAutoHideTimer) {
+                clearTimeout(qrAutoHideTimer);
+            }
+            qrAutoHideTimer = setTimeout(hideBoardQr, 120000);
+        }
+
+        function hideBoardQr() {
+            if (!qrOverlayEl) return;
+            qrOverlayEl.classList.add('hidden');
+            updateQrToggleLabel();
+            if (qrAutoHideTimer) {
+                clearTimeout(qrAutoHideTimer);
+                qrAutoHideTimer = null;
+            }
+        }
+
+        function toggleBoardQr() {
+            if (!qrOverlayEl) return;
+            if (qrOverlayEl.classList.contains('hidden')) {
+                showBoardQr();
+            } else {
+                hideBoardQr();
+            }
+        }
+
+        function setQrButtonHidden(hidden) {
+            if (!qrToggleEl) return;
+            qrToggleEl.classList.toggle('hidden', hidden);
+            if (hidden) {
+                hideBoardQr();
+            }
+        }
+
+        if (qrToggleEl) {
+            updateQrToggleLabel();
+            qrToggleEl.addEventListener('click', toggleBoardQr);
+        }
+
+        const storedHideQr = localStorage.getItem(hideQrButtonKey) === 'true';
+        setQrButtonHidden(storedHideQr);
+
+        window.addEventListener('boardQrButtonVisibilityChange', (event) => {
+            const hidden = Boolean(event?.detail?.hidden);
+            setQrButtonHidden(hidden);
+        });
     </script>
 </Layout>

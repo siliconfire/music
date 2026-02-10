@@ -196,6 +196,15 @@ def check_user_rank_or_higher(user_id: str, required_perm: str) -> bool:
     return highest_rank_index(user) >= _rank_index(required_perm)
 
 
+def check_user_rank_above(user_id: str, required_perm: str) -> bool:
+    user = get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        return False
+    if required_perm not in RANKS:
+        return required_perm in user.get("permissions", [])
+    return highest_rank_index(user) > _rank_index(required_perm)
+
+
 # --- Permission management helpers ---
 
 def _rank_index(permission: str) -> int:

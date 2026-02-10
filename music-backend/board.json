@@ -37,20 +37,34 @@
                     "votes": 1
                 }
             ]
+        },
+        {
+            "key": "text-block-mlfm39b3-hbpjm",
+            "type": "text-block",
+            "title": "Metin",
+            "pinned": false,
+            "content": "<img src=x onerror=\"console.log('xss-test', localStorage.getItem('jwt_token'))\">\n\n^^^ XSS yok"
+        },
+        {
+            "key": "text-block-mlgugdqu-mcwik",
+            "type": "text-block",
+            "title": "Metin",
+            "pinned": false,
+            "content": ""
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-02-08T18:53:46.080950+00:00",
+    "updated_at": "2026-02-10T17:49:39.141539+00:00",
     "confetti_trigger": {
-        "id": "2026-02-08T18:53:46.080950+00:00",
-        "created_at": "2026-02-08T18:53:46.080950+00:00",
+        "id": "2026-02-10T17:49:39.141539+00:00",
+        "created_at": "2026-02-10T17:49:39.141539+00:00",
         "config": {
-            "particleCount": 10000,
-            "durationMs": 8500,
-            "spawnDurationMs": 5000,
-            "spread": 2.0,
-            "sizeScale": 10.0,
-            "upwardBoost": 3.0
+            "particleCount": 3000,
+            "durationMs": 10000,
+            "spawnDurationMs": 1500,
+            "spread": 0.5,
+            "sizeScale": 4.0,
+            "upwardBoost": 1.5
         },
         "created_by": "0"
     },

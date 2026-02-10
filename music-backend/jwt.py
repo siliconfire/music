@@ -23,6 +23,12 @@ def create_access_token(user_id: str):
     return encoded_jwt
 
 
+def create_permanent_token(user_id: str):
+    """Encodes the user's unique ID into the 'sub' field of the JWT without an expiration."""
+    to_encode = {"sub": str(user_id)}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 def get_current_user(token: str = Security(api_key_header)):
     """Decodes the JWT and returns the full payload (containing the 'sub' ID)."""
     if not token:

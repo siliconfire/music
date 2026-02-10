@@ -1,0 +1,84 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Board Login">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800">Board login</h1>
+        <p class="text-sm text-slate-600">QR kod ile gelen giriş isteği burada tamamlanır.</p>
+
+        <div class="mt-4 border border-slate-300 rounded p-4 inline-block">
+            <div id="boardlogin-status" class="text-sm text-slate-600">Kontrol ediliyor...</div>
+            <div class="mt-3 flex flex-wrap gap-2" id="boardlogin-confirm">
+                <button id="boardlogin-confirm-btn" class="border border-slate-300 px-3 py-2">Onayla</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2" id="boardlogin-actions" style="display:none;">
+                <a class="underline" href="/login">Giriş yap</a>
+                <button id="boardlogin-retry" class="border border-slate-300 px-3 py-2">Tekrar dene</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        import { API_URL } from '../lib/constants';
+
+        const statusEl = document.getElementById('boardlogin-status');
+        const actionsEl = document.getElementById('boardlogin-actions');
+        const retryEl = document.getElementById('boardlogin-retry');
+        const confirmEl = document.getElementById('boardlogin-confirm');
+        const confirmBtnEl = document.getElementById('boardlogin-confirm-btn');
+
+        function setStatus(message, showActions = false) {
+            if (statusEl) statusEl.textContent = message;
+            if (actionsEl) actionsEl.style.display = showActions ? 'flex' : 'none';
+        }
+
+        function setConfirmVisible(visible) {
+            if (confirmEl) confirmEl.style.display = visible ? 'flex' : 'none';
+        }
+
+        async function attemptBoardLogin() {
+            const params = new URLSearchParams(location.search);
+            const boardId = params.get('board_id') || '100000';
+            const deviceId = params.get('device_id') || '';
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                setStatus('Önce giriş yapmalısınız.', true);
+                setConfirmVisible(false);
+                return;
+            }
+            setStatus('Yetki kontrolü yapılıyor...');
+            setConfirmVisible(false);
+            try {
+                const query = new URLSearchParams({ board_id: boardId });
+                if (deviceId) {
+                    query.set('device_id', deviceId);
+                }
+                const res = await fetch(`${API_URL}/boardlogin/approve?${query.toString()}`, {
+                    method: 'POST',
+                    headers: { 'X-Session-ID': token }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setStatus(data.detail || 'Giriş başarısız.', true);
+                    setConfirmVisible(true);
+                    return;
+                }
+                setStatus('Tamamlandı. İyi günler.');
+            } catch (err) {
+                setStatus('Tahta girişi sırasında hata oluştu.', true);
+                setConfirmVisible(true);
+            }
+        }
+
+        if (retryEl) {
+            retryEl.addEventListener('click', attemptBoardLogin);
+        }
+
+        if (confirmBtnEl) {
+            confirmBtnEl.addEventListener('click', attemptBoardLogin);
+        }
+
+        setStatus('Oturum verilmesini onaylamak için "Onayla" butonuna tıklayın. (eğer tahtaya oturum vermeye çalışmıyorsanız, onaylamayın.)');
+    </script>
+</Layout>

@@ -37,7 +37,10 @@
         "100000": {
             "name": "board",
             "permissions": [
-                "board"
+                "board",
+                "music",
+                "moderator",
+                "admin"
             ],
             "banned": false,
             "reason": null

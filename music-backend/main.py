@@ -29,7 +29,7 @@ from webauthn.helpers.structs import (
 
 import cors
 import users
-from jwt import get_current_user, create_access_token, is_token_valid, api_key_header
+from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
 import board
 
 load_dotenv()
@@ -48,6 +48,8 @@ PASSKEY_RP_NAME = os.getenv("PASSKEY_RP_NAME", "Music Board")
 PASSKEY_CHALLENGE_TTL_SEC = 300
 PASSKEY_REGISTER_CHALLENGES: dict[str, dict] = {}
 PASSKEY_LOGIN_CHALLENGES: dict[str, dict] = {}
+BOARD_LOGIN_APPROVALS: dict[str, dict] = {}
+BOARD_LOGIN_TTL_SEC = 300
 
 
 def get_auth_manager():
@@ -199,6 +201,40 @@ def check_session(x_session_id: str = Header(None)):
     return {"valid": valid}
 
 
+@app.post("/boardlogin/approve")
+def board_login_approve(board_id: str = "100000", device_id: str | None = None, payload: dict = Depends(get_current_user)):
+    actor_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(actor_id, "admin"):
+        raise HTTPException(status_code=403, detail="Admin veya üstü yetki gerekli.")
+    board_user = users.get_user_by_id(board_id)
+    if not board_user:
+        raise HTTPException(status_code=404, detail="Board user not found")
+    if board_user.get("banned"):
+        raise HTTPException(status_code=403, detail="Board user is banned")
+    if "board" not in board_user.get("permissions", []):
+        raise HTTPException(status_code=400, detail="Board user missing 'board' permission")
+    if not device_id:
+        raise HTTPException(status_code=400, detail="Device ID gerekli.")
+    token = create_permanent_token(board_id)
+    BOARD_LOGIN_APPROVALS[device_id] = {
+        "created_at": time.time(),
+        "token": token,
+        "board_id": board_id,
+        "approved_by": actor_id
+    }
+    return {"ok": True, "device_id": device_id}
+
+
+@app.get("/boardlogin/pending")
+def board_login_pending(device_id: str | None = None):
+    if not device_id:
+        raise HTTPException(status_code=400, detail="Device ID gerekli.")
+    payload = _consume_board_login(device_id)
+    if not payload:
+        return {"ready": False}
+    return {"ready": True, "access_token": payload.get("token"), "board_id": payload.get("board_id")}
+
+
 def _base64url_encode(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
@@ -232,6 +268,22 @@ def _cleanup_challenges(store: dict):
         created_at = payload.get("created_at", 0)
         if now - float(created_at) > PASSKEY_CHALLENGE_TTL_SEC:
             store.pop(key, None)
+
+
+def _cleanup_board_login():
+    now = time.time()
+    for key, payload in list(BOARD_LOGIN_APPROVALS.items()):
+        created_at = payload.get("created_at", 0)
+        if now - float(created_at) > BOARD_LOGIN_TTL_SEC:
+            BOARD_LOGIN_APPROVALS.pop(key, None)
+
+
+def _consume_board_login(device_id: str):
+    _cleanup_board_login()
+    payload = BOARD_LOGIN_APPROVALS.pop(device_id, None)
+    if not payload:
+        return None
+    return payload
 
 
 def _parse_registration_credential(payload: dict) -> RegistrationCredential:
