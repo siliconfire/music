@@ -31,7 +31,6 @@ import cors
 import users
 from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
 import board
-from blacklist_manager import list_files, toggle_file, add_manual_word, get_active_blacklist
 
 load_dotenv()
 app = FastAPI()
