@@ -8,8 +8,8 @@ import Item from '../components/Item.astro';
 
 <Layout title="Bartın Lisesi Müzik Sistemi">
 	<h1 class="text-2xl text-slate-800 m-10" id="title">Müzik Sistemi</h1>
-	<div class="flex flex-wrap m-5 lg:m-10 gap-5">
-	<fieldset id="div-lockdown" class="hidden p-5 border border-red-500 bg-red-100 w-75 lg:w-100">
+	<div class="flex flex-wrap m-5 lg:m-10 gap-5 max-w-full overflow-x-hidden">
+	<fieldset id="div-lockdown" class="hidden p-5 border border-red-500 bg-red-100 w-full">
 			<legend class="text-red-700 font-bold">Dikkat</legend>
 			<p class="text-red-700">Sistem kilitlendi.</p>
 			<p class="text-red-700">Lütfen kilidin kaldırılması için bir öğretmenden yardım isteyin.</p>
@@ -40,7 +40,18 @@ import Item from '../components/Item.astro';
 				<br>
 				<p class="m-3">Daha çok seçenek için lütfen Kontroller menüsüne gidin.</p>
 			</details>
-
+		</Item>
+		<Item title="Cihaz seçme">
+			<div id="div-devices" class="max-w-full overflow-hidden">
+				<select id="select-device" class="text-sm border border-slate-300 p-1 mb-2 max-w-full">
+					<option value="">Cihazlar taranıyor...</option>
+				</select>
+				<br>
+				<button id="btn-set-device" class="text-sm border border-slate-300 px-2 py-1 bg-slate-50">Seç</button>
+				<hr class="text-slate-400 my-3">
+				<p class="text-sm mb-2">Eğer müzik çalmıyor ise, buradan cihaz seçip ardından tekrar deneyin.</p>
+				<p class="text-xs text-slate-700 mb-2">(Bazen spotify garip davranabiliyor.)</p>
+			</div>
 		</Item>
 	</div>
 
@@ -87,54 +98,94 @@ import Item from '../components/Item.astro';
 		async function handleUserInfo() {
 			const response = await fetch(`${API_URL}/me`, {headers: {'X-Session-ID': token}});
 			const user_info = await response.json();
-			console.log(user_info)
-			if (user_info.real === false) {
-				window.location.href = '/login';
-				return;
-			}
-			if (user_info.banned === true) {
+
+			if (user_info.banned) {
 				window.location.href = '/account';
-				return;
 			}
-			if (user_info.permissions.includes('admin')) {
+
+			const username_el = document.getElementById("username") as HTMLSpanElement;
+			username_el.innerText = user_info.username;
+
+			const perms = user_info.permissions;
+
+			if (perms.includes("moderator") || perms.includes("admin")) {
+				document.getElementById("div-mod").classList.remove("hidden");
+			}
+			document.getElementById("btn-mod").addEventListener("click", () => {
+				window.location.href = '/mod'
+			})
+
+			if (perms.includes("admin")) {
 				document.getElementById("div-admin").classList.remove("hidden");
 				document.getElementById("btn-admin").addEventListener("click", () => {
-					window.location.href = '/admin';
-				});
+					window.location.href = '/admin'
+				})
 			}
 
-			if (user_info.permissions.includes('moderator')) {
-				document.getElementById("div-mod").classList.remove("hidden");
-				document.getElementById("btn-mod").addEventListener("click", () => {
-					window.location.href = '/mod';
-				});
+			if (perms.includes("music") || perms.includes("musicpermanent")) {
+				fetchDevices();
+			} else {
+				const devWrap = document.getElementById('div-devices');
+				if (devWrap) devWrap.innerHTML = '<p class="text-xs text-red-600">Cihaz değiştirmek için "film" yetkisine sahip olmalısınız.</p>';
 			}
-
-			document.getElementById("username").innerText = user_info.name;
 		}
 
-		async function loadLockdown() {
-			const lockdownDiv = document.getElementById("div-lockdown");
-			if (!lockdownDiv) {
-				return;
-			}
+		async function fetchDevices() {
+			const select = document.getElementById('select-device') as HTMLSelectElement;
+			if (!select) return;
+
 			try {
-				const res = await fetch(`${API_URL}/lockdown`);
-				if (!res.ok) {
-					return;
-				}
+				const res = await fetch(`${API_URL}/admin/spotify/devices`, {
+					headers: { 'X-Session-ID': token }
+				});
+				if (!res.ok) throw new Error();
 				const data = await res.json();
-				if (data.locked) {
-					lockdownDiv.classList.remove("hidden");
+				const devices = data.devices || [];
+
+				select.innerHTML = '';
+				if (devices.length === 0) {
+					const opt = document.createElement('option');
+					opt.value = '';
+					opt.textContent = 'Aktif cihaz bulunamadı.';
+					select.appendChild(opt);
 				} else {
-					lockdownDiv.classList.add("hidden");
+					devices.forEach((dev) => {
+						const opt = document.createElement('option');
+						opt.value = dev.id;
+						opt.textContent = `${dev.name}${dev.is_active ? ' (Aktif)' : ''}`;
+						if (dev.is_active) opt.selected = true;
+						select.appendChild(opt);
+					});
 				}
 			} catch (err) {
-				lockdownDiv.classList.add("hidden");
+				select.innerHTML = '<option value="">Cihazlar alınamadı.</option>';
 			}
 		}
 
-		loadLockdown();
+		const btnSetDevice = document.getElementById('btn-set-device');
+		btnSetDevice?.addEventListener('click', async () => {
+			const select = document.getElementById('select-device') as HTMLSelectElement;
+			const deviceId = select.value;
+			if (!deviceId) return;
+
+			btnSetDevice.textContent = 'Değiştiriliyor...';
+			try {
+				const res = await fetch(`${API_URL}/admin/spotify/device?device_id=${deviceId}`, {
+					method: 'POST',
+					headers: { 'X-Session-ID': token }
+				});
+				if (res.ok) {
+					alert('Cihaz başarıyla değiştirildi.');
+					fetchDevices();
+				} else {
+					alert('Cihaz değiştirilemedi.');
+				}
+			} catch (err) {
+				alert('Bir hata oluştu.');
+			} finally {
+				btnSetDevice.textContent = 'Seç';
+			}
+		});
 
 		document.getElementById("btn-play").addEventListener("click", async () => {
 			await fetch(`${API_URL}/resume`, { headers: { 'X-Session-ID': token }, method: 'POST' }
@@ -249,7 +300,7 @@ import Item from '../components/Item.astro';
 <!-- saving for later -->
 <!--
  		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/svg+xml" href="/e ifavicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Müzik Sistemi</title>

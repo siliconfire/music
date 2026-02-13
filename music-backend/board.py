@@ -9,7 +9,8 @@ ALLOWED_WIDGETS = {
     "queue": "Kuyruk",
     "text-block": "Metin",
     "poll": "Anket",
-    "cover-art": "Kapak",
+    "clock": "Saat",
+    "controls": "Kontroller",
 }
 
 DEFAULT_WIDGET_ORDER = [
@@ -17,8 +18,232 @@ DEFAULT_WIDGET_ORDER = [
     "queue",
     "text-block",
     "poll",
-    "cover-art",
 ]
+
+DEFAULT_THEME_KEY = "classic"
+THEME_PRESETS = {
+    "classic": {
+        "key": "classic",
+        "label": "Klasik",
+        "colors": {
+            "textPrimary": "#0f172a",
+            "textSecondary": "#475569",
+            "background": "#f8fafc",
+            "cardBackground": "#ffffff",
+            "cardBorder": "#cbd5f5",
+            "cardPinnedBackground": "#ecfdf5",
+            "cardPinnedBorder": "#6ee7b7",
+            "qrButtonBackground": "#ffffff",
+            "qrButtonBorder": "#cbd5f5",
+            "qrButtonText": "#0f172a",
+            "confettiColors": ["#22c55e", "#16a34a", "#a3e635", "#86efac", "#4ade80", "#10b981"]
+        }
+    },
+    "midnight": {
+        "key": "midnight",
+        "label": "Akşam Saati",
+        "colors": {
+            "textPrimary": "#e2e8f0",
+            "textSecondary": "#94a3b8",
+            "background": "#0b1120",
+            "cardBackground": "#111827",
+            "cardBorder": "#334155",
+            "cardPinnedBackground": "#0f172a",
+            "cardPinnedBorder": "#64748b",
+            "qrButtonBackground": "#111827",
+            "qrButtonBorder": "#334155",
+            "qrButtonText": "#e2e8f0",
+            "confettiColors": ["#38bdf8", "#818cf8", "#f472b6", "#facc15", "#34d399", "#22d3ee"]
+        }
+    },
+    "sunset": {
+        "key": "sunset",
+        "label": "\"Bal\" Gibi",
+        "colors": {
+            "textPrimary": "#3f1d2e",
+            "textSecondary": "#7c2d12",
+            "background": "#fff7ed",
+            "cardBackground": "#fffaf5",
+            "cardBorder": "#fdba74",
+            "cardPinnedBackground": "#ffedd5",
+            "cardPinnedBorder": "#fb923c",
+            "qrButtonBackground": "#fff7ed",
+            "qrButtonBorder": "#fdba74",
+            "qrButtonText": "#7c2d12",
+            "confettiColors": ["#f97316", "#fb7185", "#f59e0b", "#facc15", "#fb923c", "#fdba74"]
+        }
+    },
+    "nordic": {
+        "key": "nordic",
+        "label": "Bartın'a kar yağmış",
+        "colors": {
+            "textPrimary": "#1e293b",
+            "textSecondary": "#64748b",
+            "background": "#f1f5f9",
+            "cardBackground": "#ffffff",
+            "cardBorder": "#e2e8f0",
+            "cardPinnedBackground": "#f0f9ff",
+            "cardPinnedBorder": "#7dd3fc",
+            "qrButtonBackground": "#ffffff",
+            "qrButtonBorder": "#e2e8f0",
+            "qrButtonText": "#0369a1",
+            "confettiColors": ["#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe", "#0284c7"]
+        }
+    },
+    "cyberpunk": {
+        "key": "cyberpunk",
+        "label": "Geleceksel",
+        "colors": {
+            "textPrimary": "#fdf4ff",
+            "textSecondary": "#d8b4fe",
+            "background": "#020617",
+            "cardBackground": "#0f172a",
+            "cardBorder": "#581c87",
+            "cardPinnedBackground": "#2e1065",
+            "cardPinnedBorder": "#d946ef",
+            "qrButtonBackground": "#1e1b4b",
+            "qrButtonBorder": "#d946ef",
+            "qrButtonText": "#fdf4ff",
+            "confettiColors": ["#d946ef", "#8b5cf6", "#06b6d4", "#f472b6", "#22d3ee", "#a855f7"]
+        }
+    },
+    "rose": {
+        "key": "rose",
+        "label": "Bubble Tea",
+        "colors": {
+            "textPrimary": "#4c0519",
+            "textSecondary": "#881337",
+            "background": "#fff1f2",
+            "cardBackground": "#fffafb",
+            "cardBorder": "#fecdd3",
+            "cardPinnedBackground": "#ffe4e6",
+            "cardPinnedBorder": "#fb7185",
+            "qrButtonBackground": "#ffffff",
+            "qrButtonBorder": "#fecdd3",
+            "qrButtonText": "#be123c",
+            "confettiColors": ["#fb7185", "#f43f5e", "#fda4af", "#e11d48", "#fbcfe8", "#db2777"]
+        }
+    },
+    "telegram_pink": {
+        "key": "telegram_pink",
+        "label": "Gerçek Telegram Pembesi",
+        "colors": {
+            "textPrimary": "#ffffff",
+            "textSecondary": "#aaaaaa",
+            "background": "#18222d",
+            "cardBackground": "#242f3d",
+            "cardBorder": "#323d4d",
+            "cardPinnedBackground": "#2b394a",
+            "cardPinnedBorder": "#ee6aa7",
+            "qrButtonBackground": "#242f3d",
+            "qrButtonBorder": "#ee6aa7",
+            "qrButtonText": "#ee6aa7",
+            "confettiColors": ["#ee6aa7", "#f9a8d4", "#f472b6", "#db2777", "#9d174d", "#fdf2f8"]
+        }
+    },
+    "telegram_pink2": {
+        "key": "telegram_pink2",
+        "label": "Daha Gerçek Telegram Pembesi",
+        "colors": {
+            "textPrimary": "#ffffff",
+            "textSecondary": "#94a3b8",
+            "background": "#1c1215",
+            "cardBackground": "#281a1e",
+            "cardBorder": "#3d262c",
+            "cardPinnedBackground": "#4c1d24",
+            "cardPinnedBorder": "#f472b6",
+            "qrButtonBackground": "#281a1e",
+            "qrButtonBorder": "#f472b6",
+            "qrButtonText": "#f472b6",
+            "confettiColors": ["#f472b6", "#be185d", "#9d174d", "#ec4899", "#701a75", "#f9a8d4"]
+        }
+    },
+    "hacker_dark": {
+        "key": "hacker_dark",
+        "label": "Hacker",
+        "colors": {
+            "textPrimary": "#00ff41",
+            "textSecondary": "#008f11",
+            "background": "#050f05",
+            "cardBackground": "#000000",
+            "cardBorder": "#003b00",
+            "cardPinnedBackground": "#001100",
+            "cardPinnedBorder": "#00ff41",
+            "qrButtonBackground": "#003b00",
+            "qrButtonBorder": "#008f11",
+            "qrButtonText": "#00ff41",
+            "confettiColors": ["#00ff41", "#008f11", "#003b00", "#0d0208", "#00FF00", "#125512"]
+        }
+    },
+    "gruvbox_dark": {
+        "key": "gruvbox_dark",
+        "label": "Lidya Sarısı",
+        "colors": {
+            "textPrimary": "#ebdbb2",
+            "textSecondary": "#a89984",
+            "background": "#1d2021",
+            "cardBackground": "#282828",
+            "cardBorder": "#3c3836",
+            "cardPinnedBackground": "#32302f",
+            "cardPinnedBorder": "#fabd2f",
+            "qrButtonBackground": "#3c3836",
+            "qrButtonBorder": "#504945",
+            "qrButtonText": "#fabd2f",
+            "confettiColors": ["#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c"]
+        }
+    },
+    "deep_forest": {
+        "key": "deep_forest",
+        "label": "Yeşil Madde",
+        "colors": {
+            "textPrimary": "#ecfdf5",
+            "textSecondary": "#a7f3d0",
+            "background": "#061612",
+            "cardBackground": "#0c221d",
+            "cardBorder": "#164e41",
+            "cardPinnedBackground": "#14532d",
+            "cardPinnedBorder": "#4ade80",
+            "qrButtonBackground": "#0c221d",
+            "qrButtonBorder": "#164e41",
+            "qrButtonText": "#4ade80",
+            "confettiColors": ["#065f46", "#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0"]
+        }
+    },
+    "black_eclipse": {
+        "key": "black_eclipse",
+        "label": "Siyahın Asaleti",
+        "colors": {
+            "textPrimary": "#ffffff",
+            "textSecondary": "#94a3b8",
+            "background": "#000000",
+            "cardBackground": "#0a0a0a",
+            "cardBorder": "#262626",
+            "cardPinnedBackground": "#171717",
+            "cardPinnedBorder": "#facc15",
+            "qrButtonBackground": "#000000",
+            "qrButtonBorder": "#404040",
+            "qrButtonText": "#ffffff",
+            "confettiColors": ["#ffffff", "#facc15", "#e5e5e5", "#a3a3a3", "#fbbf24", "#d4d4d4"]
+        }
+    },
+    "deep_ocean": {
+        "key": "deep_ocean",
+        "label": "Zoktay Mavisi",
+        "colors": {
+            "textPrimary": "#f0f9ff",
+            "textSecondary": "#7dd3fc",
+            "background": "#020617",
+            "cardBackground": "#0f172a",
+            "cardBorder": "#1e3a8a",
+            "cardPinnedBackground": "#172554",
+            "cardPinnedBorder": "#38bdf8",
+            "qrButtonBackground": "#0f172a",
+            "qrButtonBorder": "#38bdf8",
+            "qrButtonText": "#38bdf8",
+            "confettiColors": ["#0ea5e9", "#2563eb", "#06b6d4", "#7dd3fc", "#1d4ed8", "#67e8f9"]
+        }
+    }
+}
 
 
 def _make_widget_key(widget_type, existing_keys):
@@ -102,6 +327,16 @@ def _normalize_widgets(raw_widgets, include_defaults=False):
             question = item.get("question")
             entry["question"] = question.strip() if isinstance(question, str) and question.strip() else "Yeni anket"
             entry["options"] = _normalize_poll_options(item.get("options"))
+        if widget_type == "clock":
+            show_date = item.get("show_date")
+            show_seconds = item.get("show_seconds")
+            entry["show_date"] = show_date if isinstance(show_date, bool) else True
+            entry["show_seconds"] = show_seconds if isinstance(show_seconds, bool) else False
+        if widget_type == "controls":
+            entry["show_confetti"] = bool(item.get("show_confetti", True))
+            entry["show_theme"] = bool(item.get("show_theme", True))
+            entry["show_reload"] = bool(item.get("show_reload", False))
+            entry["display_text"] = bool(item.get("display_text", True))
         widgets.append(entry)
         seen.add(key)
 
@@ -111,13 +346,40 @@ def _normalize_widgets(raw_widgets, include_defaults=False):
     return widgets
 
 
+def _normalize_theme_key(value):
+    if isinstance(value, str) and value in THEME_PRESETS:
+        return value
+    return DEFAULT_THEME_KEY
+
+
+def _theme_payload(theme_key):
+    preset = THEME_PRESETS.get(theme_key) or THEME_PRESETS[DEFAULT_THEME_KEY]
+    return {
+        "key": preset["key"],
+        "label": preset["label"],
+        "colors": preset["colors"]
+    }
+
+
+def _theme_presets_payload():
+    return [
+        {
+            "key": preset["key"],
+            "label": preset["label"],
+            "colors": preset["colors"]
+        }
+        for preset in THEME_PRESETS.values()
+    ]
+
+
 def load_board():
     if not BOARD_FILE.exists():
         data = {
             "widgets": _default_widgets(),
             "updated_by": None,
             "updated_at": None,
-            "debug_passkeys": []
+            "debug_passkeys": [],
+            "theme_key": DEFAULT_THEME_KEY
         }
         save_board(data)
         return data
@@ -128,6 +390,10 @@ def load_board():
     raw_widgets = data.get("widgets")
     data["widgets"] = _normalize_widgets(raw_widgets, include_defaults=raw_widgets is None)
     data["debug_passkeys"] = _normalize_passkeys(data.get("debug_passkeys"))
+    theme_key = _normalize_theme_key(data.get("theme_key"))
+    data["theme_key"] = theme_key
+    data["theme"] = _theme_payload(theme_key)
+    data["theme_presets"] = _theme_presets_payload()
     return data
 
 
@@ -136,11 +402,29 @@ def save_board(data):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None):
+def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None, theme_key=None):
     data = load_board()
 
     if widgets is not None:
         normalized = _normalize_widgets(widgets, include_defaults=False)
+        current_widgets = _normalize_widgets(data.get("widgets"), include_defaults=True)
+        current_polls = {
+            widget.get("key"): {
+                option.get("id"): option.get("votes", 0)
+                for option in widget.get("options", [])
+                if isinstance(option, dict)
+            }
+            for widget in current_widgets
+            if widget.get("type") == "poll"
+        }
+        for widget in normalized:
+            if widget.get("type") != "poll":
+                continue
+            existing_votes = current_polls.get(widget.get("key"), {})
+            for option in widget.get("options", []) or []:
+                option_id = option.get("id")
+                if option_id in existing_votes:
+                    option["votes"] = existing_votes[option_id]
         data["widgets"] = normalized
     else:
         current_widgets = _normalize_widgets(data.get("widgets"), include_defaults=True)
@@ -180,11 +464,26 @@ def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None)
                 **({
                     "question": by_key[widget_key].get("question", "Yeni anket"),
                     "options": _normalize_poll_options(by_key[widget_key].get("options"))
-                } if by_key[widget_key]["type"] == "poll" else {})
+                } if by_key[widget_key]["type"] == "poll" else {}),
+                **({
+                    "show_date": by_key[widget_key].get("show_date", True),
+                    "show_seconds": bool(by_key[widget_key].get("show_seconds", False))
+                } if by_key[widget_key]["type"] == "clock" else {}),
+                **({
+                    "show_confetti": bool(by_key[widget_key].get("show_confetti", True)),
+                    "show_theme": bool(by_key[widget_key].get("show_theme", True)),
+                    "show_reload": bool(by_key[widget_key].get("show_reload", False)),
+                    "display_text": bool(by_key[widget_key].get("display_text", True)),
+                } if by_key[widget_key]["type"] == "controls" else {}),
             }
             for widget_key in ordered_keys
         ]
 
+    if theme_key is not None:
+        data["theme_key"] = _normalize_theme_key(theme_key)
+
+    data["theme"] = _theme_payload(data.get("theme_key"))
+    data["theme_presets"] = _theme_presets_payload()
     data["updated_by"] = updated_by
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
 

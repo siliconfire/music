@@ -6,15 +6,16 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 ---
 
 <Layout title="Bartın Lisesi (/board)">
-    <h1 class="text-2xl text-slate-800 m-10" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
+    <h1 class="text-2xl m-10 board-theme-text-primary" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
     <BoardDebugPanel />
+    <div id="board-theme-backdrop" class="fixed inset-0 -z-10"></div>
 
-    <button id="board-qr-toggle" class="fixed bottom-4 right-4 z-40 border border-slate-300 bg-white/90 px-3 py-2 text-sm">QR kodu göster</button>
+    <button id="board-qr-toggle" class="fixed bottom-4 right-4 z-40 board-qr-button px-3 py-2 text-sm">QR kodu göster</button>
     <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50">
-        <div class="border border-slate-300 bg-white p-4 text-center shadow-lg">
+        <div class="board-qr-card p-4 text-center shadow-lg">
             <div class="text-sm">Telefonunuz ile tarayın:</div>
             <img id="board-qr-img" alt="QR" class="mt-2 h-64 w-64 border border-slate-200" />
-            <div id="board-qr-label" class="mt-2 text-sm text-slate-700"></div>
+            <div id="board-qr-label" class="mt-2 text-sm board-theme-text-secondary"></div>
         </div>
     </div>
 
@@ -36,7 +37,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                  <p>Eğer bu ekranda takılıp kalırsa lütfen yardım isteyin.</p>
              </div>
          </div>
-         <div id="board-error" class="hidden">
+         <div id="board-error" class="hidden text-slate-900">
              <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
                  <p class="text-6xl">Hata düzeldi.</p>
                  <p class="text-sm">5 saniye içinde yeniden başlatılıyor...</p>
@@ -92,12 +93,16 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         const qrImgEl = document.getElementById('board-qr-img');
         const qrLabelEl = document.getElementById('board-qr-label');
         const qrHideEl = document.getElementById('board-qr-hide');
+        const themeBackdropEl = document.getElementById('board-theme-backdrop');
         const hideQrButtonKey = 'board.hideQrButton';
         let qrReady = false;
         let qrAutoHideTimer = null;
         let confettiCanvas = null;
         let confettiActive = false;
         let lastConfettiId = null;
+        let lastThemeKey = null;
+        let themeConfettiColors = null;
+        let initialConfettiShown = false;
         const restartStorageKey = 'board.restartTriggerId';
         let lastRestartId = sessionStorage.getItem(restartStorageKey);
 
@@ -161,71 +166,44 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             'now-playing': 'Şimdi Çalıyor',
             'search': 'Ara',
             'queue': 'Kuyruk',
-            'text-block': 'Metin'
+            'text-block': 'Metin',
+            'clock': 'Saat'
         };
 
-        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'cover-art']);
+        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls']);
 
         let boardData = null;
         let lastUpdatedAt = null;
         let lastWidgetStamp = null;
         let voteCooldownUntil = 0;
-        let coverArtEl = null;
-        let coverArtTimer = null;
         let refreshTimer = null;
         let retryTimer = null;
         let hideErrorTimer = null;
         let errorVisible = false;
+        let clockTimers = [];
 
-        function ensureCoverArtEl() {
-            if (coverArtEl) return;
-            coverArtEl = document.createElement('div');
-            coverArtEl.id = 'board-cover-art';
-            coverArtEl.className = 'fixed inset-0 bg-black z-0';
-            const img = document.createElement('img');
-            img.id = 'board-cover-art-img';
-            img.className = 'w-full h-full object-contain';
-            img.alt = 'Kapak';
-            coverArtEl.appendChild(img);
-            document.body.appendChild(coverArtEl);
+        function clearClockTimers() {
+            clockTimers.forEach((timerId) => clearInterval(timerId));
+            clockTimers = [];
         }
 
-        async function updateCoverArt() {
-            if (!coverArtEl) return;
-            const img = coverArtEl.querySelector('#board-cover-art-img');
-            if (!img) return;
-            try {
-                const res = await fetch(`${API_URL}/status`);
-                if (!res.ok) return;
-                const data = await res.json();
-                const image = data?.item?.album?.images?.[0]?.url || '';
-                if (image) {
-                    img.src = image;
-                    coverArtEl.classList.remove('hidden');
-                } else {
-                    coverArtEl.classList.add('hidden');
-                }
-            } catch (err) {
-                coverArtEl.classList.add('hidden');
+        function formatClockTime(now, showSeconds) {
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            if (!showSeconds) {
+                return `${hours}:${minutes}`;
             }
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
         }
 
-        function setCoverArtEnabled(enabled) {
-            if (!enabled) {
-                if (widgetsEl) widgetsEl.classList.remove('hidden');
-                if (coverArtEl) coverArtEl.classList.add('hidden');
-                if (coverArtTimer) {
-                    clearInterval(coverArtTimer);
-                    coverArtTimer = null;
-                }
-                return;
-            }
-            ensureCoverArtEl();
-            if (widgetsEl) widgetsEl.classList.add('hidden');
-            updateCoverArt();
-            if (!coverArtTimer) {
-                coverArtTimer = setInterval(updateCoverArt, 5000);
-            }
+        function formatClockDate(now) {
+            return now.toLocaleDateString('tr-TR', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
         }
 
         function setVoteCooldown(ms) {
@@ -248,6 +226,19 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 return;
             }
             setVoteCooldown(5000);
+
+            // Optimistic update
+            if (boardData) {
+                const widget = boardData.widgets.find(w => w.key === widgetKey && w.type === 'poll');
+                if (widget && widget.options) {
+                    const option = widget.options.find(o => o.id === optionId);
+                    if (option) {
+                        option.votes = (option.votes || 0) + 1;
+                        renderBoard();
+                    }
+                }
+            }
+
             try {
                 const res = await fetch(`${API_URL}/board/poll/vote`, {
                     method: 'POST',
@@ -257,10 +248,92 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 if (!res.ok) {
                     throw new Error();
                 }
+                // We don't strictly need to refreshBoard() here anymore because the next interval will sync us,
+                // but let's keep it to ensure we stay in sync with the server's final count immediately.
                 await refreshBoard();
             } catch (err) {
                 showStatus('Oy verilemedi.', true);
+                // Optionally rollback on error
+                await refreshBoard();
             }
+        }
+
+        async function triggerBoardRestart() {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_URL}/board/restart`, {
+                    method: 'POST',
+                    headers: { 'X-Session-ID': token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.trigger?.id) {
+                        lastRestartId = data.trigger.id;
+                        sessionStorage.setItem(restartStorageKey, lastRestartId);
+                    }
+                    if (window.boardShowRestartSplash) {
+                        window.boardShowRestartSplash(500);
+                    } else {
+                        location.reload();
+                    }
+                }
+            } catch (err) {}
+        }
+
+        async function triggerConfetti() {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) return;
+            const config = {
+                particleCount: 3000,
+                sizeScale: 4,
+                spread: 0.5,
+                durationMs: 10000,
+                spawnDurationMs: 1500,
+                upwardBoost: 1.5
+            };
+
+            // Pop locally immediately for instant feedback
+            popConfetti(config);
+
+            try {
+                const res = await fetch(`${API_URL}/board/confetti`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Session-ID': token },
+                    body: JSON.stringify(config)
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.trigger?.id) {
+                        lastConfettiId = data.trigger.id; // Sync ID so the next poll doesn't double-pop
+                    }
+                }
+            } catch (err) {}
+        }
+
+        async function pickRandomTheme() {
+            if (!boardData) return;
+            const token = localStorage.getItem('jwt_token');
+            if (!token) return;
+            const presets = Array.isArray(boardData.theme_presets) ? boardData.theme_presets : [];
+            if (!presets.length) return;
+            const currentKey = boardData.theme_key || boardData.theme?.key || '';
+            const choices = presets.filter((preset) => preset.key !== currentKey);
+            const list = choices.length ? choices : presets;
+            const pick = list[Math.floor(Math.random() * list.length)];
+            if (!pick) return;
+
+            // Apply locally immediately
+            applyTheme(pick);
+            lastThemeKey = pick.key;
+
+            try {
+                await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Session-ID': token },
+                    body: JSON.stringify({ theme_key: pick.key })
+                });
+            } catch (err) {}
         }
 
         function showStatus(message, isError = false) {
@@ -327,36 +400,30 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 
         function renderBoard() {
             if (!widgetsEl || !boardData) return;
+            clearClockTimers();
             widgetsEl.innerHTML = '';
 
             const pinned = boardData.widgets.filter((widget) => widget.pinned);
             const unpinned = boardData.widgets.filter((widget) => !widget.pinned);
             const ordered = [...pinned, ...unpinned].filter((widget) => displayTypes.has(widget.type));
 
-            const hasCoverArt = ordered.some((widget) => widget.type === 'cover-art');
-            if (hasCoverArt) {
-                setCoverArtEnabled(true);
-                return;
-            }
-
-            setCoverArtEnabled(false);
 
             ordered.forEach((widget) => {
                 const card = document.createElement('div');
-                card.className = 'border border-slate-400 p-4 bg-white flex-1 min-w-[16rem] max-w-[26rem]';
+                card.className = 'board-card border p-4 flex-1 min-w-[16rem] max-w-[26rem]';
                 if (widget.pinned) {
-                    card.classList.add('bg-green-50', 'border-green-300');
+                    card.classList.add('board-card-pinned');
                 }
 
                 const header = document.createElement('div');
                 header.className = 'flex items-start justify-between gap-2';
 
                 const title = document.createElement('div');
-                title.className = 'font-semibold text-slate-800';
+                title.className = 'font-semibold board-theme-text-primary';
                 title.textContent = widget.title || widget.type || widget.key;
 
                 const badge = document.createElement('span');
-                badge.className = 'text-xs border border-slate-400 px-2 py-0.5';
+                badge.className = 'text-xs board-card-badge px-2 py-0.5';
                 badge.textContent = widget.pinned ? 'Sabitli' : 'Widget';
                 if (!widget.pinned) {
                     badge.classList.add('hidden');
@@ -375,11 +442,11 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 } else if (widget.type === 'queue') {
                     body.appendChild(queueTemplate?.content.cloneNode(true));
                 } else if (widget.type === 'text-block') {
-                    body.classList.add('text-sm', 'text-slate-700', 'whitespace-pre-line');
+                    body.classList.add('text-sm', 'board-theme-text-secondary', 'whitespace-pre-line');
                     body.textContent = widget.content || '';
                 } else if (widget.type === 'poll') {
                     const question = document.createElement('div');
-                    question.className = 'font-semibold text-slate-800';
+                    question.className = 'font-semibold board-theme-text-primary';
                     question.textContent = widget.question || 'Anket';
                     body.appendChild(question);
 
@@ -390,7 +457,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                         row.className = 'flex items-center justify-between gap-2';
 
                         const label = document.createElement('div');
-                        label.className = 'text-sm text-slate-700';
+                        label.className = 'text-sm board-theme-text-secondary';
                         label.textContent = option.label || 'Seçenek';
 
                         const voteBtn = document.createElement('button');
@@ -404,10 +471,64 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                         optionsWrap.appendChild(row);
                     });
                     body.appendChild(optionsWrap);
-                } else {
-                    body.classList.add('text-xs', 'text-slate-500');
-                    body.textContent = widget.type ? `Widget content goes here. (${widget.type})` : 'Widget content goes here.';
-                }
+                } else if (widget.type === 'clock') {
+                    const showDate = widget.show_date !== false;
+                    const showSeconds = Boolean(widget.show_seconds);
+
+                    const clockWrap = document.createElement('div');
+                    clockWrap.className = 'flex flex-col items-center justify-center py-4 gap-2';
+
+                    const timeEl = document.createElement('div');
+                    timeEl.className = 'text-6xl font-bold board-theme-text-primary tabular-nums';
+
+                    const dateEl = document.createElement('div');
+                    dateEl.className = 'text-xl board-theme-text-secondary';
+                    if (!showDate) {
+                        dateEl.classList.add('hidden');
+                    }
+
+                    clockWrap.appendChild(timeEl);
+                    clockWrap.appendChild(dateEl);
+                    body.appendChild(clockWrap);
+
+                    const updateClock = () => {
+                        const now = new Date();
+                        timeEl.textContent = formatClockTime(now, showSeconds);
+                        if (showDate) {
+                            dateEl.textContent = formatClockDate(now);
+                        }
+                    };
+
+                    updateClock();
+                    const intervalMs = showSeconds ? 1000 : 30000;
+                    clockTimers.push(setInterval(updateClock, intervalMs));
+                } else if (widget.type === 'controls') {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'flex flex-wrap gap-2';
+
+                    const displayText = widget.display_text !== false;
+
+                    const createBtn = (label, iconSvg, handler) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'flex items-center gap-2 border board-card-badge px-3 py-2 hover:bg-black/5 active:scale-95 transition-transform';
+                        btn.innerHTML = `${iconSvg}${displayText ? `<span>${label}</span>` : ''}`;
+                        btn.addEventListener('click', handler);
+                        return btn;
+                    };
+
+                    const confettiIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3 2 22l10.7-3.8M4 3h.01M22 8h.01M15 2h.01M22 20h.01M22 2h.01M18 7h.01M10 10l-1.5 1.5"/><circle cx="11" cy="9" r="2"/><path d="M18 2h.01M15 7h.01"/></svg>`;
+                    const themeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.281-.477-.672-.477-1.187 0-1.032.82-1.875 1.875-1.875h1.39c3.1 0 5.5-2.5 5.5-5.5 0-4.5-4.5-8.5-9.5-8.5z"/></svg>`;
+                    const reloadIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>`;
+
+                    if (widget.show_confetti !== false) wrap.appendChild(createBtn('Konfeti patlat', confettiIcon, triggerConfetti));
+                    if (widget.show_theme !== false) wrap.appendChild(createBtn('Rastgele tema', themeIcon, pickRandomTheme));
+                    if (widget.show_reload !== false) wrap.appendChild(createBtn('Yeniden başlat', reloadIcon, triggerBoardRestart));
+
+                body.appendChild(wrap);
+            } else {
+                body.classList.add('text-xs', 'board-theme-text-secondary');
+                body.textContent = widget.type ? `Widget content goes here. (${widget.type})` : 'Widget content goes here.';
+            }
 
                 card.appendChild(body);
                 widgetsEl.appendChild(card);
@@ -421,7 +542,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 const data = await loadBoard();
                 const widgetStamp = JSON.stringify(data.widgets || []);
                 const stamp = data.updated_at || widgetStamp;
-                if (boardData && widgetStamp === lastWidgetStamp) {
+                const themeKey = data?.theme_key || data?.theme?.key || null;
+                if (boardData && widgetStamp === lastWidgetStamp && themeKey === lastThemeKey) {
                     clearStatus();
                     if (errorVisible) {
                         scheduleReloadAfterRecovery();
@@ -438,6 +560,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 lastUpdatedAt = stamp;
                 lastWidgetStamp = widgetStamp;
                 boardData = data;
+                lastThemeKey = themeKey;
+                applyTheme(data?.theme || null);
                 renderBoard();
                 clearStatus();
                 if (errorVisible) {
@@ -492,7 +616,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 spread = 0.55,
                 sizeScale = 4.0,
                 spawnDurationMs = 1200,
-                upwardBoost = 1.5
+                upwardBoost = 1.5,
+                colors: overrideColors = null
             } = opts;
             if (confettiActive) return;
             confettiActive = true;
@@ -502,7 +627,9 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 confettiActive = false;
                 return;
             }
-            const colors = ['#22c55e', '#16a34a', '#a3e635', '#86efac', '#4ade80', '#10b981'];
+            const colors = Array.isArray(overrideColors)
+                ? overrideColors
+                : (Array.isArray(themeConfettiColors) ? themeConfettiColors : ['#22c55e', '#16a34a', '#a3e635', '#86efac', '#4ade80', '#10b981']);
             const particles = Array.from({ length: particleCount }, () => ({
                 x: canvas.width * (0.05 + Math.random() * 0.9),
                 y: canvas.height * (0.78 + Math.random() * 0.18),
@@ -555,7 +682,28 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             upwardBoost: 2
         };
 
-        popConfetti(initialConfettiPreset);
+        function applyTheme(theme) {
+            const colors = theme?.colors || {};
+            const style = document.documentElement.style;
+            style.setProperty('--board-text-primary', colors.textPrimary || '#0f172a');
+            style.setProperty('--board-text-secondary', colors.textSecondary || '#475569');
+            style.setProperty('--board-background', colors.background || '#f8fafc');
+            style.setProperty('--board-card-bg', colors.cardBackground || '#ffffff');
+            style.setProperty('--board-card-border', colors.cardBorder || '#cbd5f5');
+            style.setProperty('--board-card-pinned-bg', colors.cardPinnedBackground || '#ecfdf5');
+            style.setProperty('--board-card-pinned-border', colors.cardPinnedBorder || '#6ee7b7');
+            style.setProperty('--board-qr-bg', colors.qrButtonBackground || '#ffffff');
+            style.setProperty('--board-qr-border', colors.qrButtonBorder || '#cbd5f5');
+            style.setProperty('--board-qr-text', colors.qrButtonText || '#0f172a');
+            if (themeBackdropEl) {
+                themeBackdropEl.style.backgroundColor = colors.background || '#f8fafc';
+            }
+            themeConfettiColors = Array.isArray(colors.confettiColors) ? colors.confettiColors : null;
+            if (!initialConfettiShown) {
+                initialConfettiShown = true;
+                popConfetti(initialConfettiPreset);
+            }
+        }
 
         async function checkBoardAuth() {
             const token = localStorage.getItem('jwt_token');
@@ -676,4 +824,57 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             setQrButtonHidden(hidden);
         });
     </script>
+
+    <style>
+        :root {
+            --board-text-primary: #0f172a;
+            --board-text-secondary: #475569;
+            --board-background: #f8fafc;
+            --board-card-bg: #ffffff;
+            --board-card-border: #cbd5f5;
+            --board-card-pinned-bg: #ecfdf5;
+            --board-card-pinned-border: #6ee7b7;
+            --board-qr-bg: #ffffff;
+            --board-qr-border: #cbd5f5;
+            --board-qr-text: #0f172a;
+        }
+
+        :global(.board-theme-text-primary) {
+            color: var(--board-text-primary);
+        }
+
+        :global(.board-theme-text-secondary) {
+            color: var(--board-text-secondary);
+        }
+
+        :global(.board-card) {
+            background: var(--board-card-bg);
+            border-color: var(--board-card-border);
+            color: var(--board-text-primary);
+            flex: 1 0 22rem;
+            min-width: 22rem;
+        }
+
+        :global(.board-card-pinned) {
+            background: var(--board-card-pinned-bg);
+            border-color: var(--board-card-pinned-border);
+        }
+
+        :global(.board-card-badge) {
+            border: 1px solid var(--board-card-border);
+            color: var(--board-text-secondary);
+        }
+
+        :global(.board-qr-button) {
+            border: 1px solid var(--board-qr-border);
+            background: var(--board-qr-bg);
+            color: var(--board-qr-text);
+        }
+
+        :global(.board-qr-card) {
+            border: 1px solid var(--board-card-border);
+            background: var(--board-card-bg);
+            color: var(--board-text-primary);
+        }
+    </style>
 </Layout>

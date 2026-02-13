@@ -30,6 +30,8 @@ import Layout from '../../layouts/Layout.astro';
                         <option value="queue">Kuyruk</option>
                         <option value="text-block">Metin</option>
                         <option value="poll">Anket</option>
+                        <option value="clock">Saat</option>
+                        <option value="controls">Kontroller</option>
                     </select>
                     <button id="board-add-btn" class="border border-slate-300 p-2">Ekle</button>
                     <div class="mt-4"></div>
@@ -43,6 +45,13 @@ import Layout from '../../layouts/Layout.astro';
                     <li>Birşeyin başlığını değiştirmek için başlığının üzerine tıklayın.</li>
                 </ul>
                 </details>
+            </fieldset>
+            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                <legend>Tema</legend>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button id="board-theme-random" class="border border-slate-300 p-2">Rastgele seç</button>
+                </div>
+                <div id="board-theme-list" class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
             </fieldset>
             <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
                 <legend>Konfeti</legend>
@@ -117,10 +126,11 @@ import Layout from '../../layouts/Layout.astro';
             'search': 'Ara',
             'queue': 'Kuyruk',
             'text-block': 'Metin',
-            'poll': 'Anket'
+            'poll': 'Anket',
+            'clock': 'Saat'
         };
 
-        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll']);
+        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls']);
 
         let boardData = null;
         let canEdit = false;
@@ -143,6 +153,8 @@ import Layout from '../../layouts/Layout.astro';
         const confettiSpawnEl = document.getElementById('confetti-spawn');
         const confettiUpEl = document.getElementById('confetti-up');
         const restartBtnEl = document.getElementById('board-restart-btn');
+        const themeRandomEl = document.getElementById('board-theme-random');
+        const themeListEl = document.getElementById('board-theme-list');
 
         function showPermissionError(message) {
             if (editorRootEl) editorRootEl.classList.add('hidden');
@@ -259,6 +271,16 @@ import Layout from '../../layouts/Layout.astro';
                 widget.question = 'Başlık';
                 widget.options = [];
             }
+            if (widgetType === 'clock') {
+                widget.show_date = true;
+                widget.show_seconds = false;
+            }
+            if (widgetType === 'controls') {
+                widget.show_confetti = true;
+                widget.show_theme = true;
+                widget.show_reload = false;
+                widget.display_text = true;
+            }
             boardData.widgets.push(widget);
             normalizeOrder();
             renderBoard();
@@ -288,8 +310,19 @@ import Layout from '../../layouts/Layout.astro';
                                 votes: typeof option.votes === 'number' ? option.votes : 0
                             }));
                         }
+                        if (widget.type === 'clock') {
+                            entry.show_date = widget.show_date !== false;
+                            entry.show_seconds = Boolean(widget.show_seconds);
+                        }
+                        if (widget.type === 'controls') {
+                            entry.show_confetti = widget.show_confetti !== false;
+                            entry.show_theme = widget.show_theme !== false;
+                            entry.show_reload = Boolean(widget.show_reload);
+                            entry.display_text = widget.display_text !== false;
+                        }
                         return entry;
-                    })
+                    }),
+                theme_key: boardData.theme_key || null
             };
             const res = await fetch(`${API_URL}/board`, {
                 method: 'PUT',
@@ -309,6 +342,7 @@ import Layout from '../../layouts/Layout.astro';
             }
             boardData = await res.json();
             renderBoard();
+            renderThemeOptions();
             showStatus('Saved.');
         }
 
@@ -388,17 +422,17 @@ import Layout from '../../layouts/Layout.astro';
                         optionsWrap.className = 'mt-2 flex flex-col gap-2';
                         (widget.options || []).forEach((option) => {
                             const row = document.createElement('div');
-                            row.className = 'flex gap-2 items-center';
+                            row.className = 'flex flex-wrap gap-2 items-center';
 
                             const optionInput = document.createElement('input');
-                            optionInput.className = 'flex-1 border border-slate-300 p-2 text-sm text-slate-700';
+                            optionInput.className = 'flex-1 min-w-[12rem] border border-slate-300 p-2 text-sm text-slate-700';
                             optionInput.value = option.label || '';
                             optionInput.addEventListener('input', (event) => {
                                 option.label = event.target.value;
                             });
 
                             const removeBtn = document.createElement('button');
-                            removeBtn.className = 'border border-slate-300 px-2 py-1 text-xs';
+                            removeBtn.className = 'border border-slate-300 px-2 py-1 text-xs whitespace-nowrap';
                             removeBtn.textContent = 'Sil';
                             removeBtn.addEventListener('click', () => removePollOption(widget, option.id));
 
@@ -413,6 +447,62 @@ import Layout from '../../layouts/Layout.astro';
                         addOptionBtn.textContent = 'Seçenek ekle';
                         addOptionBtn.addEventListener('click', () => addPollOption(widget));
                         body.appendChild(addOptionBtn);
+                    } else if (widget.type === 'clock') {
+                        const showDateLabel = document.createElement('label');
+                        showDateLabel.className = 'flex items-center gap-2 text-xs text-slate-600';
+
+                        const showDateInput = document.createElement('input');
+                        showDateInput.type = 'checkbox';
+                        showDateInput.checked = widget.show_date !== false;
+                        showDateInput.addEventListener('change', (event) => {
+                            widget.show_date = event.target.checked;
+                        });
+
+                        const showDateText = document.createElement('span');
+                        showDateText.textContent = 'Tarihi göster';
+
+                        showDateLabel.appendChild(showDateInput);
+                        showDateLabel.appendChild(showDateText);
+                        body.appendChild(showDateLabel);
+
+                        const showSecondsLabel = document.createElement('label');
+                        showSecondsLabel.className = 'mt-2 flex items-center gap-2 text-xs text-slate-600';
+
+                        const showSecondsInput = document.createElement('input');
+                        showSecondsInput.type = 'checkbox';
+                        showSecondsInput.checked = Boolean(widget.show_seconds);
+                        showSecondsInput.addEventListener('change', (event) => {
+                            widget.show_seconds = event.target.checked;
+                        });
+
+                        const showSecondsText = document.createElement('span');
+                        showSecondsText.textContent = 'Saniyeyi göster';
+
+                        showSecondsLabel.appendChild(showSecondsInput);
+                        showSecondsLabel.appendChild(showSecondsText);
+                        body.appendChild(showSecondsLabel);
+                    } else if (widget.type === 'controls') {
+                        const createCheckbox = (label, key) => {
+                            const wrap = document.createElement('label');
+                            wrap.className = 'flex items-center gap-2 text-xs text-slate-600 mb-2';
+                            const input = document.createElement('input');
+                            input.type = 'checkbox';
+                            input.checked = Boolean(widget[key]);
+                            if (key !== 'show_reload' && widget[key] === undefined) input.checked = true;
+                            input.addEventListener('change', (e) => {
+                                widget[key] = e.target.checked;
+                            });
+                            const text = document.createElement('span');
+                            text.textContent = label;
+                            wrap.appendChild(input);
+                            wrap.appendChild(text);
+                            return wrap;
+                        };
+
+                        body.appendChild(createCheckbox('Konfeti butonu', 'show_confetti'));
+                        body.appendChild(createCheckbox('Tema butonu', 'show_theme'));
+                        body.appendChild(createCheckbox('Yeniden yükle butonu', 'show_reload'));
+                        body.appendChild(createCheckbox('Yazıları göster', 'display_text'));
                     }
                     card.appendChild(body);
 
@@ -468,6 +558,122 @@ import Layout from '../../layouts/Layout.astro';
                 });
         }
 
+        function renderThemeOptions() {
+            if (!themeListEl || !boardData) return;
+            const presets = Array.isArray(boardData.theme_presets) ? boardData.theme_presets : [];
+            const currentKey = boardData.theme_key || boardData.theme?.key || '';
+            themeListEl.innerHTML = '';
+
+            presets.forEach((preset) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'text-left border border-slate-300 p-3 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400';
+                if (preset.key === currentKey) {
+                    card.classList.add('ring-2', 'ring-slate-500');
+                }
+
+                const header = document.createElement('div');
+                header.className = 'text-sm font-semibold text-slate-800';
+                header.textContent = preset.label || preset.key;
+                card.appendChild(header);
+
+                const swatchWrap = document.createElement('div');
+                swatchWrap.className = 'mt-2 flex flex-wrap gap-2';
+                const colors = preset.colors || {};
+                const swatches = [
+                    { label: 'Arkaplan', background: colors.background, color: colors.textPrimary, border: colors.cardBorder },
+                    { label: 'Kart', background: colors.cardBackground, color: colors.textPrimary, border: colors.cardBorder },
+                    { label: 'Metin', background: colors.background, color: colors.textPrimary, border: colors.cardBorder },
+                    { label: 'İkincil', background: colors.background, color: colors.textSecondary, border: colors.cardBorder }
+                ];
+
+                swatches.forEach((swatch) => {
+                    const box = document.createElement('div');
+                    box.className = 'text-xs px-2 py-1 rounded border';
+                    box.textContent = swatch.label;
+                    box.style.background = swatch.background || '#ffffff';
+                    box.style.color = swatch.color || '#0f172a';
+                    box.style.borderColor = swatch.border || '#cbd5f5';
+                    swatchWrap.appendChild(box);
+                });
+
+                card.appendChild(swatchWrap);
+
+                if (Array.isArray(colors.confettiColors) && colors.confettiColors.length > 0) {
+                    const confettiWrap = document.createElement('div');
+                    confettiWrap.className = 'flex flex-wrap items-center gap-2 mt-2 w-full';
+
+                    const label = document.createElement('div');
+                    label.className = 'text-xs text-slate-600';
+                    label.textContent = 'Konfeti:';
+                    confettiWrap.appendChild(label);
+
+                    colors.confettiColors.forEach((color) => {
+                        const dot = document.createElement('span');
+                        dot.className = 'inline-block w-4 h-4 rounded border';
+                        dot.style.background = color;
+                        dot.style.borderColor = colors.cardBorder || '#cbd5f5';
+                        dot.title = color;
+                        confettiWrap.appendChild(dot);
+                    });
+
+                    card.appendChild(confettiWrap);
+                }
+
+                card.addEventListener('click', () => {
+                    boardData.theme_key = preset.key;
+                    boardData.theme = preset;
+                    renderThemeOptions();
+                    saveTheme();
+                });
+
+                themeListEl.appendChild(card);
+            });
+        }
+
+        function pickRandomTheme() {
+            if (!boardData) return;
+            const presets = Array.isArray(boardData.theme_presets) ? boardData.theme_presets : [];
+            if (!presets.length) return;
+            const currentKey = boardData.theme_key || boardData.theme?.key || '';
+            const choices = presets.filter((preset) => preset.key !== currentKey);
+            const list = choices.length ? choices : presets;
+            const pick = list[Math.floor(Math.random() * list.length)];
+            if (!pick) return;
+            boardData.theme_key = pick.key;
+            boardData.theme = pick;
+            renderThemeOptions();
+            saveTheme();
+        }
+
+        async function saveTheme() {
+            if (!boardData?.theme_key) return;
+            clearStatus();
+            try {
+                const res = await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ theme_key: boardData.theme_key })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Tema kaydedilemedi.', true);
+                    return;
+                }
+                boardData = await res.json();
+                renderThemeOptions();
+                showStatus('Tema kaydedildi.');
+            } catch (err) {
+                showStatus('Tema kaydedilemedi.', true);
+            }
+        }
+
         async function init() {
             try {
                 const meRes = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
@@ -505,6 +711,7 @@ import Layout from '../../layouts/Layout.astro';
                 boardData = await loadBoard();
                 normalizeOrder();
                 renderBoard();
+                renderThemeOptions();
             } catch (err) {
                 if (err && err.message === 'permission') {
                     showPermissionError('Düzenlemek için yetkiniz yok.');
@@ -522,6 +729,10 @@ import Layout from '../../layouts/Layout.astro';
         });
 
         saveBtnEl?.addEventListener('click', saveBoard);
+
+        if (themeRandomEl) {
+            themeRandomEl.addEventListener('click', pickRandomTheme);
+        }
 
         function buildConfettiPayload() {
             const payload = {};

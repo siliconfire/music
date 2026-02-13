@@ -31,6 +31,7 @@ import cors
 import users
 from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
 import board
+from blacklist_manager import list_files, toggle_file, add_manual_word, get_active_blacklist
 
 load_dotenv()
 app = FastAPI()
@@ -121,6 +122,7 @@ class BoardUpdateRequest(BaseModel):
     widgets: list[dict] | None = None
     order: list[str] | None = None
     pinned: list[str] | None = None
+    theme_key: str | None = None
 
 
 class BoardPollVoteRequest(BaseModel):
@@ -483,6 +485,20 @@ def logout(payload: dict = Depends(get_current_user)):
     return {"message": "Already logged out."}
 
 
+@app.get("/admin/spotify/devices")
+def list_devices(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "music"):
+        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+    return sp.devices()
+
+
+@app.post("/admin/spotify/device")
+def set_device(device_id: str, sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
+    ensure_music_control(payload)
+    sp.transfer_playback(device_id=device_id, force_play=False)
+    return {"message": "playback transferred"}
+
+
 @app.get("/status")
 def get_status(sp: Spotify = Depends(get_sp)):  # no auth
     return sp.current_user_playing_track()
@@ -705,7 +721,8 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
         widgets=req.widgets,
         order_ids=req.order,
         pinned_ids=req.pinned,
-        updated_by=user_id
+        updated_by=user_id,
+        theme_key=req.theme_key
     )
 
 
