@@ -3,6 +3,7 @@ import base64
 import json
 import time
 import uuid
+import requests
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Header, Security
@@ -50,6 +51,7 @@ PASSKEY_REGISTER_CHALLENGES: dict[str, dict] = {}
 PASSKEY_LOGIN_CHALLENGES: dict[str, dict] = {}
 BOARD_LOGIN_APPROVALS: dict[str, dict] = {}
 BOARD_LOGIN_TTL_SEC = 300
+SPOTIFY_REQUEST_TIMEOUT_SEC = float(os.getenv("SPOTIFY_REQUEST_TIMEOUT_SEC", "10"))
 
 
 def get_auth_manager():
@@ -70,7 +72,7 @@ def get_sp(auth_manager=Depends(get_auth_manager)):
         raise HTTPException(status_code=503,
                             detail="Service unavailable. Please tell your administrator to log in (/login).")
 
-    return Spotify(auth=token_info['access_token'])
+    return Spotify(auth=token_info["access_token"], requests_timeout=SPOTIFY_REQUEST_TIMEOUT_SEC)
 
 
 def ensure_music_control(payload: dict):
@@ -526,7 +528,12 @@ def play_now(uri: str, sp: Spotify = Depends(get_sp), payload: dict = Depends(ge
 
 @app.get("/list-queue")
 def list_queue(sp: Spotify = Depends(get_sp)):  # no auth
-    return sp.queue()
+    try:
+        return sp.queue()
+    except requests.exceptions.ReadTimeout:
+        raise HTTPException(status_code=504, detail="Spotify API timed out while fetching the queue.")
+    except requests.exceptions.RequestException:
+        raise HTTPException(status_code=502, detail="Spotify API request failed while fetching the queue.")
 
 
 @app.post("/pause")

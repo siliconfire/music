@@ -36,12 +36,12 @@
             "options": [
                 {
                     "id": "mlclrr9q-6nq8o",
-                    "label": "erdogan",
-                    "votes": 11
+                    "label": "ahmet",
+                    "votes": 13
                 },
                 {
                     "id": "mlclrrni-94zzl",
-                    "label": "tayyip",
+                    "label": "mehmet",
                     "votes": 2
                 }
             ]
@@ -51,7 +51,7 @@
             "type": "text-block",
             "title": "Metin",
             "pinned": false,
-            "content": "<img src=x onerror=\"console.log('xss-test', localStorage.getItem('jwt_token'))\">\n\n^^^ XSS yaparım diye tehdit eden mal kimdi bu arada"
+            "content": "<img src=x onerror=\"console.log('xss-test', localStorage.getItem('jwt_token'))\">\n\n^^^ XSS calısmıyor hahahah"
         },
         {
             "key": "text-block-mlgugdqu-mcwik",
@@ -67,53 +67,53 @@
             "pinned": false,
             "show_confetti": true,
             "show_theme": true,
-            "show_reload": false,
+            "show_reload": true,
             "display_text": true
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-02-11T14:06:29.160231+00:00",
+    "updated_at": "2026-02-14T20:00:34.771266+00:00",
     "confetti_trigger": {
-        "id": "2026-02-11T14:01:26.093863+00:00",
-        "created_at": "2026-02-11T14:01:26.093863+00:00",
+        "id": "2026-02-13T20:00:33.739366+00:00",
+        "created_at": "2026-02-13T20:00:33.739366+00:00",
         "config": {
-            "particleCount": 10000,
-            "durationMs": 8500,
-            "spawnDurationMs": 5000,
-            "spread": 2.0,
-            "sizeScale": 10.0,
-            "upwardBoost": 3.0
+            "particleCount": 3000,
+            "durationMs": 10000,
+            "spawnDurationMs": 1500,
+            "spread": 0.5,
+            "sizeScale": 4.0,
+            "upwardBoost": 1.5
         },
-        "created_by": "0"
+        "created_by": "100000"
     },
     "restart_trigger": {
-        "id": "2026-02-11T14:06:29.160231+00:00",
-        "created_at": "2026-02-11T14:06:29.160231+00:00",
+        "id": "2026-02-14T19:52:38.263729+00:00",
+        "created_at": "2026-02-14T19:52:38.263729+00:00",
         "created_by": "0"
     },
     "debug_passkeys": [],
-    "theme_key": "gruvbox_dark",
+    "theme_key": "telegram_pink2",
     "theme": {
-        "key": "gruvbox_dark",
-        "label": "Lidya Sarısı",
+        "key": "telegram_pink2",
+        "label": "Daha Gerçek Telegram Pembesi",
         "colors": {
-            "textPrimary": "#ebdbb2",
-            "textSecondary": "#a89984",
-            "background": "#1d2021",
-            "cardBackground": "#282828",
-            "cardBorder": "#3c3836",
-            "cardPinnedBackground": "#32302f",
-            "cardPinnedBorder": "#fabd2f",
-            "qrButtonBackground": "#3c3836",
-            "qrButtonBorder": "#504945",
-            "qrButtonText": "#fabd2f",
+            "textPrimary": "#ffffff",
+            "textSecondary": "#94a3b8",
+            "background": "#1c1215",
+            "cardBackground": "#281a1e",
+            "cardBorder": "#3d262c",
+            "cardPinnedBackground": "#4c1d24",
+            "cardPinnedBorder": "#f472b6",
+            "qrButtonBackground": "#281a1e",
+            "qrButtonBorder": "#f472b6",
+            "qrButtonText": "#f472b6",
             "confettiColors": [
-                "#fb4934",
-                "#b8bb26",
-                "#fabd2f",
-                "#83a598",
-                "#d3869b",
-                "#8ec07c"
+                "#f472b6",
+                "#be185d",
+                "#9d174d",
+                "#ec4899",
+                "#701a75",
+                "#f9a8d4"
             ]
         }
     },
