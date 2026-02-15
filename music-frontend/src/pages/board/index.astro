@@ -11,10 +11,10 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
     <div id="board-theme-backdrop" class="fixed inset-0 -z-10"></div>
 
     <button id="board-qr-toggle" class="fixed bottom-4 right-4 z-40 board-qr-button px-3 py-2 text-sm">QR kodu göster</button>
-    <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50">
-        <div class="board-qr-card p-4 text-center shadow-lg">
-            <div class="text-sm">Telefonunuz ile tarayın:</div>
-            <img id="board-qr-img" alt="QR" class="mt-2 h-64 w-64 border border-slate-200" />
+    <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50" style="background: transparent;">
+        <div class="board-qr-card p-4 text-center shadow-lg board-theme-text-primary" style="background: rgba(255,255,255,0.04); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="text-sm board-theme-text-secondary">Telefonunuz ile tarayın:</div>
+            <img id="board-qr-img" alt="QR" class="mt-2 h-64 w-64" style="border: 1px solid var(--board-card-border); background: transparent;" />
             <div id="board-qr-label" class="mt-2 text-sm board-theme-text-secondary"></div>
         </div>
     </div>
@@ -31,7 +31,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         </div>
          <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
          <!-- Transparent overlay so the page doesn't darken; the inner card itself is the frosted glass -->
-         <div id="board-restart-splash" class="fixed inset-0 z-40 flex items-center justify-center p-6" style="background: transparent;">
+         <div id="board-restart-splash" class="hidden fixed inset-0 z-40 flex items-center justify-center p-6" style="background: transparent;">
              <div class="max-w-xl w-full p-6 rounded-lg border" style="background: rgba(255,255,255,0.04); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 6px 18px rgba(2,6,23,0.06); transition: opacity 240ms ease, transform 240ms ease;">
                  <div class="flex items-start justify-between">
                      <div>
@@ -42,30 +42,45 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                  </div>
              </div>
          </div>
-         <div id="board-error" class="hidden text-slate-900">
-             <div id="board-error-fixed" class="hidden border border-green-700 bg-green-200 p-3 m-3">
-                 <p class="text-6xl">Hata düzeldi.</p>
-                 <p class="text-sm">5 saniye içinde yeniden başlatılıyor...</p>
-             </div>
-             <div class="border border-red-700 bg-red-200 p-10">
-                 <div class="lg:float-right border border-red-700 p-2" id="div-retrying">
-                     <img src="/loading.svg" alt="loading" class="w-10 inline" />
-                     Tekrar deneniyor...
+         <!-- Floating frosted-glass error overlay -->
+         <div id="board-error" class="fixed inset-0 z-50 flex items-center justify-center" style="pointer-events:none;">
+             <div id="board-error-card" class="hidden w-full max-w-3xl p-6 rounded-lg relative" style="pointer-events:auto; background: rgba(220,38,38,0.06); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(220,38,38,0.12); box-shadow: 0 12px 36px rgba(2,6,23,0.45);">
+                 <!-- Floating 'fixed' notification styled as a pill so it doesn't clash with card padding -->
+                 <div id="board-error-fixed" class="hidden" style="position:absolute; top:-0.75rem; right:0.75rem; background: rgba(16,185,129,0.95); color: #fff; border: 1px solid rgba(6,95,70,0.9); padding: 0.35rem 0.65rem; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(2,6,23,0.15); font-weight:600;">
+                     <span>Hata düzeldi.</span>
                  </div>
-                 <p class="text-5xl">Bir hata oluştu.</p>
-                 <p class="text-3xl">Muhtemelen sunucu kapalı yada veritabanında bir sıkıntı var.</p>
-                 <img class="lg:float-end m-1 border border-red-700" id="error-qr" alt="Scan me!" src="/loading.svg" />
-                 <br>
-                 <p class="text-xl">Lütfen bu hatayı karekodu okutarak bana bildirin.</p>
-                 <p class="text-xl">Çınar Mert Çeçen - cinar@cinarcecen.dev</p>
-                 <br>
-                 <p class="text-xs">Eğer bunun kurulumu ile sorumlu iseniz, lütfen önce bu sayfayı yenilemeyi deneyin. eğer olmaz ise sunucunun çalışıyor olduğundan, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve board.json veritabanının geçerli bir json dosyası olduğundan emin olun. (tereddüt ederseniz board.json dosyasını silebilirsiniz, sunucu kendi tekrardan oluşturacaktır.) Bunlar düzeltmez ise hem tarayıcının hemde frontend/backend'in konsollarına göz atmalısınız, hatalar görürseniz (bazen hatalar çok yukarılarda olabilir) bu size ipucunuzu verecektir.</p>
-                 <p class="text-sm">Bu yazı hata düzelince kendiliğinden de gitmeli, fakat gitmez ise sayfayı yenilemek yardımcı olabilir.</p>
-             </div>
-             <div class="border border-yellow-700 bg-yellow-50 p-3">
-                 <span id="error-info">(hata bilgileri...)</span>
-             </div>
 
+                 <div class="mb-4 flex items-start justify-between gap-4">
+                     <div>
+                         <p class="text-3xl font-semibold board-theme-text-primary">Bir hata oluştu.</p>
+                         <p class="mt-2 text-lg board-theme-text-secondary">Muhtemelen sunucu kapalı ya da veritabanında bir sıkıntı var.</p>
+                     </div>
+
+                     <!-- retrying indicator restored so showLonelyText() updates it correctly -->
+                     <div id="div-retrying" class="flex items-center gap-3 text-sm board-theme-text-primary">
+                         <img src="/loading.svg" alt="loading" class="h-6 w-6" />
+                         <span>Tekrar deneniyor...</span>
+                     </div>
+                 </div>
+
+                 <div class="mb-4 flex items-center justify-center">
+                     <!-- Make QR large enough to scan -->
+                     <img id="error-qr" class="h-56 w-56 border rounded" alt="Scan me!" src="/loading.svg" style="border-color: rgba(220,38,38,0.5); background: transparent;" />
+                 </div>
+
+                 <div class="mb-4 text-sm board-theme-text-primary text-center">
+                     <p>Lütfen bu hatayı karekodu okutarak bana bildirin.</p>
+                     <p>Çınar Mert Çeçen - cinar@cinarcecen.dev</p>
+                 </div>
+
+                 <div class="mb-4 text-xs board-theme-text-secondary">
+                     <p>Kurulum ile sorumlu iseniz önce sayfayı yenilemeyi deneyin. Eğer olmaz ise sunucunun çalıştığından, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve <code>board.json</code> dosyasının geçerli olduğundan emin olun. (Tereddüt ederseniz <code>board.json</code> dosyasını önce yedekleyip sonra silebilirsiniz; sunucu yeniden oluşturacaktır.)</p>
+                 </div>
+
+                 <div id="board-error-info" class="rounded p-3" style="background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.22);">
+                     <span id="error-info" class="board-theme-text-primary">(hata bilgileri...)</span>
+                 </div>
+             </div>
          </div>
      </div>
 
@@ -82,23 +97,40 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
     <script>
         import { API_URL } from '../../lib/constants';
 
-        const statusEl = document.getElementById('board-status');
-        const errorEl = document.getElementById('board-error');
-        const errorInfoEl = document.getElementById('error-info');
-        const errorQrEl = document.getElementById('error-qr');
-        const widgetsEl = document.getElementById('board-widgets');
-        const nowPlayingTemplate = document.getElementById('tpl-now-playing');
-        const queueTemplate = document.getElementById('tpl-queue');
-        const authWarningEl = document.getElementById('board-auth-warning');
-        const authLogoutEl = document.getElementById('board-auth-logout');
-        const errorFixedEl = document.getElementById('board-error-fixed');
-        const retryingEl = document.getElementById('div-retrying');
-        const qrToggleEl = document.getElementById('board-qr-toggle');
-        const qrOverlayEl = document.getElementById('board-qr-overlay');
-        const qrImgEl = document.getElementById('board-qr-img');
-        const qrLabelEl = document.getElementById('board-qr-label');
-        const qrHideEl = document.getElementById('board-qr-hide');
-        const themeBackdropEl = document.getElementById('board-theme-backdrop');
+        /** @type {HTMLElement|null} */
+        const statusEl = /** @type {HTMLElement|null} */ (document.getElementById('board-status'));
+        /** @type {HTMLElement|null} */
+        const errorEl = /** @type {HTMLElement|null} */ (document.getElementById('board-error'));
+        /** @type {HTMLElement|null} */
+        const errorInfoEl = /** @type {HTMLElement|null} */ (document.getElementById('error-info'));
+        /** @type {HTMLImageElement|null} */
+        const errorQrEl = /** @type {HTMLImageElement|null} */ (document.getElementById('error-qr'));
+        /** @type {HTMLElement|null} */
+        const widgetsEl = /** @type {HTMLElement|null} */ (document.getElementById('board-widgets'));
+        /** @type {HTMLTemplateElement|null} */
+        const nowPlayingTemplate = /** @type {HTMLTemplateElement|null} */ (document.getElementById('tpl-now-playing'));
+        /** @type {HTMLTemplateElement|null} */
+        const queueTemplate = /** @type {HTMLTemplateElement|null} */ (document.getElementById('tpl-queue'));
+        /** @type {HTMLElement|null} */
+        const authWarningEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-warning'));
+        /** @type {HTMLElement|null} */
+        const authLogoutEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-logout'));
+        /** @type {HTMLElement|null} */
+        const errorFixedEl = /** @type {HTMLElement|null} */ (document.getElementById('board-error-fixed'));
+        /** @type {HTMLElement|null} */
+        const retryingEl = /** @type {HTMLElement|null} */ (document.getElementById('div-retrying'));
+        /** @type {HTMLButtonElement|null} */
+        const qrToggleEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-qr-toggle'));
+        /** @type {HTMLElement|null} */
+        const qrOverlayEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-overlay'));
+        /** @type {HTMLImageElement|null} */
+        const qrImgEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-qr-img'));
+        /** @type {HTMLElement|null} */
+        const qrLabelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-label'));
+        /** @type {HTMLElement|null} */
+        const qrHideEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-hide'));
+        /** @type {HTMLElement|null} */
+        const themeBackdropEl = /** @type {HTMLElement|null} */ (document.getElementById('board-theme-backdrop'));
         const hideQrButtonKey = 'board.hideQrButton';
         let qrReady = false;
         let qrAutoHideTimer = null;
@@ -366,7 +398,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 if (retryingEl) {
                     retryingEl.innerHTML = '<img src="/loading.svg" alt="loading" class="w-10 inline" /> Tekrar deneniyor...';
                 }
-                errorEl.classList.remove('hidden');
+                errorEl.classList.remove('"hidden"');
             }
             renderErrorQr(extraInfo);
             if (!refreshTimer && !retryTimer) {
@@ -721,31 +753,51 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             }
         }
 
+        // Decode a JWT payload safely (no validation) and return the parsed object or null
+        function parseJwtPayload(token) {
+            try {
+                const parts = String(token || '').split('.');
+                if (parts.length < 2) return null;
+                // base64url -> base64
+                let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                // Pad base64 if necessary
+                while (payload.length % 4) payload += '=';
+                const decoded = atob(payload);
+                // Percent-encode to support multi-byte characters
+                const json = decodeURIComponent(Array.from(decoded).map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(json);
+            } catch (e) {
+                return null;
+            }
+        }
+
         async function checkBoardAuth() {
+            // Only check the locally-stored JWT payload to confirm it's for the board user (sub: 100000).
+            // Do NOT call the server here — if the server is down we want the auth page to show the auth error,
+            // not the board page to show a server-down error and wipe the token.
             const token = localStorage.getItem('jwt_token');
             if (!token) {
                 location.href = '/board/auth';
                 return false;
             }
-            try {
-                const res = await fetch(`${API_URL}/me`, {
-                    headers: { 'X-Session-ID': token }
-                });
-                if (!res.ok) {
-                    localStorage.removeItem('jwt_token');
-                    location.href = '/board/auth';
-                    return false;
-                }
-                const user = await res.json();
-                const isBoardUser = String(user?.id) === '100000' || (user?.permissions || []).includes('board');
-                if (authWarningEl) {
-                    authWarningEl.classList.toggle('hidden', isBoardUser);
-                }
-                return isBoardUser;
-            } catch (err) {
+            const payload = parseJwtPayload(token);
+            if (!payload) {
+                // malformed token; fall back to auth flow
                 location.href = '/board/auth';
                 return false;
             }
+            // Accept sub as string or number; also tolerate common claim names if needed
+            const sub = String(payload.sub ?? payload.user_id ?? payload.id ?? '');
+            const isBoardUser = sub === '100000';
+            if (authWarningEl) {
+                authWarningEl.classList.toggle('hidden', isBoardUser);
+            }
+            if (!isBoardUser) {
+                // If not a board token, send to auth so the user can obtain a board JWT.
+                location.href = '/board/auth';
+                return false;
+            }
+            return true;
         }
 
         if (authLogoutEl) {

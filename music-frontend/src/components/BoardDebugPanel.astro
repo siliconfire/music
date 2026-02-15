@@ -1,42 +1,45 @@
-<div id="board-restart-pane" class="hidden m-5 lg:m-10 border border-yellow-700 bg-yellow-50 p-4 relative">
+<div id="board-restart-pane" class="hidden fixed top-6 right-6 z-60 p-4 board-theme-text-primary" style="max-width:40rem; width:calc(100% - 3rem); background: rgba(255,255,255,0.04); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 6px 18px rgba(2,6,23,0.06);">
     <button id="board-restart-close" class="absolute top-2 right-2 border border-yellow-700 px-2 py-1 text-sm" aria-label="Kapat">X</button>
     <div id="board-debug-pin" class="hidden mb-3">
-        <div id="board-debug-pin-display" class="mt-1 border border-yellow-700 bg-white px-3 py-2 text-xl tracking-wide min-h-8"><i>bin dört yüz elli üç? ve ardından kare?</i></div>
+        <!-- pin display: transparent so underlying page shows through; text uses theme color -->
+        <div id="board-debug-pin-display" class="mt-1 px-3 py-2 text-xl tracking-wide min-h-8 board-theme-text-primary" style="background: transparent; border: none; font-family: inherit;"><i>bin dört yüz elli üç? ve ardından kare?</i></div>
         <div id="board-debug-pin-error" class="mt-1 text-xs text-red-600 hidden">PIN hatalı.</div>
         <div class="mt-2 flex flex-wrap gap-4 items-start">
             <div>
                 <div class="grid grid-cols-3 gap-2 max-w-40">
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="1">1</button>
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="2">2</button>
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="3">3</button>
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="4">4</button>
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="5">5</button>
-                    <button class="board-pin-btn border border-yellow-700 px-2 p-1 text-xl" data-pin="6">6</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="1">1</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="2">2</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="3">3</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="4">4</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="5">5</button>
+                    <button class="board-pin-btn px-2 p-1 text-xl debug-btn" data-pin="6">6</button>
                 </div>
                 <div class="mt-2 flex gap-2">
-                    <button id="board-pin-clear" class="border border-yellow-700 px-2 p-1 text-2xl">*</button>
-                    <button id="board-pin-submit" class="border border-yellow-700 px-2 p-1 text-2xl">#</button>
+                    <button id="board-pin-clear" class="px-2 p-1 text-2xl debug-btn">*</button>
+                    <button id="board-pin-submit" class="px-2 p-1 text-2xl debug-btn">#</button>
                 </div>
             </div>
             <div class="hidden sm:block w-px bg-yellow-700 self-stretch"></div>
             <div class="flex flex-col gap-2">
-                <textarea id="board-pin-freeform" class="border border-yellow-700 bg-white px-3 py-2 text-2xl min-w-[40rem] min-h-[6rem] font-mono" placeholder="Serbest giriş"></textarea>
-                <button id="board-pin-freeform-send" class="border border-yellow-700 px-3 py-2 text-sm">Gönder</button>
+                <label for="board-pin-freeform" class="sr-only">Serbest giriş</label>
+                <textarea id="board-pin-freeform" class="board-debug-freeform debug-input text-2xl font-mono" placeholder="Serbest giriş" style="min-width:0; width:100%; min-height:6rem; resize:vertical;"></textarea>
+                <button id="board-pin-freeform-send" class="debug-btn">Gönder</button>
             </div>
         </div>
     </div>
     <div id="board-restart-controls" class="flex flex-wrap gap-2 hidden">
-        <button id="board-restart-btn-manual" class="border border-yellow-700 px-3 py-2">Yeniden başlat</button>
-        <button id="board-fullscreen-enter" class="border border-yellow-700 px-3 py-2">Tam ekrana gir</button>
-        <button id="board-fullscreen-exit" class="border border-yellow-700 px-3 py-2">Tam ekrandan çık</button>
-        <button id="board-auth-start" class="border border-yellow-700 px-3 py-2">Doğrulamayı başlat</button>
-        <button id="board-auth-logout-debug" class="border border-yellow-700 px-3 py-2">Çıkış yap</button>
+        <button id="board-restart-btn-manual" class="debug-btn">Yeniden başlat</button>
+        <button id="board-fullscreen-enter" class="debug-btn">Tam ekrana gir</button>
+        <button id="board-fullscreen-exit" class="debug-btn">Tam ekrandan çık</button>
+        <button id="board-auth-start" class="debug-btn">Doğrulamayı başlat</button>
+        <button id="board-auth-logout-debug" class="debug-btn">Çıkış yap</button>
         <div class="flex items-center gap-2 text-sm">
             <input id="board-hide-qr-btn" type="checkbox" class="border border-yellow-700" />
             <label for="board-hide-qr-btn">QR butonunu gizle</label>
         </div>
     </div>
-    <div id="board-auth-panel" class="hidden mt-3 border border-yellow-700 bg-white p-3">
+    <div id="board-auth-panel" class="hidden mt-3 border border-yellow-700 bg-white p-3 relative">
+        <button id="board-auth-close" class="absolute top-2 right-2 debug-btn" aria-label="Kapat">Kapat</button>
         <div class="text-lg">Oturumun doğrulanabilmesi ve cihaza bir JWT anahtarı verilebilmesi için, lütfen "admin" yada daha yüksek yetkiye sahip bir cihazdan bu QR kodu okutun.</div>
         <div class="text-slate-600 mt-2" id="board-auth-status">Onay gelince otomatik olarak güncellenecek.</div>
         <div class="mt-2 inline-block">
@@ -53,32 +56,58 @@
 <script>
     import { API_URL } from '../lib/constants';
 
-    const tapFirstEl = document.getElementById('tap-bartin');
-    const tapSecondEl = document.getElementById('tap-lisesi');
-    const restartPaneEl = document.getElementById('board-restart-pane');
-    const restartBtnEl = document.getElementById('board-restart-btn-manual');
-    const restartCloseEl = document.getElementById('board-restart-close');
-    const restartSplashEl = document.getElementById('board-restart-splash');
-    const fullscreenEnterEl = document.getElementById('board-fullscreen-enter');
-    const fullscreenExitEl = document.getElementById('board-fullscreen-exit');
-    const debugPinEl = document.getElementById('board-debug-pin');
-    const debugPinDisplayEl = document.getElementById('board-debug-pin-display');
-    const debugPinErrorEl = document.getElementById('board-debug-pin-error');
-    const debugPinButtons = document.querySelectorAll('.board-pin-btn');
-    const debugPinClearEl = document.getElementById('board-pin-clear');
-    const debugPinSubmitEl = document.getElementById('board-pin-submit');
-    const debugPinFreeformEl = document.getElementById('board-pin-freeform');
-    const debugPinFreeformSendEl = document.getElementById('board-pin-freeform-send');
-    const debugControlsEl = document.getElementById('board-restart-controls');
-    const secretPhotoEl = document.getElementById('board-secret-photo');
-    const secretPhotoImgEl = document.getElementById('board-secret-photo-img');
-    const authStartEl = document.getElementById('board-auth-start');
-    const authLogoutEl = document.getElementById('board-auth-logout-debug');
-    const authPanelEl = document.getElementById('board-auth-panel');
-    const authQrEl = document.getElementById('board-auth-qr');
-    const authLinkEl = document.getElementById('board-auth-link');
-    const authStatusEl = document.getElementById('board-auth-status');
-    const hideQrButtonEl = document.getElementById('board-hide-qr-btn');
+    /** @type {HTMLElement|null} */
+    const tapFirstEl = /** @type {HTMLElement|null} */ (document.getElementById('tap-bartin'));
+    /** @type {HTMLElement|null} */
+    const tapSecondEl = /** @type {HTMLElement|null} */ (document.getElementById('tap-lisesi'));
+    /** @type {HTMLElement|null} */
+    const restartPaneEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-pane'));
+    /** @type {HTMLElement|null} */
+    const restartBtnEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-btn-manual'));
+    /** @type {HTMLElement|null} */
+    const restartCloseEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-close'));
+    /** @type {HTMLElement|null} */
+    const restartSplashEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-splash'));
+    /** @type {HTMLElement|null} */
+    const fullscreenEnterEl = /** @type {HTMLElement|null} */ (document.getElementById('board-fullscreen-enter'));
+    /** @type {HTMLElement|null} */
+    const fullscreenExitEl = /** @type {HTMLElement|null} */ (document.getElementById('board-fullscreen-exit'));
+    /** @type {HTMLElement|null} */
+    const debugPinEl = /** @type {HTMLElement|null} */ (document.getElementById('board-debug-pin'));
+    /** @type {HTMLDivElement|null} */
+    const debugPinDisplayEl = /** @type {HTMLDivElement|null} */ (document.getElementById('board-debug-pin-display'));
+    /** @type {HTMLElement|null} */
+    const debugPinErrorEl = /** @type {HTMLElement|null} */ (document.getElementById('board-debug-pin-error'));
+    /** @type {NodeListOf<HTMLButtonElement>} */
+    const debugPinButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.board-pin-btn'));
+    /** @type {HTMLElement|null} */
+    const debugPinClearEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-clear'));
+    /** @type {HTMLElement|null} */
+    const debugPinSubmitEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-submit'));
+    /** @type {HTMLTextAreaElement|null} */
+    const debugPinFreeformEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('board-pin-freeform'));
+    /** @type {HTMLElement|null} */
+    const debugPinFreeformSendEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-freeform-send'));
+    /** @type {HTMLElement|null} */
+    const debugControlsEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-controls'));
+    /** @type {HTMLElement|null} */
+    const secretPhotoEl = /** @type {HTMLElement|null} */ (document.getElementById('board-secret-photo'));
+    /** @type {HTMLImageElement|null} */
+    const secretPhotoImgEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-secret-photo-img'));
+    /** @type {HTMLElement|null} */
+    const authStartEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-start'));
+    /** @type {HTMLElement|null} */
+    const authLogoutEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-logout-debug'));
+    /** @type {HTMLElement|null} */
+    const authPanelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-panel'));
+    /** @type {HTMLImageElement|null} */
+    const authQrEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-auth-qr'));
+    /** @type {HTMLElement|null} */
+    const authLinkEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-link'));
+    /** @type {HTMLElement|null} */
+    const authStatusEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-status'));
+    /** @type {HTMLInputElement|null} */
+    const hideQrButtonEl = /** @type {HTMLInputElement|null} */ (document.getElementById('board-hide-qr-btn'));
 
     const tapPattern = [1, 2, 2, 1, 2];
     let tapHistory = [];
@@ -294,6 +323,8 @@
             clearTimeout(restartPaneTimer);
             restartPaneTimer = null;
         }
+        // ensure auth panel closes when whole debug pane is closed
+        hideAuthPanel();
         resetPinpad();
     }
 
@@ -428,13 +459,34 @@
         if (authPanelEl) {
             authPanelEl.classList.remove('hidden');
         }
+        // ensure QR is rendered when panel opens
         if (!authQrReady) {
             renderBoardQr();
         }
+        // start poll only if not already running
         if (!authPollTimer) {
             authPollTimer = setInterval(pollBoardApproval, 2000);
             pollBoardApproval();
         }
+    }
+
+    function hideAuthPanel() {
+        // hide UI
+        if (authPanelEl) {
+            authPanelEl.classList.add('hidden');
+        }
+        // stop poll
+        if (authPollTimer) {
+            clearInterval(authPollTimer);
+            authPollTimer = null;
+        }
+        // clear QR image to release memory
+        try {
+            if (authQrEl) {
+                authQrEl.removeAttribute('src');
+            }
+        } catch (e) {}
+        authQrReady = false;
     }
 
     function logoutBoard() {
@@ -448,6 +500,12 @@
 
     if (authLogoutEl) {
         authLogoutEl.addEventListener('click', logoutBoard);
+    }
+
+    // auth panel close button (inside the panel)
+    const authCloseEl = document.getElementById('board-auth-close');
+    if (authCloseEl) {
+        authCloseEl.addEventListener('click', hideAuthPanel);
     }
 
     if (debugPinButtons) {
@@ -525,3 +583,33 @@
         }
     }
 </script>
+
+<style>
+    /* Debug pane: inputs and buttons styled to be glass-friendly and theme-aware */
+    #board-restart-pane .debug-input {
+        background: transparent !important;
+        border: none !important;
+        color: var(--board-text-primary) !important;
+        outline: none;
+    }
+    #board-restart-pane .debug-input::placeholder {
+        color: var(--board-text-secondary);
+        opacity: 0.6;
+    }
+    #board-restart-pane .debug-btn {
+        background: rgba(255,255,255,0.06);
+        color: var(--board-text-primary);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 0.45rem 0.75rem;
+        border-radius: 0.375rem;
+    }
+    #board-restart-pane .board-pin-btn {
+        background: rgba(255,255,255,0.04);
+        color: var(--board-text-primary);
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    /* Keep focus readable */
+    #board-restart-pane .debug-input:focus, #board-restart-pane .debug-btn:focus {
+        box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+</style>
