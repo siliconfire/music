@@ -242,6 +242,40 @@ THEME_PRESETS = {
             "qrButtonText": "#38bdf8",
             "confettiColors": ["#0ea5e9", "#2563eb", "#06b6d4", "#7dd3fc", "#1d4ed8", "#67e8f9"]
         }
+    },
+    "solarized_light_blur": {
+        "key": "solarized_light_blur",
+        "label": "Güneş Işığı (Buğulu)",
+        "colors": {
+            "textPrimary": "#073642",
+            "textSecondary": "#586e75",
+            "background": "#fdf6e3",
+            "cardBackground": "#eee8d5",
+            "cardBorder": "#d5c4a1",
+            "cardPinnedBackground": "#e9e3d0",
+            "cardPinnedBorder": "#268bd2",
+            "qrButtonBackground": "#eee8d5",
+            "qrButtonBorder": "#93a1a1",
+            "qrButtonText": "#268bd2",
+            "confettiColors": ["#b58900", "#cb4b16", "#dc322f", "#d33682", "#6c71c4", "#268bd2"]
+        }
+    },
+    "hot_dog_stand": {
+        "key": "hot_dog_stand",
+        "label": "Hot Dog Stand (Windows 3.1)",
+        "colors": {
+            "textPrimary": "#000000",
+            "textSecondary": "#000000",
+            "background": "#ff0000",
+            "cardBackground": "#ffff00",
+            "cardBorder": "#000000",
+            "cardPinnedBackground": "#ffffff",
+            "cardPinnedBorder": "#000000",
+            "qrButtonBackground": "#000000",
+            "qrButtonBorder": "#ffffff",
+            "qrButtonText": "#ffff00",
+            "confettiColors": ["#ff0000", "#ffff00", "#000000", "#ffffff", "#ff0000", "#ffff00"]
+        }
     }
 }
 

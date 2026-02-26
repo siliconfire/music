@@ -1,5 +1,5 @@
 <div id="board-restart-pane" class="hidden fixed top-6 right-6 z-60 p-4 board-theme-text-primary" style="max-width:40rem; width:calc(100% - 3rem); background: rgba(255,255,255,0.04); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 6px 18px rgba(2,6,23,0.06);">
-    <button id="board-restart-close" class="absolute top-2 right-2 border border-yellow-700 px-2 py-1 text-sm" aria-label="Kapat">X</button>
+    <button id="board-restart-close" class="absolute top-2 right-2 border px-2 py-1 text-sm" aria-label="Kapat" style="border-color: var(--board-card-pinned-border, var(--board-card-pinned-border, #b45309));">X</button>
     <div id="board-debug-pin" class="hidden mb-3">
         <!-- pin display: transparent so underlying page shows through; text uses theme color -->
         <div id="board-debug-pin-display" class="mt-1 px-3 py-2 text-xl tracking-wide min-h-8 board-theme-text-primary" style="background: transparent; border: none; font-family: inherit;"><i>bin dört yüz elli üç? ve ardından kare?</i></div>
@@ -19,7 +19,7 @@
                     <button id="board-pin-submit" class="px-2 p-1 text-2xl debug-btn">#</button>
                 </div>
             </div>
-            <div class="hidden sm:block w-px bg-yellow-700 self-stretch"></div>
+            <div class="hidden sm:block w-px self-stretch" style="background-color: var(--board-card-pinned-border, var(--board-card-pinned-bg-rgba, #b45309));"></div>
             <div class="flex flex-col gap-2">
                 <label for="board-pin-freeform" class="sr-only">Serbest giriş</label>
                 <textarea id="board-pin-freeform" class="board-debug-freeform debug-input text-2xl font-mono" placeholder="Serbest giriş" style="min-width:0; width:100%; min-height:6rem; resize:vertical;"></textarea>
@@ -33,12 +33,14 @@
         <button id="board-fullscreen-exit" class="debug-btn">Tam ekrandan çık</button>
         <button id="board-auth-start" class="debug-btn">Doğrulamayı başlat</button>
         <button id="board-auth-logout-debug" class="debug-btn">Çıkış yap</button>
+        <button id="board-browser-toggle" class="debug-btn">cihaz bilgisini göster</button>
+        <div id="board-browser-info" class="mt-2 text-sm hidden" aria-live="polite"></div>
         <div class="flex items-center gap-2 text-sm">
-            <input id="board-hide-qr-btn" type="checkbox" class="border border-yellow-700" />
+            <input id="board-hide-qr-btn" type="checkbox" class="border" style="border-color: var(--board-warning-border, var(--board-card-pinned-border, #b45309));" />
             <label for="board-hide-qr-btn">QR butonunu gizle</label>
         </div>
     </div>
-    <div id="board-auth-panel" class="hidden mt-3 border border-yellow-700 bg-white p-3 relative">
+    <div id="board-auth-panel" class="hidden mt-3 border p-3 relative" style="max-width:40rem; width:calc(100% - 3rem); background: rgba(255,255,255,0.04); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 6px 18px rgba(2,6,23,0.06); border-color: var(--board-warning-border, var(--board-card-pinned-border, #b45309));">
         <button id="board-auth-close" class="absolute top-2 right-2 debug-btn" aria-label="Kapat">Kapat</button>
         <div class="text-lg">Oturumun doğrulanabilmesi ve cihaza bir JWT anahtarı verilebilmesi için, lütfen "admin" yada daha yüksek yetkiye sahip bir cihazdan bu QR kodu okutun.</div>
         <div class="text-slate-600 mt-2" id="board-auth-status">Onay gelince otomatik olarak güncellenecek.</div>
@@ -56,60 +58,36 @@
 <script>
     import { API_URL } from '../lib/constants';
 
-    /** @type {HTMLElement|null} */
-    const tapFirstEl = /** @type {HTMLElement|null} */ (document.getElementById('tap-bartin'));
-    /** @type {HTMLElement|null} */
-    const tapSecondEl = /** @type {HTMLElement|null} */ (document.getElementById('tap-lisesi'));
-    /** @type {HTMLElement|null} */
-    const restartPaneEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-pane'));
-    /** @type {HTMLElement|null} */
-    const restartBtnEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-btn-manual'));
-    /** @type {HTMLElement|null} */
-    const restartCloseEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-close'));
-    /** @type {HTMLElement|null} */
-    const restartSplashEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-splash'));
-    /** @type {HTMLElement|null} */
-    const fullscreenEnterEl = /** @type {HTMLElement|null} */ (document.getElementById('board-fullscreen-enter'));
-    /** @type {HTMLElement|null} */
-    const fullscreenExitEl = /** @type {HTMLElement|null} */ (document.getElementById('board-fullscreen-exit'));
-    /** @type {HTMLElement|null} */
-    const debugPinEl = /** @type {HTMLElement|null} */ (document.getElementById('board-debug-pin'));
-    /** @type {HTMLDivElement|null} */
-    const debugPinDisplayEl = /** @type {HTMLDivElement|null} */ (document.getElementById('board-debug-pin-display'));
-    /** @type {HTMLElement|null} */
-    const debugPinErrorEl = /** @type {HTMLElement|null} */ (document.getElementById('board-debug-pin-error'));
-    /** @type {NodeListOf<HTMLButtonElement>} */
-    const debugPinButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.board-pin-btn'));
-    /** @type {HTMLElement|null} */
-    const debugPinClearEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-clear'));
-    /** @type {HTMLElement|null} */
-    const debugPinSubmitEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-submit'));
-    /** @type {HTMLTextAreaElement|null} */
-    const debugPinFreeformEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('board-pin-freeform'));
-    /** @type {HTMLElement|null} */
-    const debugPinFreeformSendEl = /** @type {HTMLElement|null} */ (document.getElementById('board-pin-freeform-send'));
-    /** @type {HTMLElement|null} */
-    const debugControlsEl = /** @type {HTMLElement|null} */ (document.getElementById('board-restart-controls'));
-    /** @type {HTMLElement|null} */
-    const secretPhotoEl = /** @type {HTMLElement|null} */ (document.getElementById('board-secret-photo'));
-    /** @type {HTMLImageElement|null} */
-    const secretPhotoImgEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-secret-photo-img'));
-    /** @type {HTMLElement|null} */
-    const authStartEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-start'));
-    /** @type {HTMLElement|null} */
-    const authLogoutEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-logout-debug'));
-    /** @type {HTMLElement|null} */
-    const authPanelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-panel'));
-    /** @type {HTMLImageElement|null} */
-    const authQrEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-auth-qr'));
-    /** @type {HTMLElement|null} */
-    const authLinkEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-link'));
-    /** @type {HTMLElement|null} */
-    const authStatusEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-status'));
-    /** @type {HTMLInputElement|null} */
-    const hideQrButtonEl = /** @type {HTMLInputElement|null} */ (document.getElementById('board-hide-qr-btn'));
+    const tapFirstEl = document.getElementById('tap-bartin');
+    const tapSecondEl = document.getElementById('tap-lisesi');
+    const restartPaneEl = document.getElementById('board-restart-pane');
+    const restartBtnEl = document.getElementById('board-restart-btn-manual');
+    const restartCloseEl = document.getElementById('board-restart-close');
+    const restartSplashEl = document.getElementById('board-restart-splash');
+    const fullscreenEnterEl = document.getElementById('board-fullscreen-enter');
+    const fullscreenExitEl = document.getElementById('board-fullscreen-exit');
+    const debugPinEl = document.getElementById('board-debug-pin');
+    const debugPinDisplayEl = document.getElementById('board-debug-pin-display');
+    const debugPinErrorEl = document.getElementById('board-debug-pin-error');
+    const debugPinButtons = document.querySelectorAll('.board-pin-btn');
+    const debugPinClearEl = document.getElementById('board-pin-clear');
+    const debugPinSubmitEl = document.getElementById('board-pin-submit');
+    const debugPinFreeformEl = document.getElementById('board-pin-freeform');
+    const debugPinFreeformSendEl = document.getElementById('board-pin-freeform-send');
+    const debugControlsEl = document.getElementById('board-restart-controls');
+    const secretPhotoEl = document.getElementById('board-secret-photo');
+    const secretPhotoImgEl = document.getElementById('board-secret-photo-img');
+    const authStartEl = document.getElementById('board-auth-start');
+    const authLogoutEl = document.getElementById('board-auth-logout-debug');
+    const authPanelEl = document.getElementById('board-auth-panel');
+    const authQrEl = document.getElementById('board-auth-qr');
+    const authLinkEl = document.getElementById('board-auth-link');
+    const authStatusEl = document.getElementById('board-auth-status');
+    const hideQrButtonEl = document.getElementById('board-hide-qr-btn');
+    const browserInfoEl = document.getElementById('board-browser-info');
+    const browserToggleEl = document.getElementById('board-browser-toggle');
 
-    const tapPattern = [1, 2, 2, 1, 2];
+    const tapPattern = [1];
     let tapHistory = [];
     let restartPaneTimer = null;
     let pinUnlocked = false;
@@ -132,7 +110,7 @@
         }, delayMs);
     }
 
-    window.boardShowRestartSplash = showRestartSplash;
+    window['boardShowRestartSplash'] = showRestartSplash;
 
     function showSecretPhoto() {
         if (!secretPhotoEl) return;
@@ -185,7 +163,9 @@
         const masked = freeformRaw.length <= 1
             ? freeformRaw
             : `${buildPixelMask(freeformRaw.length - 1)}${freeformRaw.slice(-1)}`;
-        debugPinFreeformEl.value = masked;
+        if (debugPinFreeformEl instanceof HTMLTextAreaElement) {
+            debugPinFreeformEl.value = masked;
+        }
     }
 
     function applyFreeformInput(inputType, data) {
@@ -298,10 +278,52 @@
         setPinError(true);
     }
 
+    function collectBrowserInfo() {
+        const nav = window.navigator;
+        const screenEl = window.screen;
+        // connection may be vendor-prefixed or not present — use `any` to avoid type errors
+        const conn = (nav as any).connection || (nav as any).mozConnection || (nav as any).webkitConnection || {};
+        return {
+            userAgent: nav.userAgent || '',
+            platform: nav.platform || '',
+            language: nav.language || (nav.languages && nav.languages[0]) || '',
+            cookieEnabled: Boolean((nav as any).cookieEnabled),
+            doNotTrack: (nav as any).doNotTrack || (navigator as any).msDoNotTrack || '',
+            vendor: (nav as any).vendor || '',
+            appVersion: (nav as any).appVersion || '',
+            deviceMemory: (nav as any).deviceMemory || null,
+            hardwareConcurrency: (nav as any).hardwareConcurrency || null,
+            screenWidth: screenEl?.width || null,
+            screenHeight: screenEl?.height || null,
+            viewportWidth: Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0),
+            viewportHeight: Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0),
+            connection: {
+                effectiveType: (conn && (conn as any).effectiveType) || '',
+                downlink: (conn && (conn as any).downlink) || null,
+                rtt: (conn && (conn as any).rtt) || null
+            }
+        };
+    }
+
+    function renderBrowserInfo() {
+        if (!browserInfoEl) return;
+        const info = collectBrowserInfo();
+        // Render as simple preformatted JSON so styles are untouched
+        browserInfoEl.innerHTML = '<pre style="margin:0; white-space:pre-wrap;">' + escapeHtml(JSON.stringify(info, null, 2)) + '</pre>';
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
     function showDebugControls() {
         pinUnlocked = true;
         if (debugPinEl) debugPinEl.classList.add('hidden');
         if (debugControlsEl) debugControlsEl.classList.remove('hidden');
+        // Update browser info when controls are shown only if visible
+        if (browserInfoEl && !browserInfoEl.classList.contains('hidden')) {
+            renderBrowserInfo();
+        }
     }
 
     function resetPinpad() {
@@ -336,6 +358,7 @@
             clearTimeout(restartPaneTimer);
         }
         resetPinpad();
+        // start the auto-hide timeout (60s)
         restartPaneTimer = setTimeout(hideRestartPane, 60000);
     }
 
@@ -375,7 +398,22 @@
     if (hideQrButtonEl) {
         initHideQrButtonSetting();
         hideQrButtonEl.addEventListener('change', () => {
-            syncHideQrButtonSetting(hideQrButtonEl.checked);
+            syncHideQrButtonSetting(hideQrButtonEl instanceof HTMLInputElement ? hideQrButtonEl.checked : false);
+        });
+    }
+
+    // Initialize browser toggle button state and handler (safe runtime checks)
+    if (browserToggleEl instanceof HTMLButtonElement) {
+        // Set initial label based on whether the info container is hidden
+        const initiallyHidden = browserInfoEl ? browserInfoEl.classList.contains('hidden') : true;
+        browserToggleEl.textContent = initiallyHidden ? 'cihaz bilgisini göster' : '...gizle';
+        browserToggleEl.addEventListener('click', () => {
+            if (!browserInfoEl) return;
+            const isHidden = browserInfoEl.classList.toggle('hidden');
+            browserToggleEl.textContent = isHidden ? 'cihaz bilgisini göster' : '...gizle';
+            if (!isHidden) {
+                renderBrowserInfo();
+            }
         });
     }
 
@@ -554,7 +592,11 @@
         });
         debugPinFreeformEl.addEventListener('input', () => {
             // Fallback path for browsers without beforeinput/inputType support.
-            freeformRaw = debugPinFreeformEl.value || '';
+            if (debugPinFreeformEl instanceof HTMLTextAreaElement) {
+                freeformRaw = debugPinFreeformEl.value || '';
+            } else {
+                freeformRaw = '';
+            }
             renderFreeform();
         });
         debugPinFreeformEl.addEventListener('keydown', (event) => {
@@ -578,7 +620,7 @@
 
     function initHideQrButtonSetting() {
         const stored = localStorage.getItem(hideQrButtonKey) === 'true';
-        if (hideQrButtonEl) {
+        if (hideQrButtonEl instanceof HTMLInputElement) {
             hideQrButtonEl.checked = stored;
         }
     }

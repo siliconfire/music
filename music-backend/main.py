@@ -32,6 +32,17 @@ import cors
 import users
 from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
 import board
+from content_checker import content_checker, reload_blacklists, find_blacklist_match
+import logging
+
+# Logger for blocked content checks
+content_logger = logging.getLogger("content_checks")
+if not content_logger.handlers:
+    handler = logging.FileHandler("content_checks.log", encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s"))
+    content_logger.addHandler(handler)
+content_logger.setLevel(logging.INFO)
+content_logger.propagate = False
 
 load_dotenv()
 app = FastAPI()
@@ -45,7 +56,7 @@ BOARD_LOCKDOWN = False
 
 PASSKEY_RP_ID = os.getenv("PASSKEY_RP_ID", "localhost")
 PASSKEY_RP_ORIGIN = os.getenv("PASSKEY_RP_ORIGIN", "http://localhost:4321")
-PASSKEY_RP_NAME = os.getenv("PASSKEY_RP_NAME", "Music Board")
+PASSKEY_RP_NAME = os.getenv("PASSKEY_RP_NAME", "Bartın Lisesi Müzik Sistemi")
 PASSKEY_CHALLENGE_TTL_SEC = 300
 PASSKEY_REGISTER_CHALLENGES: dict[str, dict] = {}
 PASSKEY_LOGIN_CHALLENGES: dict[str, dict] = {}
@@ -70,7 +81,7 @@ def get_sp(auth_manager=Depends(get_auth_manager)):
 
     if not token_info:
         raise HTTPException(status_code=503,
-                            detail="Service unavailable. Please tell your administrator to log in (/login).")
+                            detail="Hayır. Maalesef hayır. Lütfen yöneticinizden giriş yapmasını isteyin.")
 
     return Spotify(auth=token_info["access_token"], requests_timeout=SPOTIFY_REQUEST_TIMEOUT_SEC)
 
@@ -78,15 +89,15 @@ def get_sp(auth_manager=Depends(get_auth_manager)):
 def ensure_music_control(payload: dict):
     user_id = payload.get("sub")
     if not users.check_user_perm(user_id, "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     if LOCKDOWN and not users.check_user_rank_or_higher(user_id, "moderator"):
-        raise HTTPException(status_code=403, detail="System is locked. Moderator or higher required.")
+        raise HTTPException(status_code=403, detail="Sistem kilitli, kilitli iken değişiklik yapmak için moderatör veya üstü olmanız gerekir. Daha fazla bilgi için yardım alın.")
 
 
 def ensure_board_edit(payload: dict):
     user_id = payload.get("sub")
     if BOARD_LOCKDOWN and not users.check_user_rank_or_higher(user_id, "moderator"):
-        raise HTTPException(status_code=403, detail="Board is locked. Moderator or higher required.")
+        raise HTTPException(status_code=403, detail="Düzenleme kilitli, kilitli iken değişiklik yapmak için moderatör veya üstü olmanız gerekir. Daha fazla bilgi için yardım alın.")
 
 
 class LockdownRequest(BaseModel):
@@ -174,7 +185,7 @@ def login_to_app(user_id: str | None = None, password: str | None = None, code: 
         raise HTTPException(status_code=400, detail="User ID is required")
 
     if password is not None and password.strip().startswith("74"):
-        raise HTTPException(status_code=400, detail="Use /login/code for code logins")
+        raise HTTPException(status_code=400, detail="stupid.")
 
     user = users.get_user_by_id(user_id)
     if not user:
@@ -211,11 +222,11 @@ def board_login_approve(board_id: str = "100000", device_id: str | None = None, 
         raise HTTPException(status_code=403, detail="Admin veya üstü yetki gerekli.")
     board_user = users.get_user_by_id(board_id)
     if not board_user:
-        raise HTTPException(status_code=404, detail="Board user not found")
+        raise HTTPException(status_code=404, detail="Board user not found ...?")
     if board_user.get("banned"):
-        raise HTTPException(status_code=403, detail="Board user is banned")
+        raise HTTPException(status_code=403, detail="Board user is banned ...?")
     if "board" not in board_user.get("permissions", []):
-        raise HTTPException(status_code=400, detail="Board user missing 'board' permission")
+        raise HTTPException(status_code=400, detail="Board user missing 'board' permission ...?")
     if not device_id:
         raise HTTPException(status_code=400, detail="Device ID gerekli.")
     token = create_permanent_token(board_id)
@@ -365,11 +376,11 @@ def verify_account_passkey(req: PasskeyRegistrationVerifyRequest, payload: dict 
     user_id = payload.get("sub")
     user = users.get_user_by_id(user_id)
     if not user or user.get("banned"):
-        raise HTTPException(status_code=403, detail="User not allowed")
+        raise HTTPException(status_code=403, detail="Hayır.")
 
     stored = _load_challenge(PASSKEY_REGISTER_CHALLENGES, req.challenge_id)
     if not stored or stored.get("user_id") != user_id:
-        raise HTTPException(status_code=400, detail="Challenge expired or invalid")
+        raise HTTPException(status_code=400, detail="imkansız (süresi geçmiş olabilir mi?)")
 
     credential = _parse_registration_credential(req.credential)
     info = verify_registration_response(
@@ -394,7 +405,7 @@ def get_login_passkey_options(req: PasskeyAuthenticationOptionsRequest | None = 
     if user_id:
         user = users.get_user_by_id(user_id)
         if not user or user.get("banned"):
-            raise HTTPException(status_code=403, detail="User not allowed")
+            raise HTTPException(status_code=403, detail="hayır.")
         for entry in users.get_user_passkeys(user):
             try:
                 allow_credentials.append(
@@ -428,15 +439,15 @@ def get_login_passkey_options(req: PasskeyAuthenticationOptionsRequest | None = 
 def verify_login_passkey(req: PasskeyAuthenticationVerifyRequest):
     stored = _load_challenge(PASSKEY_LOGIN_CHALLENGES, req.challenge_id)
     if not stored:
-        raise HTTPException(status_code=400, detail="Challenge expired or invalid")
+        raise HTTPException(status_code=400, detail="imkansız (süresi geçmiş olabilir mi?)")
 
     credential = _parse_authentication_credential(req.credential)
     credential_id = _base64url_encode(credential.raw_id)
     user_id, user, entry = users.find_user_by_passkey_id(credential_id)
     if not user or not entry:
-        raise HTTPException(status_code=401, detail="Unknown credential")
+        raise HTTPException(status_code=401, detail="bu hata mesajını görüyorsan artık muhtemelen türkçe yazmamı haketmiyorsun. Unknown credential.")
     if user.get("banned"):
-        raise HTTPException(status_code=403, detail="User is banned")
+        raise HTTPException(status_code=403, detail="Kullanıcının hesabı kapatılmış.")
 
     public_key_bytes = _base64url_decode(entry["public_key"])
     info = verify_authentication_response(
@@ -462,7 +473,7 @@ def verify_login_passkey(req: PasskeyAuthenticationVerifyRequest):
 @app.get("/admin/spotify/login")
 def login(auth_manager=Depends(get_auth_manager), payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
     auth_url = auth_manager.get_authorize_url()
     return {"login_uri": auth_url}
 
@@ -470,7 +481,7 @@ def login(auth_manager=Depends(get_auth_manager), payload: dict = Depends(get_cu
 @app.get("/callback")
 def callback(code: str, auth_manager=Depends(get_auth_manager), payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
     auth_manager.get_access_token(code)
     return {"message": "Login successful."}
 
@@ -478,7 +489,7 @@ def callback(code: str, auth_manager=Depends(get_auth_manager), payload: dict = 
 @app.get("/admin/spotify/logout")
 def logout(payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
     cache_path = ".spotify_cache"
     if os.path.exists(cache_path):
         os.remove(cache_path)
@@ -489,7 +500,7 @@ def logout(payload: dict = Depends(get_current_user)):
 @app.get("/admin/spotify/devices")
 def list_devices(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     return sp.devices()
 
 
@@ -508,7 +519,7 @@ def get_status(sp: Spotify = Depends(get_sp)):  # no auth
 @app.get("/search")
 def search(q: str, limit: int = 5, sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     return sp.search(q=q, limit=limit, type="track")
 
 
@@ -531,9 +542,9 @@ def list_queue(sp: Spotify = Depends(get_sp)):  # no auth
     try:
         return sp.queue()
     except requests.exceptions.ReadTimeout:
-        raise HTTPException(status_code=504, detail="Spotify API timed out while fetching the queue.")
+        raise HTTPException(status_code=504, detail="Spotify'a ulaşmaya çalışırken bir yanıt alamadık (timeout).")
     except requests.exceptions.RequestException:
-        raise HTTPException(status_code=502, detail="Spotify API request failed while fetching the queue.")
+        raise HTTPException(status_code=502, detail="Spotify'a ulaşmaya çalışırken bir hata oluştu.")
 
 
 @app.post("/pause")
@@ -606,7 +617,7 @@ class CreateUserRequest(BaseModel):
 @app.get("/admin/users")
 def list_users_admin(payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
 
     return {"users": users.list_users()}
 
@@ -621,7 +632,7 @@ def create_user_admin(req: CreateUserRequest, payload: dict = Depends(get_curren
 @app.post("/admin/users/{target_id}/password")
 def set_user_password_admin(target_id: str, req: SetPasswordRequest, payload: dict = Depends(get_current_user)):
     if req.confirm is not None and req.password != req.confirm:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
+        raise HTTPException(status_code=400, detail="şifreler uyuşsa ne güzel olurdu")
     actor_id = payload.get("sub")
     users.set_user_password_admin(actor_id, target_id, req.password)
     return {"ok": True}
@@ -637,11 +648,11 @@ def delete_user_admin(target_id: str, payload: dict = Depends(get_current_user))
 @app.get("/admin/users/{target_id}")
 def get_user_admin(target_id: str, payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
 
     user = users.get_user_by_id(target_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="yok. öyle biri yok.")
 
     return {
         "user": {
@@ -684,7 +695,7 @@ def get_lockdown():  # no auth
 @app.post("/lockdown")
 def set_lockdown(req: LockdownRequest | None = None, locked: bool | None = None, payload: dict = Depends(get_current_user)):
     if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
-        raise HTTPException(status_code=403, detail="You don't have the 'moderator' permission.")
+        raise HTTPException(status_code=403, detail="'moderator' yetkisine sahip değilsiniz.")
     value = req.locked if req is not None else locked
     if value is None:
         raise HTTPException(status_code=400, detail="Missing 'locked' value.")
@@ -701,13 +712,40 @@ def get_board_lockdown():  # no auth
 @app.post("/board/lockdown")
 def set_board_lockdown(req: BoardLockdownRequest | None = None, locked: bool | None = None, payload: dict = Depends(get_current_user)):
     if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
-        raise HTTPException(status_code=403, detail="You don't have the 'moderator' permission.")
+        raise HTTPException(status_code=403, detail="'moderator' yetkisine sahip değilsiniz.")
     value = req.locked if req is not None else locked
     if value is None:
         raise HTTPException(status_code=400, detail="Missing 'locked' value.")
     global BOARD_LOCKDOWN
     BOARD_LOCKDOWN = bool(value)
     return {"locked": BOARD_LOCKDOWN}
+
+
+@app.get("/board/last-change")
+def get_board_last_change(payload: dict = Depends(get_current_user)):  # auth required
+    """Return who last updated the board and when.
+
+    Response fields:
+    - updated_by: user id (string) or None
+    - updated_by_name: user's display name (or None)
+    - updated_at: ISO timestamp string or None
+    """
+    data = board.load_board()
+    updated_by = data.get("updated_by")
+    updated_at = data.get("updated_at")
+    updated_by_name = None
+    if updated_by:
+        try:
+            user = users.get_user_by_id(updated_by)
+            if user:
+                updated_by_name = user.get("name")
+        except Exception:
+            updated_by_name = None
+    return {
+        "updated_by": updated_by,
+        "updated_by_name": updated_by_name,
+        "updated_at": updated_at
+    }
 
 
 @app.get("/board")
@@ -719,10 +757,119 @@ def get_board():
 def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
     if not users.check_user_rank_or_higher(user_id, "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     ensure_board_edit(payload)
     if req.pinned is not None and not users.check_user_perm(user_id, "admin"):
-        raise HTTPException(status_code=403, detail="You don't have the 'admin' permission.")
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+
+    # Reload blacklists so changes on disk take effect without restart
+    try:
+        reload_blacklists()
+    except Exception:
+        # Fail open if blacklist reload unexpectedly errors; don't block board updates because of IO
+        pass
+
+    # Validate user-generated content in incoming widgets
+    widgets = req.widgets
+    if isinstance(widgets, list):
+        for item in widgets:
+            if not isinstance(item, dict):
+                continue
+            wtype = item.get("type") or item.get("id")
+            widget_key = item.get("key") or item.get("id") or "<unknown>"
+            # Check common title field
+            title = item.get("title")
+            if isinstance(title, str) and title.strip():
+                res = find_blacklist_match(title)
+                if res:
+                    matched, matched_phrase, rule = res
+                    if matched:
+                        try:
+                            user = users.get_user_by_id(user_id)
+                            username = user.get("name") if user else None
+                        except Exception:
+                            username = None
+                        content_logger.info(f"user_id={user_id}\tusername={username}\twidget={widget_key}\tfield=title\tvalue={title!r}\tcontent={matched_phrase!r}\trule={rule}")
+                        detail = {
+                            "message": "Gönderdiğiniz içerik engellendi.",
+                            "rule": matched_phrase,
+                            "field": "title",
+                            "widget": widget_key,
+                            "value": title
+                        }
+                        raise HTTPException(status_code=400, detail=detail)
+
+            if wtype == "text-block":
+                content = item.get("content")
+                if isinstance(content, str) and content.strip():
+                    res = find_blacklist_match(content)
+                    if res:
+                        matched, matched_phrase, rule = res
+                        if matched:
+                            try:
+                                user = users.get_user_by_id(user_id)
+                                username = user.get("name") if user else None
+                            except Exception:
+                                username = None
+                            content_logger.info(f"user_id={user_id}\tusername={username}\twidget={widget_key}\tfield=content\tvalue={content!r}\tcontent={matched_phrase!r}\trule={rule!r}")
+                            detail = {
+                                "message": "Gönderdiğiniz içerik engellendi.",
+                                "rule": matched_phrase,
+                                "field": "content",
+                                "widget": widget_key,
+                                "value": content
+                            }
+                            raise HTTPException(status_code=400, detail=detail)
+
+            if wtype == "poll":
+                question = item.get("question")
+                if isinstance(question, str) and question.strip():
+                    res = find_blacklist_match(question)
+                    if res:
+                        matched, matched_phrase, rule = res
+                        if matched:
+                            try:
+                                user = users.get_user_by_id(user_id)
+                                username = user.get("name") if user else None
+                            except Exception:
+                                username = None
+                            content_logger.info(f"user_id={user_id}\tusername={username}\twidget={widget_key}\tfield=question\tvalue={question!r}\tcontent={matched_phrase!r}\treason={rule!r}")
+                            detail = {
+                                "message": "Gönderdiğiniz içerik engellendi.",
+                                "rule": matched_phrase,
+                                "field": "question",
+                                "widget": widget_key,
+                                "value": question
+                            }
+                            raise HTTPException(status_code=400, detail=detail)
+                options = item.get("options") or []
+                if isinstance(options, list):
+                    for opt in options:
+                        if not isinstance(opt, dict):
+                            continue
+                        label = opt.get("label")
+                        opt_id = opt.get("id") or "<no-id>"
+                        if isinstance(label, str) and label.strip():
+                            res = find_blacklist_match(label)
+                            if res:
+                                matched, matched_phrase, rule = res
+                                if matched:
+                                    try:
+                                        user = users.get_user_by_id(user_id)
+                                        username = user.get("name") if user else None
+                                    except Exception:
+                                        username = None
+                                    content_logger.info(f"user_id={user_id}\tusername={username}\twidget={widget_key}\tfield=poll_option:{opt_id}\tvalue={label!r}\tcontent={matched_phrase!r}\trule={rule}")
+                                    detail = {
+                                        "message": "Gönderdiğiniz içerik engellendi.",
+                                        "rule": matched_phrase,
+                                        "field": "poll_option",
+                                        "widget": widget_key,
+                                        "option_id": opt_id,
+                                        "value": label
+                                    }
+                                    raise HTTPException(status_code=400, detail=detail)
+
     return board.update_board(
         widgets=req.widgets,
         order_ids=req.order,
@@ -744,7 +891,7 @@ def vote_on_poll(req: BoardPollVoteRequest):
 def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
     if not users.check_user_rank_or_higher(user_id, "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     ensure_board_edit(payload)
     config = req.dict(by_alias=True, exclude_none=True)
     trigger = board.set_confetti_trigger(config=config, updated_by=user_id)
@@ -755,7 +902,7 @@ def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(ge
 def trigger_board_restart(payload: dict = Depends(get_current_user)):
     user_id = payload.get("sub")
     if not users.check_user_rank_or_higher(user_id, "music"):
-        raise HTTPException(status_code=403, detail="You don't have the 'music' permission.")
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     ensure_board_edit(payload)
     trigger = board.set_restart_trigger(updated_by=user_id)
     return {"ok": True, "trigger": trigger}

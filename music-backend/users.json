@@ -22,7 +22,7 @@
             "banned": false,
             "reason": null,
             "login_code": {
-                "code": "74681407",
+                "code": "74654872",
                 "remaining_usage": -1,
                 "set_password": "disabled",
                 "valid_until": null
@@ -30,9 +30,17 @@
         },
         "101": {
             "name": "Furkan Kırıl",
-            "permissions": [],
+            "permissions": [
+                "music"
+            ],
             "banned": false,
-            "reason": null
+            "reason": null,
+            "login_code": {
+                "code": "74693944",
+                "remaining_usage": -1,
+                "set_password": "disabled",
+                "valid_until": null
+            }
         },
         "100000": {
             "name": "board",
@@ -43,7 +51,13 @@
                 "admin"
             ],
             "banned": false,
-            "reason": null
+            "reason": null,
+            "login_code": {
+                "code": "74599195",
+                "remaining_usage": -1,
+                "set_password": "disabled",
+                "valid_until": null
+            }
         }
     }
 }

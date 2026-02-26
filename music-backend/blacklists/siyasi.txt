@@ -1,0 +1,213 @@
+# bu liste hayatımdan en az 40 dakika aldı.
+# iyi işlerde kullanın.
+# -- Çınar Mert Çeçen - https://cinarcecen.dev
+# -- 2026-02-17
+
+# siyasi kişiler
+recep tayyip
+receptayyip
+tayyip erdoğan
+tayyip erdogan
+tayyip erdoğan
+tayyiperdogan
+recep tayyip erdoğan
+receptayyiperdogan
+tayyip
+erdoğan
+erdogan
+rte
+hakan fidan
+hakanfidan
+kemal kılıçdaroğlu
+kemal kılıcdaroglu
+kemalkılıcdaroglu
+kılıçdaroğlu
+kılıcdaroglu
+bay kemal
+baykemal
+özgür özel
+ozgur ozel
+özgürözel
+ozgurozel
+ekrem imamoğlu
+ekrem imamoglu
+imamoğlu
+imamoglu
+ekremimamoglu
+eko başkan
+ekobaskan
+mansur yavaş
+mansur yavas
+mansuryavaş
+mansuryavas
+yusuf tekin
+yusuftekin
+devlet bahceli
+devletbahceli
+ali babacan
+alibabacan
+ümit özdağ
+umit ozdag
+ümitözdağ
+umitozdag
+furkan bölükbaşı
+furkan bolukbası
+furkan bolukbasi
+furkanbölükbaşı
+furkanbolukbası
+furkanbolukbasi
+meral akşener
+meral aksener
+meralakşener
+meralaksener
+
+# parti isimleri
+ak parti
+akparti
+ampul partisi
+akp
+cumhuriyet halk partisi
+cumhuriyethalkpartisi
+chp
+milliyetci hareket partisi
+milliyetci harekat partisi
+milliyetcihareketpartisi
+milliyetciharekatpartisi
+hareketpartisi
+harekatpartisi
+mhp
+iyi parti
+iyiparti
+iyip
+dem parti
+demparti
+halklarin esitlik ve demokrasi partisi
+halklarinesitlikvedemokrasipartisi
+yeniden refah partisi
+yenidenrefahpartisi
+yrp
+zafer partisi
+zaferpartisi
+turkiye isci partisi
+turkiyeiscipartisi
+türkiye işçi partisi
+türkiyeişçipartisi
+deva partisi
+devapartisi
+deva
+gelecek partisi
+gelecekpartisi
+saadet partisi
+saadetpartisi
+huda par
+hudapar
+hür dava partisi
+hurdavapartisi
+memleket partisi
+memleketpartisi
+vatan partisi
+vatanpartisi
+demokrat parti
+demokratparti
+buyuk birlik partisi
+buyukbirlikpartisi
+bbp
+türkiye değişim partisi
+turkiyedegisimpartisi
+tdp
+anavatan partisi
+anavatanpartisi
+anap
+dogru yol partisi
+dogruyolpartisi
+dyp
+
+# siyasi şarkı sözleri (çoğu tutmaz ama gene de koymanın bir zararı yok)
+ezanla coşan
+milletiyle kucaklaşan
+benim cumhurbaşkanım
+gerekirse kuru ekmek soğan
+kuru ekmek soğan
+gücünü miletten alan
+haydi gidelim haydi
+ben bay kemal geliyorum
+
+# sloganlara devam
+türkiye yüzyılı
+turkiye yuzyili
+haydi bismillah
+haydibismillah
+ak sevda
+aksevda
+doğru zaman doğru adam
+dogru zaman dogru adam
+milletin adamı
+milletin adami
+dik dur eğilme
+dik dur egilme
+durmak yok yola devam
+durmakyokyoladevam
+vakit tamam
+vakittamam
+geliyor gelmekte olan
+geliyorgelmekteolan
+her şey çok güzel olacak
+hersey cok guzel olacak
+herseycokguzelolacak
+çare sarıgül
+caresarıgul
+caresarigul
+tek millet tek bayrak tek vatan tek devlet
+tekmillettekbayraktekvatantekdevlet
+bozkurtlar ulusun
+bozkurtlarulusun
+tanrı dağı kadar türk hira dağı kadar müslüman
+şimdi fatih vakti
+simdifatihvakti
+adalet mülkün temelidir
+halka hizmet hakka hizmet
+halkahizmethakkahizmet
+biz birlikte türkiyeyiz
+bizbirlikteturkiyeyiz
+yaparsa yine o yapar
+yaparsayineoyapar
+türkiye bilir
+turkiyebilir
+türkiye kazanacak
+turkiyekazanacak
+
+# secim<n>
+seçim2020
+seçim2021
+seçim2022
+seçim2023
+seçim2024
+seçim2025
+seçim2026
+seçim2027
+seçim2028
+seçim2029
+seçim2030
+seçim2031
+seçim2032
+seçim2033
+seçim2034
+seçim2035
+seçim2036
+seçim2037
+seçim2038
+seçim2039
+seçim2040
+seçim2067
+
+# misc
+ampule oy
+erken seçim
+erkensecim
+altı ok
+altıok
+6 ok
+6lı masa
+6'lı masa
+altılı masa
+altılımasa

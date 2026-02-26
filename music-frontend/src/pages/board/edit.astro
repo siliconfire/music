@@ -177,6 +177,60 @@ import Layout from '../../layouts/Layout.astro';
             statusEl.classList.remove('border-red-400', 'bg-red-50');
         }
 
+        // Remove previous field-level error UI
+        function clearFieldErrors() {
+            // remove error messages
+            document.querySelectorAll('.field-error-msg').forEach((el) => el.remove());
+            // remove error classes from inputs
+            document.querySelectorAll('[data-field]').forEach((el) => {
+                el.classList.remove('border-red-500');
+                el.classList.remove('bg-red-50');
+            });
+        }
+
+        function markFieldError(detail) {
+            if (!detail || !detail.widget) return;
+            const widgetKey = detail.widget;
+            const field = detail.field;
+            const rule = detail.rule;
+            const message = detail.message || 'Gönderdiğiniz içerik engellendi.';
+            let el = null;
+            const widgetSelector = `[data-widget-key="${widgetKey}"]`;
+            if (field === 'title') {
+                el = document.querySelector(`${widgetSelector} [data-field=title]`);
+            } else if (field === 'content') {
+                el = document.querySelector(`${widgetSelector} [data-field=content]`);
+            } else if (field === 'question') {
+                el = document.querySelector(`${widgetSelector} [data-field=question]`);
+            } else if (field === 'poll_option') {
+                const optId = detail.option_id;
+                el = document.querySelector(`${widgetSelector} [data-field=poll_option][data-option-id="${optId}"]`);
+            }
+
+            if (el) {
+                // highlight
+                el.classList.add('border-red-500');
+                // insert message
+                const msg = document.createElement('div');
+                msg.className = 'text-xs text-red-600 field-error-msg mt-1';
+                msg.textContent = `${message} (kural: ${rule})`;
+                if (el.parentNode) {
+                    // insert after the input/textarea
+                    if (el.nextSibling) el.parentNode.insertBefore(msg, el.nextSibling);
+                    else el.parentNode.appendChild(msg);
+                }
+                try {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (typeof el.focus === 'function') el.focus();
+                } catch (e) {
+                    // ignore
+                }
+            } else {
+                // fallback to status message
+                showStatus(message + (rule ? ` (rule: ${rule})` : ''), true);
+            }
+        }
+
         function hasRank(permissions) {
             return permissions.some((perm) => ranks.includes(perm));
         }
@@ -337,10 +391,30 @@ import Layout from '../../layouts/Layout.astro';
                 return;
             }
             if (!res.ok) {
-                showStatus('Save failed.', true);
+                // Try to show the server-provided error detail (e.g. blocked rule message)
+                let errMsg = 'Save failed.';
+                try {
+                    const body = await res.json();
+                    if (body && body.detail) {
+                        // backend now returns structured detail object
+                        const detail = body.detail;
+                        clearFieldErrors();
+                        if (typeof detail === 'object') {
+                            // mark offending field and show message
+                            markFieldError(detail);
+                            errMsg = detail.message || errMsg;
+                        } else {
+                            errMsg = detail;
+                        }
+                    }
+                } catch (e) {
+                    // ignore JSON parse errors, keep generic message
+                }
+                showStatus(errMsg, true);
                 return;
             }
             boardData = await res.json();
+            clearFieldErrors();
             renderBoard();
             renderThemeOptions();
             showStatus('Saved.');
@@ -377,6 +451,8 @@ import Layout from '../../layouts/Layout.astro';
                     const title = document.createElement('input');
                     title.className = 'font-semibold text-slate-800 text-sm border border-slate-200 px-2 py-1 w-full';
                     title.value = widget.title || allWidgets[widget.type] || widget.type;
+                    // mark field for error lookup
+                    title.dataset.field = 'title';
                     title.addEventListener('input', (event) => {
                         widget.title = event.target.value;
                     });
@@ -404,6 +480,7 @@ import Layout from '../../layouts/Layout.astro';
                         textarea.className = 'w-full border border-slate-300 p-2 text-sm text-slate-700';
                         textarea.rows = 4;
                         textarea.value = widget.content || '';
+                        textarea.dataset.field = 'content';
                         textarea.addEventListener('input', (event) => {
                             widget.content = event.target.value;
                         });
@@ -413,6 +490,7 @@ import Layout from '../../layouts/Layout.astro';
                         question.className = 'w-full border border-slate-300 p-2 text-sm text-slate-700';
                         question.value = widget.question || '';
                         question.placeholder = 'Soru';
+                        question.dataset.field = 'question';
                         question.addEventListener('input', (event) => {
                             widget.question = event.target.value;
                         });
@@ -427,8 +505,10 @@ import Layout from '../../layouts/Layout.astro';
                             const optionInput = document.createElement('input');
                             optionInput.className = 'flex-1 min-w-[12rem] border border-slate-300 p-2 text-sm text-slate-700';
                             optionInput.value = option.label || '';
+                            optionInput.dataset.field = 'poll_option';
+                            optionInput.dataset.optionId = option.id;
                             optionInput.addEventListener('input', (event) => {
-                                option.label = event.target.value;
+                                 option.label = event.target.value;
                             });
 
                             const removeBtn = document.createElement('button');
@@ -553,6 +633,9 @@ import Layout from '../../layouts/Layout.astro';
                             card.appendChild(controls);
                         }
                     }
+
+                    // tag the card so we can find fields by widget key
+                    card.dataset.widgetKey = widget.key;
 
                     widgetsEl.appendChild(card);
                 });

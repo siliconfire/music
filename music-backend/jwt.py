@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from jose import jwt, JWTError
 from starlette.status import HTTP_403_FORBIDDEN
 
-SECRET_KEY = "super-secret-don't-tell-anyone-ts"    # Seriously, move this to .env later lol
+SECRET_KEY = "arnsisnrsethlfuqphqfwuphuwqfhpqwlfhuplshrtnzxrseanthwfuypllhwpfwuphurhstrnesvnvvnsethulflphuwplfwphluhello"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

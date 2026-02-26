@@ -44,16 +44,16 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
          </div>
          <!-- Floating frosted-glass error overlay -->
          <div id="board-error" class="fixed inset-0 z-50 flex items-center justify-center" style="pointer-events:none;">
-             <div id="board-error-card" class="hidden w-full max-w-3xl p-6 rounded-lg relative" style="pointer-events:auto; background: rgba(220,38,38,0.06); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(220,38,38,0.12); box-shadow: 0 12px 36px rgba(2,6,23,0.45);">
+             <div id="board-error-card" class="hidden w-full max-w-3xl p-6 rounded-lg relative" style="pointer-events:auto; background: rgba(255,255,255,0.03); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 12px 36px rgba(2,6,23,0.36);">
                  <!-- Floating 'fixed' notification styled as a pill so it doesn't clash with card padding -->
                  <div id="board-error-fixed" class="hidden" style="position:absolute; top:-0.75rem; right:0.75rem; background: rgba(16,185,129,0.95); color: #fff; border: 1px solid rgba(6,95,70,0.9); padding: 0.35rem 0.65rem; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(2,6,23,0.15); font-weight:600;">
-                     <span>Hata düzeldi.</span>
+                     <span>Birazdan yeniden başlatılacak...</span>
                  </div>
 
                  <div class="mb-4 flex items-start justify-between gap-4">
                      <div>
-                         <p class="text-3xl font-semibold board-theme-text-primary">Bir hata oluştu.</p>
-                         <p class="mt-2 text-lg board-theme-text-secondary">Muhtemelen sunucu kapalı ya da veritabanında bir sıkıntı var.</p>
+                         <p class="text-3xl font-semibold board-theme-text-primary">Sunucu neredesin?</p>
+                         <p class="mt-2 text-lg board-theme-text-secondary">Sunucu kapalı yada bana yanıt vermiyor.</p>
                      </div>
 
                      <!-- retrying indicator restored so showLonelyText() updates it correctly -->
@@ -65,7 +65,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 
                  <div class="mb-4 flex items-center justify-center">
                      <!-- Make QR large enough to scan -->
-                     <img id="error-qr" class="h-56 w-56 border rounded" alt="Scan me!" src="/loading.svg" style="border-color: rgba(220,38,38,0.5); background: transparent;" />
+                     <img id="error-qr" class="h-56 w-56 border rounded" alt="Scan me!" src="/loading.svg" style="border-color: rgba(255,255,255,0.12); background: transparent;" />
                  </div>
 
                  <div class="mb-4 text-sm board-theme-text-primary text-center">
@@ -74,7 +74,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                  </div>
 
                  <div class="mb-4 text-xs board-theme-text-secondary">
-                     <p>Kurulum ile sorumlu iseniz önce sayfayı yenilemeyi deneyin. Eğer olmaz ise sunucunun çalıştığından, güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve <code>board.json</code> dosyasının geçerli olduğundan emin olun. (Tereddüt ederseniz <code>board.json</code> dosyasını önce yedekleyip sonra silebilirsiniz; sunucu yeniden oluşturacaktır.)</p>
+                     <p>Kurulum ile sorumlu iseniz önce sayfayı yenilemeyi deneyin. Eğer olmaz ise sunucunun çalıştığından (daha yeni açtıysanız sunucu kendini açmamış olabilir, biraz bekleyin), güvenlik duvarının frontend-backend arasındaki bağlantıya karışmadığından ve <code>board.json</code> dosyasının geçerli olduğundan emin olun. (Tereddüt ederseniz <code>board.json</code> dosyasını önce yedekleyip sonra silebilirsiniz; sunucu yeniden oluşturacaktır.)</p>
                  </div>
 
                  <div id="board-error-info" class="rounded p-3" style="background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.22);">
@@ -82,10 +82,17 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                  </div>
              </div>
          </div>
+        <!-- show the small "connecting..." text, before we go wild -->
+        <div id="board-error-mini" class="hidden fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div class="h-20 flex flex-row items-center justify-center rounded-md p-3" style="background: rgba(255,255,255,0.03); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.06);">
+                <img src="/loading.svg" alt="loading" class="h-8 w-8 mr-2" />
+                <div id="div-retrying-mini" class="mt-2 text-lg board-theme-text-primary">Sunucu ile bağlantı kurmakta zorlanıyorum...</div>
+            </div>
+        </div>
      </div>
 
     <div class="m-5 lg:m-10">
-        <div id="board-widgets" class="flex flex-wrap gap-5"></div>
+        <div id="board-widgets" class="widgets-intro-hidden flex flex-wrap gap-5"></div>
     </div>
 
     <template id="tpl-now-playing">
@@ -95,6 +102,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         <Queue showControls={false} showHeader={false} />
     </template>
     <script>
+        // @ts-nocheck
         import { API_URL } from '../../lib/constants';
 
         /** @type {HTMLElement|null} */
@@ -119,6 +127,10 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         const errorFixedEl = /** @type {HTMLElement|null} */ (document.getElementById('board-error-fixed'));
         /** @type {HTMLElement|null} */
         const retryingEl = /** @type {HTMLElement|null} */ (document.getElementById('div-retrying'));
+        /** @type {HTMLElement|null} */
+        const retryingMiniEl = /** @type {HTMLElement|null} */ (document.getElementById('div-retrying-mini'));
+        /** @type {HTMLElement|null} */
+        const errorMiniEl = /** @type {HTMLElement|null} */ (document.getElementById('board-error-mini'));
         /** @type {HTMLButtonElement|null} */
         const qrToggleEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-qr-toggle'));
         /** @type {HTMLElement|null} */
@@ -217,6 +229,42 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         let retryTimer = null;
         let hideErrorTimer = null;
         let errorVisible = false;
+        let consecutiveFailures = 0;
+        let firstFailureAt = null;
+        const miniRetryStages = [
+            { tryAfter: 1, text: 'Sunucuya bağlanılıyor...' },
+            { tryAfter: 3, text: 'Sunucuya bağlanılamıyor...?' },
+            { tryAfter: 5, text: 'Hâla bağlanmayı deniyorum.' },
+            { tryAfter: 6, text: 'Hâla bağlanmayı deniyorum..' },
+            { tryAfter: 7, text: 'Hâla bağlanmayı deniyorum...' },
+            { tryAfter: 9, text: 'Sunucuya bağlanabileceğimize inanıyorum.' },
+            { tryAfter: 11, text: 'Sunucu? Neredesin??' },
+            { tryAfter: 12, text: 'Sunucuya bağlanacağız. Umudum yüksek.' },
+            { tryAfter: 14, text: 'Sunucuya bağlanacağız. Umudum yüksek (değil)' },
+            { tryAfter: 16, text: 'Sayın sunucu lütfen kapıyı açar mısınız?' },
+            { tryAfter: 18, text: 'Son birkaç kere daha bağlanmayı deneyelim.' },
+            { tryAfter: 20, text: 'Son 3...' },
+            { tryAfter: 21, text: 'Son 2...' },
+            { tryAfter: 22, text: 'Son 1...' },
+            { tryAfter: 23, text: '' }
+        ];
+        const bigErrorThreshold = 24; // when to switch to the big error card (inclusive)
+
+        function getMiniRetryText(count) {
+            if (!Array.isArray(miniRetryStages) || miniRetryStages.length === 0) {
+                return 'Sunucu ile bağlantı kurmakta zorlanıyorum...';
+            }
+            // find stages where the current count is above the stage.tryAfter
+            const candidates = miniRetryStages.filter(s => Number(count) > Number(s.tryAfter || 0));
+            if (candidates.length) {
+                // pick the candidate with the largest tryAfter
+                candidates.sort((a, b) => Number(b.tryAfter) - Number(a.tryAfter));
+                return candidates[0].text;
+            }
+            // nothing matched (count is not above any listed try value) => use the first stage as default
+            return miniRetryStages[0].text;
+        }
+
         let clockTimers = [];
         let widgetIntroRendered = false;
         let widgetIntroHidden = false;
@@ -324,12 +372,12 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             const token = localStorage.getItem('jwt_token');
             if (!token) return;
             const config = {
-                particleCount: 3000,
+                particleCount: 100,
                 sizeScale: 4,
                 spread: 0.5,
-                durationMs: 10000,
-                spawnDurationMs: 1500,
-                upwardBoost: 1.5
+                durationMs: 3000,
+                spawnDurationMs: 1200,
+                upwardBoost: 2
             };
 
             // Pop locally immediately for instant feedback
@@ -383,23 +431,68 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             statusEl.classList.toggle('bg-red-50', isError);
         }
 
+        // Update the retrying text in both the big error card and the mini overlay
+        function updateRetryingText() {
+            const countText = consecutiveFailures > 0 ? ` (${consecutiveFailures})` : '';
+            if (retryingEl) {
+                retryingEl.innerHTML = `<img src="/loading.svg" alt="loading" class="w-10 inline" /> Bağlanmaya çalışıyorum...${countText}`;
+            }
+            // Update the small mini overlay text according to progressive stages (no count appended)
+            if (retryingMiniEl) {
+                retryingMiniEl.textContent = getMiniRetryText(consecutiveFailures);
+            }
+        }
+
+        function showMiniError() {
+            if (errorMiniEl) errorMiniEl.classList.remove('hidden');
+            const errorCardEl = document.getElementById('board-error-card');
+            if (errorCardEl) errorCardEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.add('hidden'); // keep big outer wrapper hidden when using mini
+        }
+
+        function showBigError() {
+            if (errorMiniEl) errorMiniEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.remove('hidden');
+            const errorCardEl = document.getElementById('board-error-card');
+            if (errorCardEl) errorCardEl.classList.remove('hidden');
+        }
+
+        function hideAllErrorUis() {
+            if (errorMiniEl) errorMiniEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.add('hidden');
+            const errorCardEl = document.getElementById('board-error-card');
+            if (errorCardEl) errorCardEl.classList.add('hidden');
+        }
+
         function showLonelyText(extraInfo = '') {
-            if (!errorEl) return;
+            if (!document) return;
+            // track consecutive failures so we can switch between a minimal and a full error UI
+            consecutiveFailures = (consecutiveFailures || 0) + 1;
+            if (!firstFailureAt) firstFailureAt = Date.now();
+
             const wasVisible = errorVisible;
             errorVisible = true;
             if (hideErrorTimer) {
                 clearTimeout(hideErrorTimer);
                 hideErrorTimer = null;
             }
+
+            updateRetryingText();
+
+            // First show the small minimal overlay; after a threshold of failed requests show the full error card
             if (!wasVisible) {
-                if (errorFixedEl) {
-                    // errorFixedEl.classList.add('hidden');
+                if (consecutiveFailures < bigErrorThreshold) {
+                    showMiniError();
+                } else {
+                    showBigError();
                 }
-                if (retryingEl) {
-                    retryingEl.innerHTML = '<img src="/loading.svg" alt="loading" class="w-10 inline" /> Tekrar deneniyor...';
+            } else {
+                // if already visible, and we've crossed the threshold, ensure the big card is shown
+                if (consecutiveFailures >= bigErrorThreshold) {
+                    showBigError();
                 }
-                errorEl.classList.remove('"hidden"');
             }
+
             renderErrorQr(extraInfo);
             if (!refreshTimer && !retryTimer) {
                 retryTimer = setInterval(refreshBoard, 5000);
@@ -407,19 +500,26 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         }
 
         function scheduleReloadAfterRecovery() {
+            // Always restart shortly after recovery. Clear any existing scheduled reload
+            // and set a fresh timer for 1.5s so the page reloads every time a network error
+            // is resolved.
             if (hideErrorTimer) {
-                return;
+                clearTimeout(hideErrorTimer);
+                hideErrorTimer = null;
             }
             if (errorFixedEl) {
                 errorFixedEl.classList.remove('hidden');
             }
             if (retryingEl) {
-                retryingEl.textContent = 'Düzeldi.';
+                retryingEl.textContent = 'Bağlantı kuruldu.';
             }
+            // hide the minimal overlay if it was shown
+            if (errorMiniEl) errorMiniEl.classList.add('hidden');
             popConfetti();
             hideErrorTimer = setTimeout(() => {
+                // Use location.reload to ensure a full page reload after recovery
                 location.reload();
-            }, 10000);
+            }, 1500);
         }
 
         function clearStatus() {
@@ -588,6 +688,9 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         async function refreshBoard() {
             try {
                 const data = await loadBoard();
+                // reset failure counters on successful request
+                consecutiveFailures = 0;
+                firstFailureAt = null;
                 const widgetStamp = JSON.stringify(data.widgets || []);
                 const stamp = data.updated_at || widgetStamp;
                 const themeKey = data?.theme_key || data?.theme?.key || null;
@@ -643,7 +746,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             if (confettiCanvas) return confettiCanvas;
             const canvas = document.createElement('canvas');
             canvas.id = 'board-confetti-canvas';
-            canvas.className = 'fixed inset-0 pointer-events-none z-50';
+            // put confetti behind the cards: low z-index
+            canvas.className = 'fixed inset-0 pointer-events-none z-0';
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             document.body.appendChild(canvas);
@@ -659,8 +763,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         function popConfetti(options = {}) {
             const opts = typeof options === 'number' ? { particleCount: options } : options;
             const {
-                durationMs = 10000,
-                particleCount = 5000,
+                durationMs = 4000,
+                particleCount = 200,
                 spread = 0.55,
                 sizeScale = 4.0,
                 spawnDurationMs = 1200,
@@ -738,7 +842,13 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             style.setProperty('--board-background', colors.background || '#f8fafc');
             style.setProperty('--board-card-bg', colors.cardBackground || '#ffffff');
             style.setProperty('--board-card-border', colors.cardBorder || '#cbd5f5');
+            // keep the original pinned color var (may be used elsewhere)
             style.setProperty('--board-card-pinned-bg', colors.cardPinnedBackground || '#ecfdf5');
+            // compute an rgba variant for a subtle tint overlay so we can preserve blur while tinting
+            const pinned = colors.cardPinnedBackground || '#10b981';
+            // a slightly stronger tint by default so pinned cards read as tinted
+            const pinnedRgba = hexToRgba(pinned, 0.12);
+             style.setProperty('--board-card-pinned-bg-rgba', pinnedRgba);
             style.setProperty('--board-card-pinned-border', colors.cardPinnedBorder || '#6ee7b7');
             style.setProperty('--board-qr-bg', colors.qrButtonBackground || '#ffffff');
             style.setProperty('--board-qr-border', colors.qrButtonBorder || '#cbd5f5');
@@ -751,6 +861,31 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 initialConfettiShown = true;
                 popConfetti(initialConfettiPreset);
             }
+        }
+
+        // Helper: convert hex (or rgb(a) token) to rgba string with given alpha. Fallback returns rgba(16,185,129,alpha)
+        function hexToRgba(input, alpha = 0.06) {
+            try {
+                const s = String(input || '').trim();
+                // if already rgba or rgb, return with alpha applied if needed
+                if (s.startsWith('rgba')) return s;
+                if (s.startsWith('rgb')) return s.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+                // hex shorthand or full
+                const hex = s.replace('#', '');
+                if (hex.length === 3) {
+                    const r = parseInt(hex[0] + hex[0], 16);
+                    const g = parseInt(hex[1] + hex[1], 16);
+                    const b = parseInt(hex[2] + hex[2], 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                }
+                if (hex.length === 6) {
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                }
+            } catch (e) {}
+            return `rgba(16,185,129,${alpha})`;
         }
 
         // Decode a JWT payload safely (no validation) and return the parsed object or null
@@ -798,6 +933,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                 return false;
             }
             return true;
+
         }
 
         if (authLogoutEl) {
@@ -901,6 +1037,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             --board-card-bg: #ffffff;
             --board-card-border: #cbd5f5;
             --board-card-pinned-bg: #ecfdf5;
+            /* default rgba tint for pinned cards (used as a fallback before JS runs) */
+            --board-card-pinned-bg-rgba: rgba(16,185,129,0.12);
             --board-card-pinned-border: #6ee7b7;
             --board-qr-bg: #ffffff;
             --board-qr-border: #cbd5f5;
@@ -920,17 +1058,46 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             color: var(--board-text-secondary);
         }
 
+        /* Make the widget cards frosted glass so they blend with the backdrop */
         :global(.board-card) {
-            background: var(--board-card-bg);
-            border-color: var(--board-card-border);
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(12px) saturate(120%);
+            -webkit-backdrop-filter: blur(12px) saturate(120%);
+            border: 1px solid rgba(255,255,255,0.08);
             color: var(--board-text-primary);
             flex: 1 0 22rem;
             min-width: 22rem;
+            box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+            /* ensure cards sit above the confetti canvas */
+            position: relative;
+            z-index: 10;
         }
 
+        /* Slightly tinted frosted glass for pinned cards */
         :global(.board-card-pinned) {
-            background: var(--board-card-pinned-bg);
+            /* use a subtle rgba tint derived from theme while keeping the frosted backdrop */
+            background: var(--board-card-pinned-bg-rgba, rgba(16,185,129,0.06));
+            backdrop-filter: blur(12px) saturate(120%);
+            -webkit-backdrop-filter: blur(12px) saturate(120%);
             border-color: var(--board-card-pinned-border);
+            overflow: hidden; /* contain tint overlay */
+        }
+
+        /* overlay tint to ensure the themed color reads well while retaining backdrop-filter */
+        :global(.board-card-pinned::before) {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--board-card-pinned-bg-rgba, rgba(16,185,129,0.12));
+            pointer-events: none;
+            mix-blend-mode: normal;
+            z-index: 0;
+        }
+
+        /* ensure the card contents stay above the tint overlay */
+        :global(.board-card-pinned > *) {
+            position: relative;
+            z-index: 1;
         }
 
         :global(.board-card-badge) {
