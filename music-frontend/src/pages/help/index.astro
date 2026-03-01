@@ -1,0 +1,26 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Yardım">
+    <div class="m-10">
+        <h1 class="text-4xl">Yardım</h1>
+        <a href="/" class="text-amber-800 no-underline mb-5">(Ana sayfaya dönmek için tıkla)</a>
+        <ul class="m-5 list-disc list-inside">
+            <li>
+                <a href="/help/login">Giriş yapamıyorum!</a>
+            </li>
+            <hr class="text-slate-400 my-2">
+            <li>
+                <a href="/help/short">Bir yardım sayfası yapacaksan neden sadece 2 tane soru cevapladın?</a>
+            </li>
+        </ul>
+
+        <details class="mt-10 p-3 border border-slate-400 inline-block">
+            <summary>Soruma cevap bulamadım</summary>
+            Eğer sorunuza cevap bulamadıysanız, lütfen benimle iletişime geçin.
+            <hr class="text-slate-400 my-2">
+            Çınar Mert Çeçen - <a href="mailto:cinar@cinarcecen.dev">cinar@cinarcecen.dev</a>
+        </details>
+    </div>
+</Layout>

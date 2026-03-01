@@ -42,7 +42,6 @@ import Layout from '../../layouts/Layout.astro'
         const viewNoToken = document.getElementById('view-no-token');
         const viewInvalidToken = document.getElementById('view-invalid-token');
         const info = document.getElementById('info');
-        const userData = document.getElementById('user-data');
         const errorBox = document.getElementById('error-box');
 
         function showError(message, allowHtml = false) {
@@ -81,12 +80,10 @@ import Layout from '../../layouts/Layout.astro'
 
             info.innerHTML = "Oturumunuz kontrol ediliyor...";
             try {
-                const fetchStart = performance.now();
                 const res = await fetch(`${API_URL}/check`, {
                     method: 'POST',
                     headers: {'X-Session-ID': token}
                 });
-                const fetchEnd = performance.now();
 
                 const data = await res.json();
 
@@ -139,6 +136,23 @@ import Layout from '../../layouts/Layout.astro'
 
                 if (res.ok) {
                     localStorage.setItem('jwt_token', data.access_token);
+
+                    // Fetch canonical user info from server and identify PostHog with server-provided id and name
+                    try {
+                        const meRes = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': data.access_token } });
+                        const me = await meRes.json();
+                        if (me && me.id) {
+                            window.posthog?.identify(String(me.id), { name: me.name });
+                        } else {
+                            // fallback to input id if /me doesn't return id
+                            window.posthog?.identify(String(user_id));
+                        }
+                    } catch (err) {
+                        // If /me fails for any reason, fall back to input id
+                        window.posthog?.identify(String(user_id));
+                    }
+
+                    window.posthog?.capture('user_logged_in', { method: 'password' });
                     if (data.set_password === 'forced') {
                         window.location.href = '/account/set-password?mode=forced';
                         return;
@@ -157,11 +171,14 @@ import Layout from '../../layouts/Layout.astro'
                 }
             } catch (err) {
                 console.error("Login fetch error:", err);
+                window.posthog?.captureException(err);
                 showError("Sunucu hatası. Lütfen daha sonra tekrar deneyin.");
             }
         }
 
         function handleLogout() {
+            window.posthog?.capture('user_logged_out');
+            window.posthog?.reset();
             localStorage.removeItem('jwt_token');
             updateUI();
         }
@@ -171,14 +188,10 @@ import Layout from '../../layouts/Layout.astro'
         logoutButtons.forEach(button => {
             button.addEventListener('click', handleLogout);
         });
-        document.getElementsByClassName('btn-logout').onclick = handleLogout;
-        document.getElementById('btn-home')?.addEventListener('click', () => {
-            window.location.href = '/';
-        });
-
         const passwordInput = document.getElementById('password');
-        passwordInput?.addEventListener('input', () => {
-            const value = passwordInput.value.trim();
+        passwordInput?.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            const value = target?.value?.trim() || '';
             if (value.startsWith('74')) {
                 showError("Bu bir şifre değil de giriş kodu gibi duruyor. <a href='/login/code' class='underline'>Giriş kodu kullanmak için buraya tıkla</a>.", true);
             } else if (errorBox?.classList.contains('hidden') === false) {

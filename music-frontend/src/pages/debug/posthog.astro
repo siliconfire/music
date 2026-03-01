@@ -1,0 +1,134 @@
+---
+import '../../styles/global.css'
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="PostHog Debug">
+  <div class="m-10">
+    <h1 class="text-2xl">PostHog Debug Sayfası</h1>
+    <p class="text-sm text-slate-600"><a href="/">Buraya nasıl geldiğinizi bilmiyorsanız, ana sayfaya dönmek için buraya tıklayın.</a></p>
+
+    <div class="mt-6 p-4 border rounded bg-gray-50">
+      <div class="mb-2">PostHog loaded: <strong id="ph-loaded">...</strong></div>
+      <div class="mb-2">Distinct id: <strong id="ph-distinct">...</strong></div>
+      <div class="mb-2">Session id: <strong id="ph-session">...</strong></div>
+      <div class="mb-2">Local JWT token: <code id="jwt-token">(none)</code></div>
+      <div class="mb-2">/me (server) info: <pre id="me-info" class="text-xs"></pre></div>
+
+      <div class="flex gap-2 mt-4">
+        <button id="btn-refresh" class="border px-3 py-1 rounded">Refresh</button>
+        <button id="btn-identify" class="border px-3 py-1 rounded">Idenfify from /me</button>
+        <button id="btn-capture" class="border px-3 py-1 rounded">Capture test event</button>
+        <button id="btn-reset" class="border px-3 py-1 rounded">Reset PostHog</button>
+      </div>
+
+      <div class="mt-3 text-sm text-slate-700">Last action: <span id="last-action">-</span></div>
+    </div>
+  </div>
+
+  <script>
+    import { API_URL } from '../../lib/constants.ts';
+
+    function tryDistinctId() {
+      const ph = window.posthog;
+      if (!ph) return null;
+      // try several common method names to be robust across versions/stubs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyPh = ph;
+      return anyPh.get_distinct_id?.() || anyPh.getDistinctId?.() || anyPh.get_distinct_id?.() || anyPh.getAnonymousId?.() || anyPh._get_distinct_id?.() || null;
+    }
+
+    function trySessionId() {
+      const ph = window.posthog;
+      if (!ph) return null;
+      // some SDKs have onSessionId/getSessionId
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyPh = ph;
+      return anyPh.getSessionId?.() || anyPh.get_session_id?.() || anyPh._session_id || null;
+    }
+
+    async function fetchMe() {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) return null;
+      try {
+        const res = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+        if (!res.ok) return { error: `Status ${res.status}` };
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        return { error: (err && err.message) || String(err) };
+      }
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === 'CODE' || el.tagName === 'PRE') {
+        el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+      } else {
+        el.textContent = value === null || value === undefined ? String(value) : String(value);
+      }
+    }
+
+    async function refresh() {
+      setText('last-action', 'refreshing...');
+      setText('ph-loaded', !!window.posthog ? 'yes' : 'no');
+      setText('ph-distinct', tryDistinctId() || '(none)');
+      setText('ph-session', trySessionId() || '(none)');
+      const token = localStorage.getItem('jwt_token');
+      setText('jwt-token', token || '(none)');
+      const me = await fetchMe();
+      setText('me-info', me || '(no token)');
+      setText('last-action', 'refreshed');
+    }
+
+    async function identifyFromServer() {
+      setText('last-action', 'identifying...');
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setText('last-action', 'no jwt token');
+        return;
+      }
+      try {
+        const me = await fetchMe();
+        if (me && me.id) {
+          window.posthog?.identify(String(me.id), { name: me.name });
+          setText('last-action', `identified id=${me.id}`);
+        } else {
+          setText('last-action', `could not identify: ${JSON.stringify(me)}`);
+        }
+      } catch (err) {
+        setText('last-action', `error: ${err?.message || String(err)}`);
+      }
+      await refresh();
+    }
+
+    function captureTest() {
+      try {
+        window.posthog?.capture('debug_test_event', { ts: new Date().toISOString() });
+        setText('last-action', 'captured debug_test_event');
+      } catch (err) {
+        setText('last-action', `capture error: ${err?.message || String(err)}`);
+      }
+    }
+
+    function resetPosthog() {
+      try {
+        window.posthog?.reset();
+        setText('last-action', 'posthog.reset() called');
+      } catch (err) {
+        setText('last-action', `reset error: ${err?.message || String(err)}`);
+      }
+      setTimeout(refresh, 200);
+    }
+
+    document.getElementById('btn-refresh')?.addEventListener('click', refresh);
+    document.getElementById('btn-identify')?.addEventListener('click', identifyFromServer);
+    document.getElementById('btn-capture')?.addEventListener('click', captureTest);
+    document.getElementById('btn-reset')?.addEventListener('click', resetPosthog);
+
+    // initial
+    refresh();
+  </script>
+</Layout>
+

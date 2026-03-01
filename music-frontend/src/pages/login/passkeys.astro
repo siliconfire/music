@@ -114,11 +114,17 @@ import Layout from '../../layouts/Layout.astro';
                 const result = await verifyRes.json();
                 if (result?.access_token) {
                     localStorage.setItem('jwt_token', result.access_token);
+                    // Identify the user in PostHog on successful passkey login
+                    if (result.user_id) {
+                        window.posthog?.identify(String(result.user_id), { name: result.user_name || result.name });
+                    }
+                    window.posthog?.capture('user_logged_in_with_passkey', { method: 'passkey' });
                     window.location.href = '/';
                     return;
                 }
                 setStatus('Giriş tamamlandı.', false);
             } catch (err) {
+                window.posthog?.captureException(err);
                 setStatus(err?.message || 'Passkey girişi başarısız.', true);
             } finally {
                 if (btnEl) btnEl.disabled = false;

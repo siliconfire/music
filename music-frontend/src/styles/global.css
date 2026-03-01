@@ -60,3 +60,9 @@ fieldset {
 legend {
   padding: 0 10px;
 }
+
+@layer base {
+  a {
+    @apply text-blue-600 underline hover:text-blue-800;
+  }
+}

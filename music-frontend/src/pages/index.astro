@@ -103,6 +103,11 @@ import Item from '../components/Item.astro';
 				window.location.href = '/account';
 			}
 
+			// Identify the user in PostHog with their ID and name (server-provided)
+			if (user_info.id) {
+				window.posthog?.identify(String(user_info.id), { name: user_info.name });
+			}
+
 			const username_el = document.getElementById("username") as HTMLSpanElement;
 			username_el.innerText = user_info.username;
 
@@ -189,21 +194,28 @@ import Item from '../components/Item.astro';
 
 		document.getElementById("btn-play").addEventListener("click", async () => {
 			await fetch(`${API_URL}/resume`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		)});
+		);
+			window.posthog?.capture('music_playback_resumed');
+		});
 
 		document.getElementById("btn-pause").addEventListener("click", async () => {
 			await fetch(`${API_URL}/pause`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		)});
+		);
+			window.posthog?.capture('music_playback_paused');
+		});
 
 		document.getElementById("btn-next").addEventListener("click", async () => {
 			await fetch(`${API_URL}/next`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		)
+		);
+			window.posthog?.capture('music_track_skipped');
 		})
 		document.getElementById("btn-account").addEventListener("click", () => {
 			window.location.href = '/account';
 		});
 
 		document.getElementById("btn-logout").addEventListener("click", () => {
+			window.posthog?.capture('user_logged_out');
+			window.posthog?.reset();
 			localStorage.removeItem("jwt_token");
 			window.location.href = '/login';
 		});
@@ -224,6 +236,7 @@ import Item from '../components/Item.astro';
 					upwardBoost: 1
 				})
 			});
+			window.posthog?.capture('confetti_triggered', { type: 'less' });
 		});
 
 		document.getElementById("btn-normal-confetti").addEventListener("click", async () => {
@@ -242,6 +255,7 @@ import Item from '../components/Item.astro';
 					upwardBoost: 1.5
 				})
 			});
+			window.posthog?.capture('confetti_triggered', { type: 'normal' });
 		});
 
 		document.getElementById("btn-faster-confetti").addEventListener("click", async () => {
@@ -260,6 +274,7 @@ import Item from '../components/Item.astro';
 					upwardBoost: 1.5
 				})
 			});
+			window.posthog?.capture('confetti_triggered', { type: 'faster' });
 		});
 
 		document.getElementById("btn-many-confetti").addEventListener("click", async () => {
@@ -278,6 +293,7 @@ import Item from '../components/Item.astro';
 					upwardBoost: 3
 				})
 			});
+			window.posthog?.capture('confetti_triggered', { type: 'many' });
 		});
 
 		document.getElementById("btn-edit").addEventListener("click", () => {

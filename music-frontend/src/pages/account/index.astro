@@ -131,8 +131,10 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
                     const verifyData = await verifyRes.json().catch(() => ({}));
                     throw new Error(verifyData.detail || 'Passkey kaydı doğrulanamadı.');
                 }
+                window.posthog?.capture('passkey_enrolled');
                 setPasskeyStatus('Passkey kaydedildi.');
             } catch (err) {
+                window.posthog?.captureException(err);
                 setPasskeyStatus(err?.message || 'Passkey kaydı başarısız.', true);
             } finally {
                 if (btn) btn.disabled = false;
@@ -196,6 +198,8 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
 
         // buttons
         document.getElementById('logout-btn')?.addEventListener('click', () => {
+            window.posthog?.capture('user_logged_out');
+            window.posthog?.reset();
             localStorage.removeItem('jwt_token');
             window.location.href = "/login";
         });

@@ -34,17 +34,20 @@
 
             resultsDiv.innerHTML = "";
             // slice down to 3
-            data.tracks.items.slice(0, 3).forEach(track => {
+            const results = data.tracks.items.slice(0, 3);
+            window.posthog?.capture('music_searched', { query, result_count: results.length });
+            results.forEach(track => {
                 const row = document.createElement("div");
                 row.className = "flex justify-between items-center gap-4 border-t border-yellow-500/30 pt-1";
                 row.innerHTML = `
           <span class="truncate w-32">${track.name}</span>
-          <button class="play-btn font-semibold hover:bg-yellow-300" data-uri="${track.uri}">[şimdi çal]</button>
-          <button class="add-btn font-bold hover:bg-yellow-300" data-uri="${track.uri}">[sıraya ekle]</button>
+          <button class="play-btn font-semibold hover:bg-yellow-300" data-uri="${track.uri}" data-name="${track.name}">[şimdi çal]</button>
+          <button class="add-btn font-bold hover:bg-yellow-300" data-uri="${track.uri}" data-name="${track.name}">[sıraya ekle]</button>
         `;
                 resultsDiv.appendChild(row);
             });
         } catch (e) {
+            window.posthog?.captureException(e);
             resultsDiv.innerHTML = "<span class='text-red-600'>Hata." +
                 "<br><br>normalde yetkin yok derdim ama yetkin olmasa bu sayfaya zaten gelemezdin ki...?" +
                 "<br>acaba ben mi hatalıyım?" +
@@ -60,21 +63,30 @@
         const uri = target.getAttribute("data-uri");
         if (!uri) return;
 
+        const trackName = target.getAttribute("data-name") || undefined;
+
+        let res: Response;
         if (target.classList.contains("play-btn")) {
-            const res = await fetch(`${API_URL}/play?uri=${encodeURIComponent(uri)}`, {
+            res = await fetch(`${API_URL}/play?uri=${encodeURIComponent(uri)}`, {
                 headers: {'X-Session-ID': token || ''},
                 method: 'POST'
             });
+            if (res.ok) {
+                window.posthog?.capture('track_played', { track_uri: uri, track_name: trackName });
+            }
         } else {
-            const res = await fetch(`${API_URL}/add?uri=${encodeURIComponent(uri)}`, {
+            res = await fetch(`${API_URL}/add?uri=${encodeURIComponent(uri)}`, {
                 headers: {'X-Session-ID': token || ''},
                 method: 'POST'
             });
+            if (res.ok) {
+                window.posthog?.capture('track_added_to_queue', { track_uri: uri, track_name: trackName });
+            }
         }
 
         if (res.ok) {
             target.innerText = "[OK]";
-            target.disabled = true;
+            (target as HTMLButtonElement).disabled = true;
         }
     });
 </script>

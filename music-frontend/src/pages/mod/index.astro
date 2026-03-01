@@ -171,6 +171,7 @@ import Layout from '../../layouts/Layout.astro';
 
                     locked = !!data.locked;
                     renderLockdown();
+                    window.posthog?.capture('lockdown_toggled', { target: 'music', locked });
                     showNotice(locked ? 'Kilitlendi.' : 'Kilit kaldırıldı.');
                 } catch (err) {
                     showNotice('Sunucu hatası.', 'error');
@@ -195,6 +196,7 @@ import Layout from '../../layouts/Layout.astro';
 
                     boardLocked = !!data.locked;
                     renderBoardLockdown();
+                    window.posthog?.capture('lockdown_toggled', { target: 'board', locked: boardLocked });
                     showNotice(boardLocked ? 'Ekran kilitlendi.' : 'Ekran kilidi kaldırıldı.');
                 } catch (err) {
                     showNotice('Sunucu hatası.', 'error');
