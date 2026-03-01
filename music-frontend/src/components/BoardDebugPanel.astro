@@ -34,6 +34,12 @@
         <button id="board-auth-start" class="debug-btn">Doğrulamayı başlat</button>
         <button id="board-auth-logout-debug" class="debug-btn">Çıkış yap</button>
         <button id="board-browser-toggle" class="debug-btn">cihaz bilgisini göster</button>
+        <details class="debug-btn">
+            <summary>Debug</summary>
+            <a class="debug-btn" href="/debug/posthog">Posthog</a>
+            <a class="debug-btn" href="/debug/events">Events</a>
+            <a class="debug-btn" href="/debug/screen">Screen</a>
+        </details>
         <div id="board-browser-info" class="mt-2 text-sm hidden" aria-live="polite"></div>
         <div class="flex items-center gap-2 text-sm">
             <input id="board-hide-qr-btn" type="checkbox" class="border" style="border-color: var(--board-warning-border, var(--board-card-pinned-border, #b45309));" />

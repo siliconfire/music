@@ -88,6 +88,7 @@ import Item from '../components/Item.astro';
 	<script>
 		import { API_URL } from '../lib/constants';
 
+		const BOARD_USER_ID = '100000';
 		const token = localStorage.getItem("jwt_token");
 		if (!token) {
 			window.location.href = '/login';
@@ -104,7 +105,7 @@ import Item from '../components/Item.astro';
 			}
 
 			// Identify the user in PostHog with their ID and name (server-provided)
-			if (user_info.id) {
+			if (user_info.id && String(user_info.id) !== BOARD_USER_ID) {
 				window.posthog?.identify(String(user_info.id), { name: user_info.name });
 			}
 

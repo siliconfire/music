@@ -10,7 +10,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
     <BoardDebugPanel />
     <div id="board-theme-backdrop" class="fixed inset-0 -z-10"></div>
 
-    <button id="board-qr-toggle" class="fixed bottom-4 right-4 z-40 board-qr-button px-3 py-2 text-sm">QR kodu göster</button>
+    <button id="board-qr-toggle" data-action="board-qr-toggle" class="fixed bottom-4 right-4 z-40 board-qr-button px-3 py-2 text-sm">QR kodu göster</button>
     <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50" style="background: transparent;">
         <div class="board-qr-card p-4 text-center shadow-lg board-theme-text-primary" style="background: rgba(255,255,255,0.04); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(255,255,255,0.08);">
             <div class="text-sm board-theme-text-secondary">Telefonunuz ile tarayın:</div>
@@ -154,6 +154,30 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         let initialConfettiShown = false;
         const restartStorageKey = 'board.restartTriggerId';
         let lastRestartId = sessionStorage.getItem(restartStorageKey);
+        const INACTIVITY_RESET_MS = 10 * 60 * 1000;
+        let inactivityTimer = null;
+
+        function trackBoardAction(event, props = {}) {
+            if (window.posthog?.capture) {
+                window.posthog.capture(event, props);
+            }
+        }
+
+        function scheduleInactivityReset() {
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+            }
+            inactivityTimer = setTimeout(() => {
+                window.posthog?.reset();
+            }, INACTIVITY_RESET_MS);
+        }
+
+        function startInactivityWatcher() {
+            scheduleInactivityReset();
+            const events = ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'];
+            const handler = () => scheduleInactivityReset();
+            events.forEach((event) => window.addEventListener(event, handler, { passive: true }));
+        }
 
         function handleRestartTrigger(data) {
             const restartId = data?.restart_trigger?.id;
@@ -346,6 +370,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         }
 
         async function triggerBoardRestart() {
+            trackBoardAction('board_control_clicked', { action: 'board-restart' });
             const token = localStorage.getItem('jwt_token');
             if (!token) return;
             try {
@@ -369,6 +394,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         }
 
         async function triggerConfetti() {
+            trackBoardAction('board_control_clicked', { action: 'board-confetti' });
             const token = localStorage.getItem('jwt_token');
             if (!token) return;
             const config = {
@@ -399,6 +425,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         }
 
         async function pickRandomTheme() {
+            trackBoardAction('board_control_clicked', { action: 'board-theme-random' });
             if (!boardData) return;
             const token = localStorage.getItem('jwt_token');
             if (!token) return;
@@ -652,9 +679,12 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 
                     const displayText = widget.display_text !== false;
 
-                    const createBtn = (label, iconSvg, handler) => {
+                    const createBtn = (label, iconSvg, handler, action) => {
                         const btn = document.createElement('button');
                         btn.className = 'flex items-center gap-2 border board-card-badge px-3 py-2 hover:bg-black/5 active:scale-95 transition-transform';
+                        if (action) {
+                            btn.dataset.action = action;
+                        }
                         btn.innerHTML = `${iconSvg}${displayText ? `<span>${label}</span>` : ''}`;
                         btn.addEventListener('click', handler);
                         return btn;
@@ -664,9 +694,9 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                     const themeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.281-.477-.672-.477-1.187 0-1.032.82-1.875 1.875-1.875h1.39c3.1 0 5.5-2.5 5.5-5.5 0-4.5-4.5-8.5-9.5-8.5z"/></svg>`;
                     const reloadIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>`;
 
-                    if (widget.show_confetti !== false) wrap.appendChild(createBtn('Konfeti patlat', confettiIcon, triggerConfetti));
-                    if (widget.show_theme !== false) wrap.appendChild(createBtn('Rastgele tema', themeIcon, pickRandomTheme));
-                    if (widget.show_reload !== false) wrap.appendChild(createBtn('Yeniden başlat', reloadIcon, triggerBoardRestart));
+                    if (widget.show_confetti !== false) wrap.appendChild(createBtn('Konfeti patlat', confettiIcon, triggerConfetti, 'board-confetti'));
+                    if (widget.show_theme !== false) wrap.appendChild(createBtn('Rastgele tema', themeIcon, pickRandomTheme, 'board-theme-random'));
+                    if (widget.show_reload !== false) wrap.appendChild(createBtn('Yeniden başlat', reloadIcon, triggerBoardRestart, 'board-restart'));
 
                 body.appendChild(wrap);
             } else {
@@ -948,6 +978,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             if (!ok) {
                 return;
             }
+            startInactivityWatcher();
             refreshBoard();
             refreshTimer = setInterval(refreshBoard, 2000);
         })();
@@ -982,16 +1013,18 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             qrOverlayEl.classList.remove('hidden');
             updateQrToggleLabel();
             ensureBoardQr();
+            trackBoardAction('board_qr_toggled', { state: 'shown', reason: 'manual' });
             if (qrAutoHideTimer) {
                 clearTimeout(qrAutoHideTimer);
             }
-            qrAutoHideTimer = setTimeout(hideBoardQr, 120000);
+            qrAutoHideTimer = setTimeout(() => hideBoardQr('timeout'), 120000);
         }
 
-        function hideBoardQr() {
+        function hideBoardQr(reason = 'manual') {
             if (!qrOverlayEl) return;
             qrOverlayEl.classList.add('hidden');
             updateQrToggleLabel();
+            trackBoardAction('board_qr_toggled', { state: 'hidden', reason });
             if (qrAutoHideTimer) {
                 clearTimeout(qrAutoHideTimer);
                 qrAutoHideTimer = null;
@@ -1003,7 +1036,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             if (qrOverlayEl.classList.contains('hidden')) {
                 showBoardQr();
             } else {
-                hideBoardQr();
+                hideBoardQr('manual');
             }
         }
 
@@ -1011,7 +1044,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             if (!qrToggleEl) return;
             qrToggleEl.classList.toggle('hidden', hidden);
             if (hidden) {
-                hideBoardQr();
+                hideBoardQr('manual');
             }
         }
 

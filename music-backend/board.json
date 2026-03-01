@@ -72,10 +72,10 @@
         }
     ],
     "updated_by": "100000",
-    "updated_at": "2026-02-26T19:39:28.272241+00:00",
+    "updated_at": "2026-03-01T10:38:02.734880+00:00",
     "confetti_trigger": {
-        "id": "2026-02-26T19:39:28.272241+00:00",
-        "created_at": "2026-02-26T19:39:28.272241+00:00",
+        "id": "2026-03-01T10:38:00.622167+00:00",
+        "created_at": "2026-03-01T10:38:00.622167+00:00",
         "config": {
             "particleCount": 100,
             "durationMs": 3000,
@@ -87,33 +87,33 @@
         "created_by": "100000"
     },
     "restart_trigger": {
-        "id": "2026-02-26T07:26:41.489876+00:00",
-        "created_at": "2026-02-26T07:26:41.489876+00:00",
+        "id": "2026-03-01T10:23:31.643034+00:00",
+        "created_at": "2026-03-01T10:23:31.643034+00:00",
         "created_by": "100000"
     },
     "debug_passkeys": [],
-    "theme_key": "rose",
+    "theme_key": "telegram_pink2",
     "theme": {
-        "key": "rose",
-        "label": "Bubble Tea",
+        "key": "telegram_pink2",
+        "label": "Daha Gerçek Telegram Pembesi",
         "colors": {
-            "textPrimary": "#4c0519",
-            "textSecondary": "#881337",
-            "background": "#fff1f2",
-            "cardBackground": "#fffafb",
-            "cardBorder": "#fecdd3",
-            "cardPinnedBackground": "#ffe4e6",
-            "cardPinnedBorder": "#fb7185",
-            "qrButtonBackground": "#ffffff",
-            "qrButtonBorder": "#fecdd3",
-            "qrButtonText": "#be123c",
+            "textPrimary": "#ffffff",
+            "textSecondary": "#94a3b8",
+            "background": "#1c1215",
+            "cardBackground": "#281a1e",
+            "cardBorder": "#3d262c",
+            "cardPinnedBackground": "#4c1d24",
+            "cardPinnedBorder": "#f472b6",
+            "qrButtonBackground": "#281a1e",
+            "qrButtonBorder": "#f472b6",
+            "qrButtonText": "#f472b6",
             "confettiColors": [
-                "#fb7185",
-                "#f43f5e",
-                "#fda4af",
-                "#e11d48",
-                "#fbcfe8",
-                "#db2777"
+                "#f472b6",
+                "#be185d",
+                "#9d174d",
+                "#ec4899",
+                "#701a75",
+                "#f9a8d4"
             ]
         }
     },

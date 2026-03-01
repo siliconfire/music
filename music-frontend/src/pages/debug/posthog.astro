@@ -3,10 +3,11 @@ import '../../styles/global.css'
 import Layout from '../../layouts/Layout.astro'
 ---
 
-<Layout title="PostHog Debug">
+<Layout title="debug">
   <div class="m-10">
     <h1 class="text-2xl">PostHog Debug Sayfası</h1>
-    <p class="text-sm text-slate-600"><a href="/">Buraya nasıl geldiğinizi bilmiyorsanız, ana sayfaya dönmek için buraya tıklayın.</a></p>
+    <p class="text-sm text-slate-600"><a href="/board">Tahta görünümüne geri dön (/board)</a></p>
+    <p class="text-sm text-slate-600"><a href="/">Ana sayfaya geri dön (/)</a></p>
 
     <div class="mt-6 p-4 border rounded bg-gray-50">
       <div class="mb-2">PostHog loaded: <strong id="ph-loaded">...</strong></div>
@@ -28,6 +29,8 @@ import Layout from '../../layouts/Layout.astro'
 
   <script>
     import { API_URL } from '../../lib/constants.ts';
+
+    const BOARD_USER_ID = '100000';
 
     function tryDistinctId() {
       const ph = window.posthog;
@@ -92,8 +95,12 @@ import Layout from '../../layouts/Layout.astro'
       try {
         const me = await fetchMe();
         if (me && me.id) {
-          window.posthog?.identify(String(me.id), { name: me.name });
-          setText('last-action', `identified id=${me.id}`);
+          if (String(me.id) === BOARD_USER_ID) {
+            setText('last-action', 'identify skipped for board user');
+          } else {
+            window.posthog?.identify(String(me.id), { name: me.name });
+            setText('last-action', `identified id=${me.id}`);
+          }
         } else {
           setText('last-action', `could not identify: ${JSON.stringify(me)}`);
         }

@@ -1,0 +1,62 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+<Layout title="debug">
+    <style>
+      .detected {
+        background: green !important;
+        color: white;
+      }
+
+      .card {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 5px;
+        display: inline-block;
+      }
+
+      #log {
+        border: 1px solid black;
+        height: 300px;
+        overflow-y: scroll;
+        font-family: monospace;
+        margin-top: 20px;
+      }
+    </style>
+
+    <a href="/board" class="m-4 inline-block">(geri git)</a>
+    <div id="grid">
+        {['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'].map(e => (
+                <div id={`card-${e}`} class="card">
+                    {e}: <span id={`status-${e}`}>Checking support...</span>
+                </div>
+        ))}
+    </div>
+
+    <div id="log">ready</div>
+
+
+    <script>
+        const events = ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'];
+        const log = document.getElementById('log');
+
+        events.forEach(eventName => {
+            const card = document.getElementById(`card-${eventName}`);
+            const status = document.getElementById(`status-${eventName}`);
+
+            // Check support
+            const supported = `on${eventName}` in window;
+            status.innerText = supported ? "Supported" : "NOT Supported";
+
+            // Detect hardware trigger
+            window.addEventListener(eventName, (e) => {
+                card.classList.add('detected');
+                status.innerText = "FIRED";
+
+                const entry = document.createElement('div');
+                entry.innerText = `[${new Date().toISOString().split('T')[1]}] ${eventName}`;
+                log.prepend(entry);
+            }, {passive: true});
+        });
+    </script>
+</Layout>

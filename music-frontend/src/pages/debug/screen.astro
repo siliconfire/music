@@ -1,0 +1,119 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Touch Test">
+    <main class="relative h-screen w-screen overflow-hidden bg-black text-white">
+
+        <div id="ui-pane" class="fixed bottom-6 left-6 z-50 p-5 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700 rounded-lg text-center min-w-[180px]">
+            <div class="font-mono text-sm mb-3 text-zinc-400">
+                <span id="x">0</span>, <span id="y">0</span>
+            </div>
+
+            <select id="grid-select" class="w-full mb-2 bg-zinc-800 border border-zinc-600 p-1 text-sm rounded cursor-pointer">
+                <option value="4">4x4</option>
+                <option value="10">10x10</option>
+                <option value="20" selected>20x20</option>
+                <option value="30">30x30</option>
+                <option value="50">50x50</option>
+                <option value="67">67x67</option>
+                <option value="100">100x100</option>
+            </select>
+
+            <button id="reset-btn" class="w-full bg-red-600 py-2 font-bold text-xs mb-4 uppercase rounded">
+                Reset
+            </button>
+
+            <div id="nav-area" class="flex flex-col items-center">
+                <a href="/board" id="go-back-link" class="text-[12px] underline text-slate-200">go back</a>
+                <a href="/board" id="go-back-btn" class="hidden bg-green-600 p-4 font-black w-full text-center rounded tracking-widest text-white no-underline">
+                    Bitir
+                </a>
+            </div>
+        </div>
+
+        <canvas id="trail-canvas" class="pointer-events-none absolute inset-0 z-20"></canvas>
+
+        <div id="grid-container" class="absolute inset-0 z-10 grid h-full w-full"></div>
+
+    </main>
+</Layout>
+
+<script>
+    const container = document.getElementById('grid-container')!;
+    const canvas = document.getElementById('trail-canvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d');
+    const xDisplay = document.getElementById('x')!;
+    const yDisplay = document.getElementById('y')!;
+    const select = document.getElementById('grid-select') as HTMLSelectElement;
+    const resetBtn = document.getElementById('reset-btn')!;
+    const backLink = document.getElementById('go-back-link')!;
+    const backBtn = document.getElementById('go-back-btn')!;
+
+    let total = 0, count = 0;
+
+    function init() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const size = parseInt(select.value);
+        total = size * size;
+        count = 0;
+
+        backLink.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+        for (let i = 0; i < total; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell border border-zinc-800/40';
+            container.appendChild(cell);
+        }
+    }
+
+    function handle(e: any) {
+        const cx = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        const cy = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+        xDisplay.textContent = Math.round(cx).toString();
+        yDisplay.textContent = Math.round(cy).toString();
+
+        if (ctx) {
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // FIX: Look through ALL elements at point, not just the top one
+        const elements = document.elementsFromPoint(cx, cy);
+        const cell = elements.find(el => el.classList.contains('cell')) as HTMLElement | undefined;
+
+        if (cell && !cell.classList.contains('bg-green-600/40')) {
+            cell.classList.add('bg-green-600/40');
+            count++;
+            if (count >= total) {
+                backLink.classList.add('hidden');
+                backBtn.classList.remove('hidden');
+                backBtn.classList.add('block');
+            }
+        }
+    }
+
+    window.addEventListener('mousemove', handle);
+    window.addEventListener('touchmove', (e) => {
+        handle(e);
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    select.onchange = init;
+    resetBtn.onclick = () => {
+        ctx?.clearRect(0,0,canvas.width,canvas.height);
+        init();
+    };
+
+    window.onresize = init;
+    init();
+</script>
