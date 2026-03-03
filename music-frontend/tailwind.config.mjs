@@ -4,7 +4,6 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                // Since you installed @fontsource/google-sans-flex
                 sans: ['"Google Sans Flex"', 'ui-sans-serif', 'system-ui'],
                 mono: ['"Jetbrains Mono"', 'monospace'],
             },

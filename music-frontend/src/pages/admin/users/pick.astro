@@ -174,9 +174,23 @@ import AdminBack from '../../../components/AdminBack.astro'
             const cards = rows.map((row) => `
                 <div class="border border-slate-700 inline-block m-5 p-5">
                     <div class="text-xl font-semibold">${row.name || '-'}</div>
+                    <div class="border border-slate-200 p-2 my-2">
+                        Giriş yapmak için:
+                        <ol class="list-decimal list-inside">
+                            <li>
+                                Ekrandaki "QR Kodu göster" tuşuna basın.
+                            </li>
+                            <li>
+                                Telefonunuzu kullanarak QR kodu okutun.
+                            </li>
+                            <li>
+                                Aşağıda bulunan giriş bilgilerinizi girin.
+                            </li>
+                        </ol>
+                    </div>
                     <div class="border border-slate-400 my-2 p-2">
                         <div class="text-lg font-semibold">ID: ${row.id || '-'}</div>
-                        Giriş kodu: <span class="text-xs bg-black text-slate-700 p-1">${row.note || '-'}</div>
+                        Giriş kodu: <span class="text-xs">${row.note || '-'}</span>
                     </div>
                 </div>
             `).join('');
