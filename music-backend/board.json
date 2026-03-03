@@ -72,10 +72,10 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-03T11:53:06.748808+00:00",
+    "updated_at": "2026-03-03T19:49:35.910341+00:00",
     "confetti_trigger": {
-        "id": "2026-03-03T10:41:20.446479+00:00",
-        "created_at": "2026-03-03T10:41:20.446479+00:00",
+        "id": "2026-03-03T19:48:59.524750+00:00",
+        "created_at": "2026-03-03T19:48:59.524750+00:00",
         "config": {
             "particleCount": 100,
             "durationMs": 3000,
@@ -87,8 +87,8 @@
         "created_by": "100000"
     },
     "restart_trigger": {
-        "id": "2026-03-03T07:38:35.155383+00:00",
-        "created_at": "2026-03-03T07:38:35.155383+00:00",
+        "id": "2026-03-03T17:36:32.599842+00:00",
+        "created_at": "2026-03-03T17:36:32.599842+00:00",
         "created_by": "0"
     },
     "debug_passkeys": [],
@@ -116,6 +116,18 @@
                 "#f9a8d4"
             ]
         }
+    },
+    "test_trigger": {
+        "id": "2026-03-01T11:40:35.480345+00:00",
+        "created_at": "2026-03-01T11:40:35.480345+00:00",
+        "created_by": "100000",
+        "test_id": "clear"
+    },
+    "redirect_trigger": {
+        "id": "2026-03-03T19:44:23.890565+00:00",
+        "created_at": "2026-03-03T19:44:23.890565+00:00",
+        "created_by": "0",
+        "path": "/debug/screen"
     },
     "theme_presets": [
         {
@@ -432,7 +444,7 @@
         },
         {
             "key": "solarized_light_blur",
-            "label": "Güneş Işığı (Buğulu)",
+            "label": "Güneş Işığı",
             "colors": {
                 "textPrimary": "#073642",
                 "textSecondary": "#586e75",
@@ -453,42 +465,6 @@
                     "#268bd2"
                 ]
             }
-        },
-        {
-            "key": "hot_dog_stand",
-            "label": "Hot Dog Stand (Windows 3.1)",
-            "colors": {
-                "textPrimary": "#000000",
-                "textSecondary": "#000000",
-                "background": "#ff0000",
-                "cardBackground": "#ffff00",
-                "cardBorder": "#000000",
-                "cardPinnedBackground": "#ffffff",
-                "cardPinnedBorder": "#000000",
-                "qrButtonBackground": "#000000",
-                "qrButtonBorder": "#ffffff",
-                "qrButtonText": "#ffff00",
-                "confettiColors": [
-                    "#ff0000",
-                    "#ffff00",
-                    "#000000",
-                    "#ffffff",
-                    "#ff0000",
-                    "#ffff00"
-                ]
-            }
         }
-    ],
-    "test_trigger": {
-        "id": "2026-03-01T11:40:35.480345+00:00",
-        "created_at": "2026-03-01T11:40:35.480345+00:00",
-        "created_by": "100000",
-        "test_id": "clear"
-    },
-    "redirect_trigger": {
-        "id": "2026-03-03T07:39:55.798369+00:00",
-        "created_at": "2026-03-03T07:39:55.798369+00:00",
-        "created_by": "0",
-        "path": "/debug/screen"
-    }
+    ]
 }

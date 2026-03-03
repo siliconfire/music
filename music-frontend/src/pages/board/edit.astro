@@ -2,120 +2,107 @@
 import Layout from '../../layouts/Layout.astro';
 ---
 
-<Layout title="Ekran Kontrolleri">
-    <h1 class="text-2xl text-slate-800 m-10" id="title">Ekran kontrolleri</h1>
+<Layout title="Ekran Yönetimi">
 
-    <div id="board-permission" class="hidden m-5 lg:m-10">
-        <fieldset class="p-5 border border-red-400 bg-red-50">
-            <legend class="text-red-700 font-bold">Yetki Hatası</legend>
-            <p id="board-permission-message" class="text-red-700 text-sm">Bu sayfayı düzenlemek için yetkiniz yok.</p>
-        </fieldset>
-    </div>
+    <h1 class="text-2xl text-slate-800 mt-10 mx-10" id="title">Ekran kontrolleri</h1>
+    <a href="/" class="mb-10 mx-10 inline-block text-sm text-blue-500 hover:underline">
+        (ana sayfaya geri dön)
+    </a>
 
-    <div id="board-editor-root">
-        <div class="m-5 lg:m-10">
-            <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+    <div class="m-5 lg:m-10">
+        <div id="board-permission" class="hidden m-5 lg:m-10">
+            <fieldset class="p-5 border border-red-400 bg-red-50">
+                <legend class="text-red-700 font-bold">Yetki Hatası</legend>
+                <p id="board-permission-message" class="text-red-700 text-sm">Bu sayfayı düzenlemek için yetkiniz yok.</p>
+            </fieldset>
         </div>
 
-        <div class="m-5 lg:m-10">
-            <div id="board-widgets" class="flex flex-wrap gap-5"></div>
-        </div>
-        <hr class="text-slate-300">
-        <div class="m-5 lg:m-10">
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full">
-                <legend>Seçenekler</legend>
-                    <select id="board-add-select" class="border border-slate-300 p-2">
-                        <option value="">Seç...</option>
-                        <option value="now-playing">Şimdi Çalıyor</option>
-                        <option value="queue">Kuyruk</option>
-                        <option value="text-block">Metin</option>
-                        <option value="poll">Anket</option>
-                        <option value="clock">Saat</option>
-                        <option value="controls">Kontroller</option>
-                    </select>
-                    <button id="board-add-btn" class="border border-slate-300 p-2">Ekle</button>
-                    <div class="mt-4"></div>
-                    <button id="board-save-btn" class="border border-slate-500 p-2 bg-slate-100">Herşeyi kaydet</button>
-                <details class="m-2 p-3 border border-slate-300 inline-block">
-                <summary>Nasıl Kullanılır</summary>
-                <ul>
-                    <li>Birşey eklemek için "Seç..." menüsünden istediğinizi seçin ve "Ekle" tuşuna basın.</li>
-                    <li>Birşeyi taşımak için ↑/↓ ok tuşlarını kullanın.</li>
-                    <li>Birşeyi silmek için "Kaldır" tuşuna basın. Sabitli öğeler kaldırılamaz.</li>
-                    <li>Birşeyin başlığını değiştirmek için başlığının üzerine tıklayın.</li>
-                </ul>
-                </details>
-            </fieldset>
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                <legend>Tema</legend>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <button id="board-theme-random" class="border border-slate-300 p-2">Rastgele seç</button>
-                </div>
-                <div id="board-theme-list" class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
-            </fieldset>
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                <legend>Konfeti</legend>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <input id="confetti-count" class="border border-slate-300 p-2 text-xs" type="number" min="10" max="5000" placeholder="Partikül sayısı (3000)" />
-                    <input id="confetti-size" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="10" placeholder="Partikül boyutu (4)" />
-                    <input id="confetti-spread" class="border border-slate-300 p-2 text-xs" type="number" step="0.05" min="0.05" max="2" placeholder="Yayılım miktarı (0.5)" />
-                    <input id="confetti-duration" class="border border-slate-300 p-2 text-xs" type="number" min="200" max="10000" placeholder="Toplam süre (10000)" />
-                    <input id="confetti-spawn" class="border border-slate-300 p-2 text-xs" type="number" min="0" max="5000" placeholder="Dağılım süresi (1500)" />
-                    <input id="confetti-up" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="4" placeholder="Yukarı itiş (1.5)" />
-                </div>
-                <br>
-                <button id="board-confetti-btn" class="border border-slate-300 p-2 ml-2">Konfeti Gönder</button>
+        <div id="board-editor-root">
+            <div class="m-5 lg:m-10">
+                <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+            </div>
 
-                <details class="m-2 p-3 border border-slate-300 inline-block">
-                    <summary>Yardım</summary>
+            <div class="m-5 lg:m-10">
+                <div id="board-widgets" class="flex flex-wrap gap-5"></div>
+            </div>
+            <hr class="text-slate-300">
+            <div class="m-5 lg:m-10">
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full">
+                    <legend>Seçenekler</legend>
+                        <select id="board-add-select" class="border border-slate-300 p-2">
+                            <option value="">Seç...</option>
+                            <option value="now-playing">Şimdi Çalıyor</option>
+                            <option value="queue">Kuyruk</option>
+                            <option value="text-block">Metin</option>
+                            <option value="poll">Anket</option>
+                            <option value="clock">Saat</option>
+                            <option value="controls">Kontroller</option>
+                        </select>
+                        <button id="board-add-btn" class="border border-slate-300 p-2">Ekle</button>
+                        <div class="mt-4"></div>
+                        <button id="board-save-btn" class="border border-slate-500 p-2 bg-slate-100">Herşeyi kaydet</button>
+                    <details class="m-2 p-3 border border-slate-300 inline-block">
+                    <summary>Nasıl Kullanılır</summary>
                     <ul>
-                        <li>Partikül sayısı: Uçurulacak konfeti adeti.</li>
-                        <li>Partikül boyutu: Her konfetinin boyutu.</li>
-                        <li>Yayılım miktarı: Konfeti parçalarının sağa/sola yayılma miktarı.</li>
-                        <li>Toplam süre (ms): Animasyonun toplam süresi (milisaniye).</li>
-                        <li>Dağılım süresi (ms): Konfeti parçalarının yayılma süresi (parçalar bu süreye yayılarak uçarlar, 0 = hepsi aynı anda) (Milisaniye).</li>
-                        <li>Yukarı itiş: Konfetileri yukarı iten güç.</li>
+                        <li>Birşey eklemek için "Seç..." menüsünden istediğinizi seçin ve "Ekle" tuşuna basın.</li>
+                        <li>Birşeyi taşımak için ↑/↓ ok tuşlarını kullanın.</li>
+                        <li>Birşeyi silmek için "Kaldır" tuşuna basın. Sabitli öğeler kaldırılamaz.</li>
+                        <li>Birşeyin başlığını değiştirmek için başlığının üzerine tıklayın.</li>
                     </ul>
+                    </details>
+                </fieldset>
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                    <legend>Tema</legend>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <button id="board-theme-random" class="border border-slate-300 p-2">Rastgele seç</button>
+                    </div>
+                    <div id="board-theme-list" class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
+                </fieldset>
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                    <legend>Konfeti</legend>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <input id="confetti-count" class="border border-slate-300 p-2 text-xs" type="number" min="10" max="5000" placeholder="Partikül sayısı (3000)" />
+                        <input id="confetti-size" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="10" placeholder="Partikül boyutu (4)" />
+                        <input id="confetti-spread" class="border border-slate-300 p-2 text-xs" type="number" step="0.05" min="0.05" max="2" placeholder="Yayılım miktarı (0.5)" />
+                        <input id="confetti-duration" class="border border-slate-300 p-2 text-xs" type="number" min="200" max="10000" placeholder="Toplam süre (10000)" />
+                        <input id="confetti-spawn" class="border border-slate-300 p-2 text-xs" type="number" min="0" max="5000" placeholder="Dağılım süresi (1500)" />
+                        <input id="confetti-up" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="4" placeholder="Yukarı itiş (1.5)" />
+                    </div>
                     <br>
-                    Parantez içinde hepsi için önerilen değerler verilmiştir, önce onları girip sonra yavaş yavaş değerler ile oynamanız önerilir.
-                </details>
-            </fieldset>
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                <legend>Yeniden başlat</legend>
-                <button id="board-restart-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Ekranı yeniden başlat</button>
-                <p class="mx-3 mt-4 text-sm text-slate-600">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
-            </fieldset>
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                <legend>Debug</legend>
-                <button id="board-debug-screen-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Screen debug</button>
-                <p class="mx-3 mt-4 text-sm text-slate-600">Ekranı kontrol etmek için kullanabilirsiniz. Bir zararı yok.</p>
-            </fieldset>
-            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                <legend>Yardım</legend>
-                <details class="m-2 p-3 border border-green-500 hidden" id="moderator-help">
-                    <summary>Moderatör yardımı</summary>
-                    Tüm moderatör araçların yeşil ile işaretlidir. Hepsi hakkında daha fazla bilgi için alttaki başlıkları okuyabilirsin.
-                    <details class="m-2 p-3 border border-green-500 inline-block">
-                        <summary>Sabitleme</summary>
-                        Eğer birşeyi sabitlersen, o en başa gider ve onu normal kullanıcılar silemez.
+                    <button id="board-confetti-btn" class="border border-slate-300 p-2 ml-2">Konfeti Gönder</button>
+
+                    <details class="m-2 p-3 border border-slate-300 inline-block">
+                        <summary>Yardım</summary>
+                        <ul>
+                            <li>Partikül sayısı: Uçurulacak konfeti adeti.</li>
+                            <li>Partikül boyutu: Her konfetinin boyutu.</li>
+                            <li>Yayılım miktarı: Konfeti parçalarının sağa/sola yayılma miktarı.</li>
+                            <li>Toplam süre (ms): Animasyonun toplam süresi (milisaniye).</li>
+                            <li>Dağılım süresi (ms): Konfeti parçalarının yayılma süresi (parçalar bu süreye yayılarak uçarlar, 0 = hepsi aynı anda) (Milisaniye).</li>
+                            <li>Yukarı itiş: Konfetileri yukarı iten güç.</li>
+                        </ul>
+                        <br>
+                        Parantez içinde hepsi için önerilen değerler verilmiştir, önce onları girip sonra yavaş yavaş değerler ile oynamanız önerilir.
                     </details>
-                    <details class="m-2 p-3 border border-green-500 inline-block">
-                        <summary>test</summary>
-                        Lorem ipsum dolor.
-                    </details>
-                    <details class="m-2 p-3 border border-green-500 inline-block">
-                        <summary>test2</summary>
-                        Lorem ipsum dolor sit amet.
-                    </details>
-                </details>
-                <details class="m-2 p-3 border border-slate-300 inline-block align-top max-w-sm">
-                    <summary>"Sabitli" ne demek?</summary>
-                    Moderatörler bazı şeyleri sabitli yapabilir. Sabitli olunca her zaman en üstte kalır ve normal kullanıcılar tarafından silinemez.
-                </details>
-            </fieldset>
+                </fieldset>
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                    <legend>Yeniden başlat</legend>
+                    <button id="board-restart-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Ekranı yeniden başlat</button>
+                    <p class="mx-3 mt-4 text-sm text-slate-600">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
+                </fieldset>
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                    <legend>Debug</legend>
+                    <button id="board-debug-screen-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Dokunmatik kontrolü başlat</button>
+                    <p class="mx-3 mt-4 text-sm text-slate-600">Ekranı kontrol etmek için kullanabilirsiniz. Bir zararı yok.</p>
+                </fieldset>
+                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                    <legend>Yardım</legend>
+                    <a href="/help/" class="m-2 p-3 border border-slate-400 bg-slate-100 inline-block align-top max-w-sm">Tüm yardım başlıklarını oku</a>
+                    <a href="/help/board-pinned" class="m-2 p-3 border border-slate-300 inline-block align-top max-w-sm">"Sabitli" ne demek?</a>
+                </fieldset>
+            </div>
         </div>
     </div>
-
     <script>
         import { API_URL } from '../../lib/constants';
 

@@ -1,324 +1,137 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Search from '../components/Search.astro';
-import Queue from '../components/Queue.astro';
-import NowPlaying from '../components/NowPlaying.astro';
-import Item from '../components/Item.astro';
 ---
 
+
 <Layout title="Bartın Lisesi Müzik Sistemi">
-	<h1 class="text-2xl text-slate-800 m-10" id="title">Müzik Sistemi</h1>
-	<div class="flex flex-wrap m-5 lg:m-10 gap-5 max-w-full overflow-x-hidden">
-	<fieldset id="div-lockdown" class="hidden p-5 border border-red-500 bg-red-100 w-full">
-			<legend class="text-red-700 font-bold">Dikkat</legend>
-			<p class="text-red-700">Sistem kilitlendi.</p>
-			<p class="text-red-700">Lütfen kilidin kaldırılması için bir öğretmenden yardım isteyin.</p>
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Bartın Lisesi Müzik Sistemi</h1>
+        <div class="flex flex-wrap m-5 lg:m-10 gap-5 max-w-full overflow-x-hidden">
+            <!-- if logged in -->
+            <div id="logged-in" class="hidden">
+                <div class="border border-slate-300 m-3 p-5 hidden" id="div-music-available">
+                    <span class="text-xl text-slate-800">Müzik Sistemi</span>
+                    <br>
+                    <a href="/music" class="border border-slate-300 p-2 mt-3 inline-block">Müzik Kontrolleri</a>
+                    <a href="/board/edit" class="border border-slate-300 p-2 mt-3 inline-block">Ekran Yönetimi</a>
+                </div>
 
-	</fieldset>
-		<Item title="Kontroller">
-			<button id="btn-play" class="border border-slate-300 p-3 mx-2">Başlat</button>
-			<button id="btn-pause" class="border border-slate-300 p-3 mx-2">Durdur</button>
-			<button id="btn-next" class="border border-slate-300 p-3 mx-2">Atla</Button>
-		</Item>
-		<Item title="Çalıyor" className="item-card">
-			<NowPlaying />
-		</Item>
-		<Item title="Ara">
-			<Search />
-		</Item>
-		<Item title="Kuyruk">
-			<Queue showHeader={false} />
-		</Item>
-		<Item title="Ekran">
-			<button class="border border-slate-300 p-3 m-2" id="btn-edit">Kontroller</button>
-			<details class="border border-slate-300 p-3 m-2">
-				<summary>Konfeti fırlat...</summary>
-				<button class="border border-slate-300 p-3 m-2" id="btn-normal-confetti">Normal</button>
-				<button class="border border-slate-300 p-3 m-2" id="btn-faster-confetti">Normalden daha hızlı</button>
-				<button class="border border-slate-300 p-3 m-2" id="btn-less-confetti">Normalden daha az</button>
-				<button class="border border-slate-300 p-3 m-2" id="btn-many-confetti">Bol keseden</button>
-				<br>
-				<p class="m-3">Daha çok seçenek için lütfen Kontroller menüsüne gidin.</p>
-			</details>
-		</Item>
-		<Item title="Cihaz seçme">
-			<div id="div-devices" class="max-w-full overflow-hidden">
-				<select id="select-device" class="text-sm border border-slate-300 p-1 mb-2 max-w-full">
-					<option value="">Cihazlar taranıyor...</option>
-				</select>
-				<br>
-				<button id="btn-set-device" class="text-sm border border-slate-300 px-2 py-1 bg-slate-50">Seç</button>
-				<hr class="text-slate-400 my-3">
-				<p class="text-sm mb-2">Eğer müzik çalmıyor ise, buradan cihaz seçip ardından tekrar deneyin.</p>
-				<p class="text-xs text-slate-700 mb-2">(Bazen spotify garip davranabiliyor.)</p>
-			</div>
-		</Item>
-	</div>
+                <div class="border border-slate-300 m-3 p-5 hidden" id="div-music-unavailable">
+                    <span class="text-xl text-slate-800">Müzik Sistemi</span>
+                    <br>
+                    Bugün müzik sistemi için seçilmemişsiniz.
+                    <br>
+                    <span class="text-slate-700">İlginiz için teşekkürler.</span>
+                </div>
+                <div class="border border-slate-300 m-3 p-5">
+                    <span class="text-xl text-slate-800">Hesap bilgileri</span>
+                    <span id="username">(...)</span>
+                    <br>
+                    <button id="btn-logout" class="border border-slate-300 p-2 mt-3 inline-block">Çıkış yap</button>
+                    <a href="/account" class="border border-slate-300 p-2 mt-3 inline-block">Hesabım</a>
+                </div>
 
-	<div class="m-5 lg:m-10 lg:mt-10 mt-10">
-		<fieldset class="p-5 border border-gray-500 inline-block bg-gray-50"><span id="username">Yükleniyor...</span>
-			<legend>Hesabınız</legend>
+                <div id="div-cool" class="border border-slate-300 m-3 p-5 hidden">
+                    <span class="text-xl text-slate-800">Superman yetkilerine sahipsiniz.</span>
+                    <br>
+                    <button class="border border-slate-300 p-2 mt-3 hidden" id="btn-mod">Moderatör Paneli</button>
+                    <button class="border border-slate-300 p-2 mt-3 hidden" id="btn-admin">Yönetici Paneli</button>
+                </div>
+            </div>
 
-			<button id="btn-account" class="m-2 border border-slate-500 p-2 rounded">
-				Hesabım
-			</button>
+            <div id="logged-out" class="hidden">
+                <div class="border border-slate-300 m-3 p-5">
+                    <span class="text-xl text-slate-800">Hoşgeldiniz.</span>
+                    <br>
+                    <a href="/login" class="border border-slate-300 p-2 mt-3 inline-block">Giriş yap</a>
+                    <a href="/help" class="border border-slate-300 p-2 mt-3 inline-block">Yardım</a>
+                </div>
+            </div>
 
-			<button id="btn-logout" class="m-2 border border-slate-500 p-2 rounded">
-				Çıkış yap
-			</button>
+            <div id="session-invalid" class="hidden">
+                <div class="border border-slate-300 m-3 p-5">
+                    <span class="text-xl text-slate-800">Oturumunuzun süresi dolmuş.</span>
+                    <br>
+                    <span class="text-slate-700">Lütfen çıkış yapıp sonra tekrar girmeyi deneyin.</span>
+                    <br>
+                    <a id="btn-logout-2" class="border border-slate-300 p-2 mt-3 inline-block">Çıkış yap</a>
+                    <a href="/help" class="border border-slate-300 p-2 mt-3 inline-block">Yardım</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-			<div id="div-mod" class="hidden">
-				<button class="m-2 border border-slate-500 bg-green-100 p-2 rounded" id="btn-mod">
-					Moderator Paneli
-				</button>
-			</div>
+    <script>
+        import { API_URL } from '../lib/constants';
+        const token = localStorage.getItem("jwt_token");
 
-			<div id="div-admin" class="hidden">
-				<button class="m-2 border border-slate-500 p-2 bg-red-100 rounded" id="btn-admin">
-					Yönetici Paneli
-				</button>
-			</div>
+        async function handleUserInfo() {
+            if (token) {
+                document.getElementById("logged-in").classList.remove("hidden");
+            } else {
+                document.getElementById("logged-out").classList.remove("hidden");
+                return;
+            }
 
-		</fieldset>
-	</div>
+            const response = await fetch(`${API_URL}/me`, {headers: {'X-Session-ID': token}});
+            const user_info = await response.json();
 
+            if (!response.ok) {
+                document.getElementById("logged-in").classList.add("hidden");
+                document.getElementById("session-invalid").classList.remove("hidden");
 
+                document.getElementById("btn-logout-2").addEventListener("click", () => {
+                    window.posthog?.capture('user_logged_out');
+                    window.posthog?.reset();
+                    localStorage.removeItem("jwt_token");
+                    window.location.href = '/';
+                });
 
+            }
 
-	<script>
-		import { API_URL } from '../lib/constants';
+            if (user_info.banned) {
+                window.location.href = '/account';
+            }
 
-		const BOARD_USER_ID = '100000';
-		const token = localStorage.getItem("jwt_token");
-		if (!token) {
-			window.location.href = '/login';
-		} else {
-			handleUserInfo();
-		}
+            // Identify the user in PostHog with their ID and name (server-provided)
+            if (user_info.id && String(user_info.id) !== '100000') {
+                window.posthog?.identify(String(user_info.id), { name: user_info.name });
+            }
 
-		async function handleUserInfo() {
-			const response = await fetch(`${API_URL}/me`, {headers: {'X-Session-ID': token}});
-			const user_info = await response.json();
+            const username_el = document.getElementById("username") as HTMLSpanElement;
+            username_el.innerText = "(" + user_info.name + ")";
 
-			if (user_info.banned) {
-				window.location.href = '/account';
-			}
+            const perms = user_info.permissions;
 
-			// Identify the user in PostHog with their ID and name (server-provided)
-			if (user_info.id && String(user_info.id) !== BOARD_USER_ID) {
-				window.posthog?.identify(String(user_info.id), { name: user_info.name });
-			}
+            if (perms.includes("moderator") || perms.includes("admin")) {
+                document.getElementById("div-cool").classList.remove("hidden");
+                document.getElementById("btn-mod").classList.remove("hidden");
+            }
+            document.getElementById("btn-mod").addEventListener("click", () => {
+                window.location.href = '/mod'
+            })
 
-			const username_el = document.getElementById("username") as HTMLSpanElement;
-			username_el.innerText = user_info.name;
+            if (perms.includes("admin")) {
+                document.getElementById("btn-admin").classList.remove("hidden");
+                document.getElementById("btn-admin").addEventListener("click", () => {
+                    window.location.href = '/admin'
+                })
+            }
 
-			const perms = user_info.permissions;
+            if (perms.includes("music") || perms.includes("musicpermanent")) {
+                document.getElementById("div-music-available").classList.remove("hidden");
+            } else {
+                document.getElementById("div-music-unavailable").classList.remove("hidden");
+            }
+        }
 
-			if (perms.includes("moderator") || perms.includes("admin")) {
-				document.getElementById("div-mod").classList.remove("hidden");
-			}
-			document.getElementById("btn-mod").addEventListener("click", () => {
-				window.location.href = '/mod'
-			})
+        document.getElementById("btn-logout").addEventListener("click", () => {
+            window.posthog?.capture('user_logged_out');
+            window.posthog?.reset();
+            localStorage.removeItem("jwt_token");
+            window.location.href = '/';
+        });
 
-			if (perms.includes("admin")) {
-				document.getElementById("div-admin").classList.remove("hidden");
-				document.getElementById("btn-admin").addEventListener("click", () => {
-					window.location.href = '/admin'
-				})
-			}
-
-			if (perms.includes("music") || perms.includes("musicpermanent")) {
-				fetchDevices();
-			} else {
-				const devWrap = document.getElementById('div-devices');
-				if (devWrap) devWrap.innerHTML = '<p class="text-xs text-red-600">Cihaz değiştirmek için "film" yetkisine sahip olmalısınız.</p>';
-			}
-		}
-
-		async function fetchDevices() {
-			const select = document.getElementById('select-device') as HTMLSelectElement;
-			if (!select) return;
-
-			try {
-				const res = await fetch(`${API_URL}/admin/spotify/devices`, {
-					headers: { 'X-Session-ID': token }
-				});
-				if (!res.ok) throw new Error();
-				const data = await res.json();
-				const devices = data.devices || [];
-
-				select.innerHTML = '';
-				if (devices.length === 0) {
-					const opt = document.createElement('option');
-					opt.value = '';
-					opt.textContent = 'Aktif cihaz bulunamadı.';
-					select.appendChild(opt);
-				} else {
-					devices.forEach((dev) => {
-						const opt = document.createElement('option');
-						opt.value = dev.id;
-						opt.textContent = `${dev.name}${dev.is_active ? ' (Aktif)' : ''}`;
-						if (dev.is_active) opt.selected = true;
-						select.appendChild(opt);
-					});
-				}
-			} catch (err) {
-				select.innerHTML = '<option value="">Cihazlar alınamadı.</option>';
-			}
-		}
-
-		const btnSetDevice = document.getElementById('btn-set-device');
-		btnSetDevice?.addEventListener('click', async () => {
-			const select = document.getElementById('select-device') as HTMLSelectElement;
-			const deviceId = select.value;
-			if (!deviceId) return;
-
-			btnSetDevice.textContent = 'Değiştiriliyor...';
-			try {
-				const res = await fetch(`${API_URL}/admin/spotify/device?device_id=${deviceId}`, {
-					method: 'POST',
-					headers: { 'X-Session-ID': token }
-				});
-				if (res.ok) {
-					alert('Cihaz başarıyla değiştirildi.');
-					fetchDevices();
-				} else {
-					alert('Cihaz değiştirilemedi.');
-				}
-			} catch (err) {
-				alert('Bir hata oluştu.');
-			} finally {
-				btnSetDevice.textContent = 'Seç';
-			}
-		});
-
-		document.getElementById("btn-play").addEventListener("click", async () => {
-			await fetch(`${API_URL}/resume`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		);
-			window.posthog?.capture('music_playback_resumed');
-		});
-
-		document.getElementById("btn-pause").addEventListener("click", async () => {
-			await fetch(`${API_URL}/pause`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		);
-			window.posthog?.capture('music_playback_paused');
-		});
-
-		document.getElementById("btn-next").addEventListener("click", async () => {
-			await fetch(`${API_URL}/next`, { headers: { 'X-Session-ID': token }, method: 'POST' }
-		);
-			window.posthog?.capture('music_track_skipped');
-		})
-		document.getElementById("btn-account").addEventListener("click", () => {
-			window.location.href = '/account';
-		});
-
-		document.getElementById("btn-logout").addEventListener("click", () => {
-			window.posthog?.capture('user_logged_out');
-			window.posthog?.reset();
-			localStorage.removeItem("jwt_token");
-			window.location.href = '/login';
-		});
-
-		document.getElementById("btn-less-confetti").addEventListener("click", async () => {
-			await fetch(`${API_URL}/board/confetti`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Session-ID': token
-				},
-				body: JSON.stringify({
-					particleCount: 10,
-					sizeScale: 2,
-					spread: 1,
-					durationMs: 2000,
-					spawnDurationMs: 1000,
-					upwardBoost: 1
-				})
-			});
-			window.posthog?.capture('confetti_triggered', { type: 'less' });
-		});
-
-		document.getElementById("btn-normal-confetti").addEventListener("click", async () => {
-			await fetch(`${API_URL}/board/confetti`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Session-ID': token
-				},
-				body: JSON.stringify({
-					particleCount: 3000,
-					sizeScale: 4,
-					spread: 0.5,
-					durationMs: 10000,
-					spawnDurationMs: 1500,
-					upwardBoost: 1.5
-				})
-			});
-			window.posthog?.capture('confetti_triggered', { type: 'normal' });
-		});
-
-		document.getElementById("btn-faster-confetti").addEventListener("click", async () => {
-			await fetch(`${API_URL}/board/confetti`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Session-ID': token
-				},
-				body: JSON.stringify({
-					particleCount: 3000,
-					sizeScale: 4,
-					spread: 0.5,
-					durationMs: 10000,
-					spawnDurationMs: 1500,
-					upwardBoost: 1.5
-				})
-			});
-			window.posthog?.capture('confetti_triggered', { type: 'faster' });
-		});
-
-		document.getElementById("btn-many-confetti").addEventListener("click", async () => {
-			await fetch(`${API_URL}/board/confetti`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Session-ID': token
-				},
-				body: JSON.stringify({
-					particleCount: 10000,
-					sizeScale: 10,
-					spread: 2,
-					durationMs: 8500,
-					spawnDurationMs: 5000,
-					upwardBoost: 3
-				})
-			});
-			window.posthog?.capture('confetti_triggered', { type: 'many' });
-		});
-
-		document.getElementById("btn-edit").addEventListener("click", () => {
-			window.location.href = '/board/edit';
-		});
-
-	</script>
+        handleUserInfo()
+    </script>
 </Layout>
-
-
-
-
-
-
-
-
-
-
-
-<!-- saving for later -->
-<!--
- 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/e ifavicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Müzik Sistemi</title>
--->

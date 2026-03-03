@@ -29,7 +29,7 @@ import PostHog from '../components/Posthog.astro'
         const token = localStorage.getItem('jwt_token');
 
         // page exceptions
-        if (path === '/login' || path === '/login/code' || path === '/login/passkeys' || path === '/stats' || path === '/board' || path === '/board/auth' || path === '/boardlogin') {
+        if (path === '/' || path === '/login' || path === '/login/code' || path === '/login/passkeys' || path === '/stats' || path === '/board' || path === '/board/auth' || path === '/boardlogin') {
             return;
         }
 

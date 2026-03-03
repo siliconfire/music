@@ -1,0 +1,11 @@
+---
+import Layout from "@/layouts/Layout.astro";
+const { frontmatter } = Astro.props;
+---
+
+<Layout title={`Yardım - ${frontmatter.title}`}>
+    <div class="m-10">
+        <h1 class="text-4xl mb-2">{frontmatter.title}</h1>
+        <slot />
+    </div>
+</Layout>

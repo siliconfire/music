@@ -1,13 +1,10 @@
 ---
-// This component handles the repetitive border and legend styles
 const { title, className = '' } = Astro.props;
 ---
 
-<fieldset class={`item-shell border rounded-xl p-6 ${className}`}>
-    <legend class="px-2 font-medium text-gray-700">
-        {title}
-    </legend>
+<div class={`item-shell border border-slate-300 p-5 ${className}`}>
+    <h2 class="text-xl mb-5">{title}</h2>
 
     <div class="space-y-4">
         <slot /> </div>
-</fieldset>
+</div>

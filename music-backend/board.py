@@ -245,7 +245,7 @@ THEME_PRESETS = {
     },
     "solarized_light_blur": {
         "key": "solarized_light_blur",
-        "label": "Güneş Işığı (Buğulu)",
+        "label": "Güneş Işığı",
         "colors": {
             "textPrimary": "#073642",
             "textSecondary": "#586e75",
@@ -260,23 +260,23 @@ THEME_PRESETS = {
             "confettiColors": ["#b58900", "#cb4b16", "#dc322f", "#d33682", "#6c71c4", "#268bd2"]
         }
     },
-    "hot_dog_stand": {
-        "key": "hot_dog_stand",
-        "label": "Hot Dog Stand (Windows 3.1)",
-        "colors": {
-            "textPrimary": "#000000",
-            "textSecondary": "#000000",
-            "background": "#ff0000",
-            "cardBackground": "#ffff00",
-            "cardBorder": "#000000",
-            "cardPinnedBackground": "#ffffff",
-            "cardPinnedBorder": "#000000",
-            "qrButtonBackground": "#000000",
-            "qrButtonBorder": "#ffffff",
-            "qrButtonText": "#ffff00",
-            "confettiColors": ["#ff0000", "#ffff00", "#000000", "#ffffff", "#ff0000", "#ffff00"]
-        }
-    }
+#     "hot_dog_stand": {
+#         "key": "hot_dog_stand",
+#         "label": "Hot Dog Stand (Windows 3.1)",
+#         "colors": {
+#             "textPrimary": "#000000",
+#             "textSecondary": "#000000",
+#             "background": "#ff0000",
+#             "cardBackground": "#ffff00",
+#             "cardBorder": "#000000",
+#             "cardPinnedBackground": "#ffffff",
+#             "cardPinnedBorder": "#000000",
+#             "qrButtonBackground": "#000000",
+#             "qrButtonBorder": "#ffffff",
+#             "qrButtonText": "#ffff00",
+#             "confettiColors": ["#ff0000", "#ffff00", "#000000", "#ffffff", "#ff0000", "#ffff00"]
+#         }
+#     }
 }
 
 

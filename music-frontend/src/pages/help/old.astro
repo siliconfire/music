@@ -1,11 +1,5 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-
-const helpFiles = import.meta.glob('./*.md', { eager: true });
-
-const articles = Object.values(helpFiles).filter((file: any) =>
-    !file.url.endsWith('/help/')
-);
+import Layout from '../../layouts/Layout.astro';
 ---
 
 <Layout title="Yardım">
@@ -14,16 +8,12 @@ const articles = Object.values(helpFiles).filter((file: any) =>
         <a href="/" class="text-amber-800 no-underline mb-5">(Ana sayfaya dönmek için tıkla)</a>
         <ul class="m-5 list-disc list-inside">
             <li>
-                <a href="/help/login" class="cool">Giriş yapamıyorum!</a>
+                <a href="/help/login">Giriş yapamıyorum!</a>
             </li>
             <hr class="text-slate-400 my-2">
-            {articles.map((article: any) => (
-                    <li>
-                        <a href={article.url} class="cool">
-                            {article.frontmatter.title}
-                        </a>
-                    </li>
-            ))}
+            <li>
+                <a href="/help/short">Bir yardım sayfası yapacaksan neden sadece 2 tane soru cevapladın?</a>
+            </li>
         </ul>
 
         <details class="mt-10 p-3 border border-slate-400 inline-block">
