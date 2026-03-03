@@ -83,7 +83,12 @@ import Layout from '../../layouts/Layout.astro';
             <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
                 <legend>Yeniden başlat</legend>
                 <button id="board-restart-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Ekranı yeniden başlat</button>
-                <p class="mx-3 mt-4">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
+                <p class="mx-3 mt-4 text-sm text-slate-600">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
+            </fieldset>
+            <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
+                <legend>Debug</legend>
+                <button id="board-debug-screen-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Screen debug</button>
+                <p class="mx-3 mt-4 text-sm text-slate-600">Ekranı kontrol etmek için kullanabilirsiniz. Bir zararı yok.</p>
             </fieldset>
             <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
                 <legend>Yardım</legend>
@@ -155,6 +160,7 @@ import Layout from '../../layouts/Layout.astro';
         const restartBtnEl = document.getElementById('board-restart-btn');
         const themeRandomEl = document.getElementById('board-theme-random');
         const themeListEl = document.getElementById('board-theme-list');
+        const debugScreenBtnEl = document.getElementById('board-debug-screen-btn');
 
         function showPermissionError(message) {
             if (editorRootEl) editorRootEl.classList.add('hidden');
@@ -908,12 +914,40 @@ import Layout from '../../layouts/Layout.astro';
             }
         }
 
+        async function triggerBoardDebugScreen() {
+            try {
+                const res = await fetch(`${API_URL}/board/redirect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ path: '/debug/screen' })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Yönlendirme gönderilemedi.', true);
+                    return;
+                }
+                showStatus('Tahta yönlendirme komutu gönderildi.');
+            } catch (err) {
+                showStatus('Yönlendirme gönderilemedi.', true);
+            }
+        }
+
          if (confettiBtnEl) {
              confettiBtnEl.addEventListener('click', triggerConfetti);
          }
 
          if (restartBtnEl) {
              restartBtnEl.addEventListener('click', triggerBoardRestart);
+         }
+
+         if (debugScreenBtnEl) {
+             debugScreenBtnEl.addEventListener('click', triggerBoardDebugScreen);
          }
 
          init();

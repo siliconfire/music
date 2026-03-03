@@ -58,10 +58,10 @@
             "type": "text-block",
             "title": "Metin",
             "pinned": false,
-            "content": "@m"
+            "content": "hey"
         },
         {
-            "key": "controls-mlh33a7z-y5kob",
+            "key": "controls-mmabzbpa-4x3kn",
             "type": "controls",
             "title": "Kontroller",
             "pinned": false,
@@ -71,11 +71,11 @@
             "display_text": true
         }
     ],
-    "updated_by": "100000",
-    "updated_at": "2026-03-01T10:38:02.734880+00:00",
+    "updated_by": "0",
+    "updated_at": "2026-03-03T08:14:53.292380+00:00",
     "confetti_trigger": {
-        "id": "2026-03-01T10:38:00.622167+00:00",
-        "created_at": "2026-03-01T10:38:00.622167+00:00",
+        "id": "2026-03-03T08:13:36.067385+00:00",
+        "created_at": "2026-03-03T08:13:36.067385+00:00",
         "config": {
             "particleCount": 100,
             "durationMs": 3000,
@@ -87,9 +87,9 @@
         "created_by": "100000"
     },
     "restart_trigger": {
-        "id": "2026-03-01T10:23:31.643034+00:00",
-        "created_at": "2026-03-01T10:23:31.643034+00:00",
-        "created_by": "100000"
+        "id": "2026-03-03T07:38:35.155383+00:00",
+        "created_at": "2026-03-03T07:38:35.155383+00:00",
+        "created_by": "0"
     },
     "debug_passkeys": [],
     "theme_key": "telegram_pink2",
@@ -478,5 +478,17 @@
                 ]
             }
         }
-    ]
+    ],
+    "test_trigger": {
+        "id": "2026-03-01T11:40:35.480345+00:00",
+        "created_at": "2026-03-01T11:40:35.480345+00:00",
+        "created_by": "100000",
+        "test_id": "clear"
+    },
+    "redirect_trigger": {
+        "id": "2026-03-03T07:39:55.798369+00:00",
+        "created_at": "2026-03-03T07:39:55.798369+00:00",
+        "created_by": "0",
+        "path": "/debug/screen"
+    }
 }

@@ -154,6 +154,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         let initialConfettiShown = false;
         const restartStorageKey = 'board.restartTriggerId';
         let lastRestartId = sessionStorage.getItem(restartStorageKey);
+        const redirectStorageKey = 'board.redirectTriggerId';
+        let lastRedirectId = sessionStorage.getItem(redirectStorageKey);
         const INACTIVITY_RESET_MS = 10 * 60 * 1000;
         let inactivityTimer = null;
 
@@ -201,6 +203,32 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             }
             return false;
         }
+
+        function handleRedirectTrigger(data) {
+            const triggerId = data?.redirect_trigger?.id;
+            if (!triggerId) {
+                return false;
+            }
+            const path = data?.redirect_trigger?.path;
+            if (!lastRedirectId) {
+                lastRedirectId = triggerId;
+                sessionStorage.setItem(redirectStorageKey, triggerId);
+            }
+            if (triggerId === lastRedirectId) {
+                return false;
+            }
+            lastRedirectId = triggerId;
+            sessionStorage.setItem(redirectStorageKey, triggerId);
+            if (typeof path === 'string' && path.trim()) {
+                const target = path.trim();
+                if (location.pathname !== target) {
+                    location.href = target;
+                    return true;
+                }
+            }
+            return false;
+        }
+
 
         const mailtoConfig = {
             email: 'cinar@cinarcecen.dev',
@@ -733,6 +761,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                         lastConfettiId = data.confetti_trigger.id;
                         popConfetti(data.confetti_trigger.config || {});
                     }
+                    handleRedirectTrigger(data);
                     if (handleRestartTrigger(data)) {
                         return;
                     }
@@ -752,6 +781,7 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                     lastConfettiId = data.confetti_trigger.id;
                     popConfetti(data.confetti_trigger.config || {});
                 }
+                handleRedirectTrigger(data);
                 if (handleRestartTrigger(data)) {
                     return;
                 }

@@ -156,6 +156,13 @@ class BoardConfettiRequest(BaseModel):
         extra = "ignore"
 
 
+class BoardRedirectRequest(BaseModel):
+    path: str | None = None
+
+    class Config:
+        extra = "ignore"
+
+
 class BoardPasskeysRequest(BaseModel):
     passkeys: list[str] | None = None
 
@@ -895,6 +902,16 @@ def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(ge
     ensure_board_edit(payload)
     config = req.dict(by_alias=True, exclude_none=True)
     trigger = board.set_confetti_trigger(config=config, updated_by=user_id)
+    return {"ok": True, "trigger": trigger}
+
+
+@app.post("/board/redirect")
+def trigger_board_redirect(req: BoardRedirectRequest, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(user_id, "music"):
+        raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
+    ensure_board_edit(payload)
+    trigger = board.set_redirect_trigger(path=req.path, updated_by=user_id)
     return {"ok": True, "trigger": trigger}
 
 

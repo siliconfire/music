@@ -639,3 +639,34 @@ def update_debug_passkeys(passkeys):
     data["debug_passkeys"] = _normalize_passkeys(passkeys)
     save_board(data)
     return data["debug_passkeys"]
+
+
+def _normalize_redirect_path(value):
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if cleaned.startswith("http://") or cleaned.startswith("https://"):
+        return None
+    if not cleaned.startswith("/"):
+        cleaned = "/" + cleaned
+    if len(cleaned) > 200:
+        cleaned = cleaned[:200]
+    return cleaned
+
+
+def set_redirect_trigger(path=None, updated_by=None):
+    data = load_board()
+    trigger_id = datetime.now(timezone.utc).isoformat()
+    cleaned_path = _normalize_redirect_path(path)
+    data["redirect_trigger"] = {
+        "id": trigger_id,
+        "created_at": trigger_id,
+        "created_by": updated_by,
+        "path": cleaned_path
+    }
+    data["updated_at"] = trigger_id
+    data["updated_by"] = updated_by
+    save_board(data)
+    return data["redirect_trigger"]

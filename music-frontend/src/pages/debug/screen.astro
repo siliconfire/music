@@ -3,30 +3,30 @@ import Layout from '../../layouts/Layout.astro';
 ---
 
 <Layout title="Touch Test">
-    <main class="relative h-screen w-screen overflow-hidden bg-black text-white">
+    <main class="relative h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
 
-        <div id="ui-pane" class="fixed bottom-6 left-6 z-50 p-5 bg-zinc-900/60 backdrop-blur-xl border border-zinc-700 rounded-lg text-center min-w-[180px]">
-            <div class="font-mono text-sm mb-3 text-zinc-400">
+        <div id="ui-pane" class="fixed bottom-6 left-6 z-50 p-5 bg-white border border-slate-300 shadow-sm rounded-xl text-center min-w-[180px]">
+            <div class="font-mono text-sm mb-3 text-slate-500">
                 <span id="x">0</span>, <span id="y">0</span>
             </div>
 
-            <select id="grid-select" class="w-full mb-2 bg-zinc-800 border border-zinc-600 p-1 text-sm rounded cursor-pointer">
+            <select id="grid-select" class="w-full mb-2 bg-white border border-slate-300 p-2 text-sm cursor-pointer rounded-md outline-none focus:ring-1 focus:ring-blue-500">
                 <option value="4">4x4</option>
-                <option value="10">10x10</option>
-                <option value="20" selected>20x20</option>
+                <option value="10" selected>10x10</option>
+                <option value="20">20x20</option>
                 <option value="30">30x30</option>
                 <option value="50">50x50</option>
                 <option value="67">67x67</option>
                 <option value="100">100x100</option>
             </select>
 
-            <button id="reset-btn" class="w-full bg-red-600 py-2 font-bold text-xs mb-4 uppercase rounded">
+            <button id="reset-btn" class="w-full bg-slate-100 hover:bg-red-50 text-red-600 border border-red-200 py-2 font-semibold text-lg mb-4 rounded-md transition-colors">
                 Reset
             </button>
 
             <div id="nav-area" class="flex flex-col items-center">
-                <a href="/board" id="go-back-link" class="text-[12px] underline text-slate-200">go back</a>
-                <a href="/board" id="go-back-btn" class="hidden bg-green-600 p-4 font-black w-full text-center rounded tracking-widest text-white no-underline">
+                <a href="/board" id="go-back-link" class="text-sm underline text-slate-400 hover:text-slate-600">Geri dön</a>
+                <a href="/board" id="go-back-btn" class="hidden bg-emerald-600 hover:bg-emerald-700 p-4 font-bold w-full text-center tracking-wide text-white no-underline rounded-md shadow-sm">
                     Bitir
                 </a>
             </div>
@@ -68,7 +68,8 @@ import Layout from '../../layouts/Layout.astro';
 
         for (let i = 0; i < total; i++) {
             const cell = document.createElement('div');
-            cell.className = 'cell border border-zinc-800/40';
+            // Changed cell border to a very light slate
+            cell.className = 'cell border border-slate-200';
             container.appendChild(cell);
         }
     }
@@ -81,18 +82,20 @@ import Layout from '../../layouts/Layout.astro';
         yDisplay.textContent = Math.round(cy).toString();
 
         if (ctx) {
-            ctx.fillStyle = '#22c55e';
+            // Softened the trail color to a light emerald
+            ctx.fillStyle = '#10b981';
             ctx.beginPath();
             ctx.arc(cx, cy, 3, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // FIX: Look through ALL elements at point, not just the top one
         const elements = document.elementsFromPoint(cx, cy);
         const cell = elements.find(el => el.classList.contains('cell')) as HTMLElement | undefined;
 
-        if (cell && !cell.classList.contains('bg-green-600/40')) {
-            cell.classList.add('bg-green-600/40');
+        // Use a cleaner background fill for "completed" cells
+        if (cell && !cell.classList.contains('bg-emerald-100')) {
+            cell.classList.add('bg-emerald-100');
+            cell.style.borderColor = '#d1fae5'; // Match light emerald border
             count++;
             if (count >= total) {
                 backLink.classList.add('hidden');
