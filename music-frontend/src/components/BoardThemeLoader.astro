@@ -1,0 +1,41 @@
+---
+import { API_URL } from '../lib/constants';
+const { addBodyClass = true } = Astro.props;
+---
+
+<script define:vars={{ addBodyClass, API_URL }}>
+    function applyTheme(theme) {
+        const colors = theme?.colors || {};
+        const style = document.documentElement.style;
+        style.setProperty('--board-text-primary', colors.textPrimary || '#0f172a');
+        style.setProperty('--board-text-secondary', colors.textSecondary || '#A3B1C7');
+        style.setProperty('--board-background', colors.background || '#f8fafc');
+        style.setProperty('--board-card-bg', colors.cardBackground || '#ffffff');
+        style.setProperty('--board-card-border', colors.cardBorder || '#cbd5f5');
+        style.setProperty('--board-card-pinned-bg', colors.cardPinnedBackground || '#ecfdf5');
+        style.setProperty('--board-card-pinned-border', colors.cardPinnedBorder || '#6ee7b7');
+        style.setProperty('--board-qr-bg', colors.qrButtonBackground || '#ffffff');
+        style.setProperty('--board-qr-border', colors.qrButtonBorder || '#cbd5f5');
+        style.setProperty('--board-qr-text', colors.qrButtonText || '#0f172a');
+    }
+
+    async function loadBoardTheme() {
+        if (addBodyClass) {
+            document.body.classList.add('board-theme');
+        }
+        try {
+            const res = await fetch(`${API_URL}/board`);
+            if (!res.ok) return;
+            const data = await res.json();
+            applyTheme(data?.theme || null);
+        } catch (e) {
+            // Keep defaults on failure.
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadBoardTheme);
+    } else {
+        loadBoardTheme();
+    }
+</script>

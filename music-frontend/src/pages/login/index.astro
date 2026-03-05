@@ -11,27 +11,34 @@ import Layout from '../../layouts/Layout.astro'
     </head>
     <body>
     <p id="info"></p>
-    <div id="view-no-token" style="display: none;">
-        <h1 class="text-2xl text-slate-800 m-5 lg:m-10" id="title">Lütfen giriş yap.</h1>
-        <div id="error-box" class="hidden m-5 lg:m-10 p-3 border border-red-300 bg-red-100 text-red-700 rounded"></div>
-        <hr class="my-1">
-        <input type="text" id="user-id" class="m-2 p-0.5 border border-gray-200 rounded" placeholder="[ID gir]"/>
-        <input type="password" id="password" class="m-2 p-0.5 border border-gray-200 rounded" placeholder="[şifre gir]"/>
-        <button id="btn-login" class="text-gray-900">[giriş yap]</button>
-        <div class="m-2 text-sm text-slate-600">
-            <a href="/login/code" class="underline text-blue-500">Benim bir giriş kodum var!</a>
-        </div>
-        <div class="mt-6">
-            <a class="text-sm text-slate-600 underline" href="/login/code">Kod ile giriş</a>
-            <span class="mx-2 text-slate-400">•</span>
-            <a class="text-sm text-slate-600 underline" href="/login/passkeys">Passkey ile giriş</a>
-        </div>
-        <hr class="my-1">
-        <a href="/help/old" class="underline text-blue-500 mx-3 my-1 inline-block">Yardım</a>
+
+    <!-- title -->
+    <div class="m-5 lg:m-10 mt-10 mb-5">
+        <h1 class="text-2xl text-slate-800" id="title">Lütfen giriş yap.</h1>
+        <a href="/" class="inline-block text-sm board-theme-text-secondary hover:underline">
+            (ana sayfaya geri dön)
+        </a>
     </div>
-    <div id="view-invalid-token" style="display: none;">
-        <h1>Oturumunuzun süresi dolmuş.</h1>
-        <button class="btn-logout">[Çıkış yap]</button>
+
+    <div class="flex flex-wrap">
+        <div class="border border-slate-400 m-5 lg:m-10 p-3">
+            <div id="view-no-token" style="display: none;">
+                <div id="error-box" class="hidden m-3 lg:m-10 p-3 border border-red-300 bg-red-100 text-red-700 rounded"></div>
+                <input type="text" id="user-id" class="m-2 p-1 border border-slate-400" placeholder="ID..."/>
+                <input type="password" id="password" class="m-2 p-1 border border-slate-400" placeholder="Şifre..."/>
+                <br>
+                <button id="btn-login" class="text-gray-900 border border-slate-400 m-2 p-3">Giriş yap</button>
+                <div class="m-2 text-sm text-slate-600">
+                    <a href="/login/code" class="underline text-blue-500">Benim bir giriş kodum var!</a>
+                </div>
+                <hr class="my-1 text-slate-400">
+            </div>
+            <div id="view-invalid-token" style="display: none;">
+                <h1>Oturumunuzun süresi dolmuş.</h1>
+                <button class="btn-logout">[Çıkış yap]</button>
+            </div>
+        </div>
+            <a href="/help" class="m-5 lg:m-10 mt-2 p-3 border border-slate-400">Yardım</a>
     </div>
     </body>
     </html>

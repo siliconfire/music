@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import BoardThemeLoader from '../components/BoardThemeLoader.astro';
 import Search from '../components/Search.astro';
 import Queue from '../components/Queue.astro';
 import NowPlaying from '../components/NowPlaying.astro';
@@ -7,9 +8,10 @@ import Item from '../components/Item.astro';
 ---
 
 <Layout title="Müzik Kontrolleri">
+	<BoardThemeLoader />
 	<div class="m-5 lg:m-10">
-		<h1 class="text-2xl text-slate-800">Müzik Kontrolleri</h1>
-		<a href="/" class="mb-10 inline-block text-sm text-blue-500 hover:underline">
+		<h1 class="text-2xl board-theme-text-primary">Müzik Kontrolleri</h1>
+		<a href="/" class="mb-10 inline-block text-sm board-theme-text-secondary hover:underline">
 			(ana sayfaya geri dön)
 		</a>
 		<div class="flex flex-wrap gap-5 max-w-full overflow-x-hidden">
@@ -19,9 +21,9 @@ import Item from '../components/Item.astro';
 					<p class="text-red-700">Lütfen kilidin kaldırılması için bir öğretmenden yardım isteyin.</p>
 			</fieldset>
 			<Item title="Kontroller">
-				<button id="btn-play" class="border border-slate-300 p-3 mx-2">Başlat</button>
-				<button id="btn-pause" class="border border-slate-300 p-3 mx-2">Durdur</button>
-				<button id="btn-next" class="border border-slate-300 p-3 mx-2">Atla</Button>
+				<button id="btn-play" class="border board-theme-border p-3 mx-2">Başlat</button>
+				<button id="btn-pause" class="border board-theme-border p-3 mx-2">Durdur</button>
+				<button id="btn-next" class="border board-theme-border p-3 mx-2">Atla</Button>
 			</Item>
 			<Item title="Çalıyor" className="item-card">
 				<NowPlaying />
@@ -34,14 +36,14 @@ import Item from '../components/Item.astro';
 			</Item>
 			<Item title="Cihaz seçme">
 				<div id="div-devices" class="max-w-full overflow-hidden">
-					<select id="select-device" class="text-sm border border-slate-300 p-1 mb-2 max-w-full">
+					<select id="select-device" class="text-sm border board-theme-border p-1 mb-2 max-w-full">
 						<option value="">Cihazlar taranıyor...</option>
 					</select>
 					<br>
-					<button id="btn-set-device" class="text-sm border border-slate-300 px-2 py-1 bg-slate-50">Seç</button>
+					<button id="btn-set-device" class="text-sm border board-theme-border px-2 py-1">Onayla</button>
 					<hr class="text-slate-400 my-3">
 					<p class="text-sm mb-2">Eğer müzik çalmıyor ise, buradan cihaz seçip ardından tekrar deneyin.</p>
-					<p class="text-xs text-slate-700 mb-2">(Bazen spotify garip davranabiliyor.)</p>
+					<p class="text-xs board-theme-text-secondary mb-2">(Bazen spotify garip davranabiliyor.)</p>
 				</div>
 			</Item>
 		</div>
@@ -71,8 +73,10 @@ import Item from '../components/Item.astro';
 				window.posthog?.identify(String(user_info.id), { name: user_info.name });
 			}
 
-			const username_el = document.getElementById("username") as HTMLSpanElement;
-			username_el.innerText = user_info.name;
+			const username_el = document.getElementById("username") as HTMLSpanElement | null;
+			if (username_el) {
+				username_el.innerText = user_info.name;
+			}
 
 			const perms = user_info.permissions;
 
@@ -141,35 +145,35 @@ import Item from '../components/Item.astro';
 			}
 		});
 
-		document.getElementById("btn-play").addEventListener("click", async () => {
+		document.getElementById("btn-play")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/resume`, { headers: { 'X-Session-ID': token }, method: 'POST' }
 		);
 			window.posthog?.capture('music_playback_resumed');
 		});
 
-		document.getElementById("btn-pause").addEventListener("click", async () => {
+		document.getElementById("btn-pause")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/pause`, { headers: { 'X-Session-ID': token }, method: 'POST' }
 		);
 			window.posthog?.capture('music_playback_paused');
 		});
 
-		document.getElementById("btn-next").addEventListener("click", async () => {
+		document.getElementById("btn-next")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/next`, { headers: { 'X-Session-ID': token }, method: 'POST' }
 		);
 			window.posthog?.capture('music_track_skipped');
-		})
-		document.getElementById("btn-account").addEventListener("click", () => {
+		});
+		document.getElementById("btn-account")?.addEventListener("click", () => {
 			window.location.href = '/account';
 		});
 
-		document.getElementById("btn-logout").addEventListener("click", () => {
+		document.getElementById("btn-logout")?.addEventListener("click", () => {
 			window.posthog?.capture('user_logged_out');
 			window.posthog?.reset();
 			localStorage.removeItem("jwt_token");
 			window.location.href = '/login';
 		});
 
-		document.getElementById("btn-less-confetti").addEventListener("click", async () => {
+		document.getElementById("btn-less-confetti")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/board/confetti`, {
 				method: 'POST',
 				headers: {
@@ -188,7 +192,7 @@ import Item from '../components/Item.astro';
 			window.posthog?.capture('confetti_triggered', { type: 'less' });
 		});
 
-		document.getElementById("btn-normal-confetti").addEventListener("click", async () => {
+		document.getElementById("btn-normal-confetti")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/board/confetti`, {
 				method: 'POST',
 				headers: {
@@ -207,7 +211,7 @@ import Item from '../components/Item.astro';
 			window.posthog?.capture('confetti_triggered', { type: 'normal' });
 		});
 
-		document.getElementById("btn-faster-confetti").addEventListener("click", async () => {
+		document.getElementById("btn-faster-confetti")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/board/confetti`, {
 				method: 'POST',
 				headers: {
@@ -226,7 +230,7 @@ import Item from '../components/Item.astro';
 			window.posthog?.capture('confetti_triggered', { type: 'faster' });
 		});
 
-		document.getElementById("btn-many-confetti").addEventListener("click", async () => {
+		document.getElementById("btn-many-confetti")?.addEventListener("click", async () => {
 			await fetch(`${API_URL}/board/confetti`, {
 				method: 'POST',
 				headers: {
@@ -245,10 +249,9 @@ import Item from '../components/Item.astro';
 			window.posthog?.capture('confetti_triggered', { type: 'many' });
 		});
 
-		document.getElementById("btn-edit").addEventListener("click", () => {
+		document.getElementById("btn-edit")?.addEventListener("click", () => {
 			window.location.href = '/board/edit';
 		});
-
 	</script>
 </Layout>
 

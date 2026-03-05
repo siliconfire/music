@@ -43,13 +43,15 @@ const { showControls = true, showHeader = true } = Astro.props;
                 const queue = data.queue || [];
 
                 if (queue.length === 0) {
-                    container.innerHTML = "Sıra boş. Şarkı ekle!";
+                    container.innerHTML = "Sıra boş.";
                     return;
                 }
 
                 container.innerHTML = "";
 
                 queue.slice(0, 5).forEach((track, index) => {
+                    // cut track to the first 20 chars
+
                     const item = document.createElement('div');
                     item.className = "flex gap-2 opacity-80";
                     item.innerHTML = `
@@ -66,7 +68,7 @@ const { showControls = true, showHeader = true } = Astro.props;
 
         updateQueue();
         refreshBtn?.addEventListener('click', updateQueue);
-        setInterval(updateQueue, 10000);
+        setInterval(updateQueue, 5000);
     }
 
     function initAllQueues() {

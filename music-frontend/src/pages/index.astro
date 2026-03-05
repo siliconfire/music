@@ -1,61 +1,63 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import BoardThemeLoader from '../components/BoardThemeLoader.astro';
 ---
 
 
 <Layout title="Bartın Lisesi Müzik Sistemi">
+    <BoardThemeLoader />
     <div class="m-10">
-        <h1 class="text-2xl text-slate-800 mt-10">Bartın Lisesi Müzik Sistemi</h1>
+        <h1 class="text-2xl mt-10 board-theme-text-primary">Bartın Lisesi Müzik Sistemi</h1>
         <div class="flex flex-wrap m-5 lg:m-10 gap-5 max-w-full overflow-x-hidden">
             <!-- if logged in -->
             <div id="logged-in" class="hidden">
-                <div class="border border-slate-300 m-3 p-5 hidden" id="div-music-available">
-                    <span class="text-xl text-slate-800">Müzik Sistemi</span>
+                <div class="border m-3 p-5 hidden board-theme-card" id="div-music-available">
+                    <span class="text-xl board-theme-text-primary">Müzik Sistemi</span>
                     <br>
-                    <a href="/music" class="border border-slate-300 p-2 mt-3 inline-block">Müzik Kontrolleri</a>
-                    <a href="/board/edit" class="border border-slate-300 p-2 mt-3 inline-block">Ekran Yönetimi</a>
+                    <a href="/music" class="border board-theme-border p-2 mt-3 inline-block">Müzik Kontrolleri</a>
+                    <a href="/board/edit" class="border board-theme-border p-2 mt-3 inline-block">Ekran Yönetimi</a>
                 </div>
 
-                <div class="border border-slate-300 m-3 p-5 hidden" id="div-music-unavailable">
-                    <span class="text-xl text-slate-800">Müzik Sistemi</span>
+                <div class="border m-3 p-5 hidden board-theme-card" id="div-music-unavailable">
+                    <span class="text-xl board-theme-text-primary">Müzik Sistemi</span>
                     <br>
                     Bugün müzik sistemi için seçilmemişsiniz.
                     <br>
-                    <span class="text-slate-700">İlginiz için teşekkürler.</span>
+                    <span class="board-theme-text-secondary">İlginiz için teşekkürler.</span>
                 </div>
-                <div class="border border-slate-300 m-3 p-5">
-                    <span class="text-xl text-slate-800">Hesap bilgileri</span>
+                <div class="border m-3 p-5 board-theme-card">
+                    <span class="text-xl board-theme-text-primary">Hesap bilgileri</span>
                     <span id="username">(...)</span>
                     <br>
-                    <button id="btn-logout" class="border border-slate-300 p-2 mt-3 inline-block">Çıkış yap</button>
-                    <a href="/account" class="border border-slate-300 p-2 mt-3 inline-block">Hesabım</a>
+                    <button id="btn-logout" class="border board-theme-border p-2 mt-3 inline-block">Çıkış yap</button>
+                    <a href="/account" class="border board-theme-border p-2 mt-3 inline-block">Hesabım</a>
                 </div>
 
-                <div id="div-cool" class="border border-slate-300 m-3 p-5 hidden">
-                    <span class="text-xl text-slate-800">Superman yetkilerine sahipsiniz.</span>
+                <div id="div-cool" class="border m-3 p-5 hidden board-theme-card">
+                    <span class="text-xl board-theme-text-primary">Superman yetkilerine sahipsiniz.</span>
                     <br>
-                    <button class="border border-slate-300 p-2 mt-3 hidden" id="btn-mod">Moderatör Paneli</button>
-                    <button class="border border-slate-300 p-2 mt-3 hidden" id="btn-admin">Yönetici Paneli</button>
+                    <button class="border board-theme-border p-2 mt-3 hidden" id="btn-mod">Moderatör Paneli</button>
+                    <button class="border board-theme-border p-2 mt-3 hidden" id="btn-admin">Yönetici Paneli</button>
                 </div>
             </div>
 
             <div id="logged-out" class="hidden">
-                <div class="border border-slate-300 m-3 p-5">
-                    <span class="text-xl text-slate-800">Hoşgeldiniz.</span>
+                <div class="border m-3 p-5 board-theme-card">
+                    <span class="text-xl board-theme-text-primary">Hoşgeldiniz.</span>
                     <br>
-                    <a href="/login" class="border border-slate-300 p-2 mt-3 inline-block">Giriş yap</a>
-                    <a href="/help" class="border border-slate-300 p-2 mt-3 inline-block">Yardım</a>
+                    <a href="/login" class="border board-theme-border p-2 mt-3 inline-block">Giriş yap</a>
+                    <a href="/help" class="border board-theme-border p-2 mt-3 inline-block">Yardım</a>
                 </div>
             </div>
 
             <div id="session-invalid" class="hidden">
-                <div class="border border-slate-300 m-3 p-5">
-                    <span class="text-xl text-slate-800">Oturumunuzun süresi dolmuş.</span>
+                <div class="border m-3 p-5 board-theme-card">
+                    <span class="text-xl board-theme-text-primary">Oturumunuzun süresi dolmuş.</span>
                     <br>
-                    <span class="text-slate-700">Lütfen çıkış yapıp sonra tekrar girmeyi deneyin.</span>
+                    <span class="board-theme-text-secondary">Lütfen çıkış yapıp sonra tekrar girmeyi deneyin.</span>
                     <br>
-                    <a id="btn-logout-2" class="border border-slate-300 p-2 mt-3 inline-block">Çıkış yap</a>
-                    <a href="/help" class="border border-slate-300 p-2 mt-3 inline-block">Yardım</a>
+                    <a id="btn-logout-2" class="border board-theme-border p-2 mt-3 inline-block">Çıkış yap</a>
+                    <a href="/help" class="border board-theme-border p-2 mt-3 inline-block">Yardım</a>
                 </div>
             </div>
         </div>
@@ -135,3 +137,4 @@ import Layout from '../layouts/Layout.astro';
         handleUserInfo()
     </script>
 </Layout>
+

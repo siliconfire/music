@@ -1,0 +1,8 @@
+music-backend/board.json
+music-backend/users.json
+music-backend/node_modules/
+music-backend/.env
+music-backend/dist/
+music-backend/.spotify-cache
+
+.env

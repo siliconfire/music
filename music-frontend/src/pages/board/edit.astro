@@ -1,11 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
 ---
 
 <Layout title="Ekran Yönetimi">
+    <BoardThemeLoader />
 
-    <h1 class="text-2xl text-slate-800 mt-10 mx-10" id="title">Ekran kontrolleri</h1>
-    <a href="/" class="mb-10 mx-10 inline-block text-sm text-blue-500 hover:underline">
+    <h1 class="text-2xl board-theme-text-primary mt-10 mx-10" id="title">Ekran kontrolleri</h1>
+    <a href="/" class="mb-10 mx-10 inline-block text-sm board-theme-text-secondary hover:underline">
         (ana sayfaya geri dön)
     </a>
 
@@ -19,17 +21,17 @@ import Layout from '../../layouts/Layout.astro';
 
         <div id="board-editor-root">
             <div class="m-5 lg:m-10">
-                <div id="board-status" class="hidden border border-slate-300 bg-slate-50 p-3 text-sm"></div>
+                <div id="board-status" class="hidden border board-theme-border board-theme-card p-3 text-sm"></div>
             </div>
 
             <div class="m-5 lg:m-10">
                 <div id="board-widgets" class="flex flex-wrap gap-5"></div>
             </div>
-            <hr class="text-slate-300">
+            <hr class="border board-theme-border">
             <div class="m-5 lg:m-10">
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full">
-                    <legend>Seçenekler</legend>
-                        <select id="board-add-select" class="border border-slate-300 p-2">
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full">
+                    <legend class="board-theme-text-primary">Seçenekler</legend>
+                        <select id="board-add-select" class="border board-theme-border p-2">
                             <option value="">Seç...</option>
                             <option value="now-playing">Şimdi Çalıyor</option>
                             <option value="queue">Kuyruk</option>
@@ -38,12 +40,12 @@ import Layout from '../../layouts/Layout.astro';
                             <option value="clock">Saat</option>
                             <option value="controls">Kontroller</option>
                         </select>
-                        <button id="board-add-btn" class="border border-slate-300 p-2">Ekle</button>
+                        <button id="board-add-btn" class="border board-theme-border p-2">Ekle</button>
                         <div class="mt-4"></div>
-                        <button id="board-save-btn" class="border border-slate-500 p-2 bg-slate-100">Herşeyi kaydet</button>
-                    <details class="m-2 p-3 border border-slate-300 inline-block">
-                    <summary>Nasıl Kullanılır</summary>
-                    <ul>
+                        <button id="board-save-btn" class="border board-theme-border p-2 board-card-bg">Herşeyi kaydet</button>
+                    <details class="m-2 p-3 border board-theme-border inline-block">
+                    <summary class="board-theme-text-primary">Nasıl Kullanılır</summary>
+                    <ul class="board-theme-text-secondary">
                         <li>Birşey eklemek için "Seç..." menüsünden istediğinizi seçin ve "Ekle" tuşuna basın.</li>
                         <li>Birşeyi taşımak için ↑/↓ ok tuşlarını kullanın.</li>
                         <li>Birşeyi silmek için "Kaldır" tuşuna basın. Sabitli öğeler kaldırılamaz.</li>
@@ -51,29 +53,29 @@ import Layout from '../../layouts/Layout.astro';
                     </ul>
                     </details>
                 </fieldset>
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                    <legend>Tema</legend>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Tema</legend>
                     <div class="flex flex-wrap gap-2 items-center">
-                        <button id="board-theme-random" class="border border-slate-300 p-2">Rastgele seç</button>
+                        <button id="board-theme-random" class="border board-theme-border p-2">Rastgele seç</button>
                     </div>
                     <div id="board-theme-list" class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
                 </fieldset>
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                    <legend>Konfeti</legend>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Konfeti</legend>
                     <div class="mt-4 flex flex-wrap gap-2">
-                        <input id="confetti-count" class="border border-slate-300 p-2 text-xs" type="number" min="10" max="5000" placeholder="Partikül sayısı (3000)" />
-                        <input id="confetti-size" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="10" placeholder="Partikül boyutu (4)" />
-                        <input id="confetti-spread" class="border border-slate-300 p-2 text-xs" type="number" step="0.05" min="0.05" max="2" placeholder="Yayılım miktarı (0.5)" />
-                        <input id="confetti-duration" class="border border-slate-300 p-2 text-xs" type="number" min="200" max="10000" placeholder="Toplam süre (10000)" />
-                        <input id="confetti-spawn" class="border border-slate-300 p-2 text-xs" type="number" min="0" max="5000" placeholder="Dağılım süresi (1500)" />
-                        <input id="confetti-up" class="border border-slate-300 p-2 text-xs" type="number" step="0.1" min="0.2" max="4" placeholder="Yukarı itiş (1.5)" />
+                        <input id="confetti-count" class="border board-theme-border p-2 text-xs" type="number" min="10" max="5000" placeholder="Partikül sayısı (3000)" />
+                        <input id="confetti-size" class="border board-theme-border p-2 text-xs" type="number" step="0.1" min="0.2" max="10" placeholder="Partikül boyutu (4)" />
+                        <input id="confetti-spread" class="border board-theme-border p-2 text-xs" type="number" step="0.05" min="0.05" max="2" placeholder="Yayılım miktarı (0.5)" />
+                        <input id="confetti-duration" class="border board-theme-border p-2 text-xs" type="number" min="200" max="10000" placeholder="Toplam süre (10000)" />
+                        <input id="confetti-spawn" class="border board-theme-border p-2 text-xs" type="number" min="0" max="5000" placeholder="Dağılım süresi (1500)" />
+                        <input id="confetti-up" class="border board-theme-border p-2 text-xs" type="number" step="0.1" min="0.2" max="4" placeholder="Yukarı itiş (1.5)" />
                     </div>
                     <br>
-                    <button id="board-confetti-btn" class="border border-slate-300 p-2 ml-2">Konfeti Gönder</button>
+                    <button id="board-confetti-btn" class="border board-theme-border p-2 ml-2">Konfeti Gönder</button>
 
-                    <details class="m-2 p-3 border border-slate-300 inline-block">
-                        <summary>Yardım</summary>
-                        <ul>
+                    <details class="m-2 p-3 border board-theme-border inline-block">
+                        <summary class="board-theme-text-primary">Yardım</summary>
+                        <ul class="board-theme-text-secondary">
                             <li>Partikül sayısı: Uçurulacak konfeti adeti.</li>
                             <li>Partikül boyutu: Her konfetinin boyutu.</li>
                             <li>Yayılım miktarı: Konfeti parçalarının sağa/sola yayılma miktarı.</li>
@@ -82,23 +84,23 @@ import Layout from '../../layouts/Layout.astro';
                             <li>Yukarı itiş: Konfetileri yukarı iten güç.</li>
                         </ul>
                         <br>
-                        Parantez içinde hepsi için önerilen değerler verilmiştir, önce onları girip sonra yavaş yavaş değerler ile oynamanız önerilir.
+                        <span class="board-theme-text-secondary">Parantez içinde hepsi için önerilen değerler verilmiştir, önce onları girip sonra yavaş yavaş değerler ile oynamanız önerilir.</span>
                     </details>
                 </fieldset>
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                    <legend>Yeniden başlat</legend>
-                    <button id="board-restart-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Ekranı yeniden başlat</button>
-                    <p class="mx-3 mt-4 text-sm text-slate-600">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Yeniden başlat</legend>
+                    <button id="board-restart-btn" class="border board-theme-border p-2 board-card-bg ml-2">Ekranı yeniden başlat</button>
+                    <p class="mx-3 mt-4 text-sm board-theme-text-secondary">Yardımcı olur mu bilmiyorum ama eğer ekran çok garip bir duruma girerse belki denemek işe yarayabilir.</p>
                 </fieldset>
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                    <legend>Debug</legend>
-                    <button id="board-debug-screen-btn" class="border border-slate-500 p-2 bg-slate-100 ml-2">Dokunmatik kontrolü başlat</button>
-                    <p class="mx-3 mt-4 text-sm text-slate-600">Ekranı kontrol etmek için kullanabilirsiniz. Bir zararı yok.</p>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Debug</legend>
+                    <button id="board-debug-screen-btn" class="border board-theme-border p-2 board-card-bg ml-2">Dokunmatik kontrolü başlat</button>
+                    <p class="mx-3 mt-4 text-sm board-theme-text-secondary">Ekranı kontrol etmek için kullanabilirsiniz. Bir zararı yok.</p>
                 </fieldset>
-                <fieldset class="p-5 border border-slate-400 inline-block bg-gray-50 w-full mt-10">
-                    <legend>Yardım</legend>
-                    <a href="/help/" class="m-2 p-3 border border-slate-400 bg-slate-100 inline-block align-top max-w-sm">Tüm yardım başlıklarını oku</a>
-                    <a href="/help/board-pinned" class="m-2 p-3 border border-slate-300 inline-block align-top max-w-sm">"Sabitli" ne demek?</a>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Yardım</legend>
+                    <a href="/help/" class="m-2 p-3 border board-theme-border board-card-bg inline-block align-top max-w-sm">Tüm yardım başlıklarını oku</a>
+                    <a href="/help/board-pinned" class="m-2 p-3 border board-theme-border inline-block align-top max-w-sm">"Sabitli" ne demek?</a>
                 </fieldset>
             </div>
         </div>
@@ -433,7 +435,7 @@ import Layout from '../../layouts/Layout.astro';
                 .filter((widget) => displayTypes.has(widget.type))
                 .forEach((widget) => {
                     const card = document.createElement('div');
-                    card.className = 'border border-slate-400 p-4 bg-white flex-1 min-w-[16rem] max-w-[26rem]';
+                    card.className = 'border board-theme-border board-theme-card p-4 flex-1 min-w-[16rem] max-w-[26rem]';
                     if (widget.pinned) {
                         card.classList.add('bg-green-50', 'border-green-300');
                     }
@@ -442,7 +444,7 @@ import Layout from '../../layouts/Layout.astro';
                     header.className = 'flex items-start justify-between gap-2';
 
                     const title = document.createElement('input');
-                    title.className = 'font-semibold text-slate-800 text-sm border border-slate-200 px-2 py-1 w-full';
+                    title.className = 'font-semibold board-theme-text-primary text-sm border board-theme-border px-2 py-1 w-full';
                     title.value = widget.title || allWidgets[widget.type] || widget.type;
                     // mark field for error lookup
                     title.dataset.field = 'title';
@@ -451,7 +453,7 @@ import Layout from '../../layouts/Layout.astro';
                     });
 
                     const badge = document.createElement('span');
-                    badge.className = 'text-xs border border-slate-400 px-2 py-0.5';
+                    badge.className = 'text-xs border board-theme-border px-2 py-0.5 board-theme-text-secondary';
                     badge.textContent = widget.pinned ? 'Sabitli' : 'Widget';
                     if (!widget.pinned) {
                         badge.classList.add('hidden');
@@ -462,15 +464,15 @@ import Layout from '../../layouts/Layout.astro';
                     card.appendChild(header);
 
                     const typeLine = document.createElement('div');
-                    typeLine.className = 'text-xs text-slate-500 mt-1';
+                    typeLine.className = 'text-xs board-theme-text-secondary mt-1';
                     typeLine.textContent = allWidgets[widget.type] || widget.type || '';
                     card.appendChild(typeLine);
 
                     const body = document.createElement('div');
-                    body.className = 'text-xs text-slate-500 mt-2';
+                    body.className = 'text-xs board-theme-text-secondary mt-2';
                     if (widget.type === 'text-block') {
                         const textarea = document.createElement('textarea');
-                        textarea.className = 'w-full border border-slate-300 p-2 text-sm text-slate-700';
+                        textarea.className = 'w-full border board-theme-border p-2 text-sm board-theme-text-primary';
                         textarea.rows = 4;
                         textarea.value = widget.content || '';
                         textarea.dataset.field = 'content';
@@ -480,7 +482,7 @@ import Layout from '../../layouts/Layout.astro';
                         body.appendChild(textarea);
                     } else if (widget.type === 'poll') {
                         const question = document.createElement('input');
-                        question.className = 'w-full border border-slate-300 p-2 text-sm text-slate-700';
+                        question.className = 'w-full border board-theme-border p-2 text-sm board-theme-text-primary';
                         question.value = widget.question || '';
                         question.placeholder = 'Soru';
                         question.dataset.field = 'question';
@@ -496,7 +498,7 @@ import Layout from '../../layouts/Layout.astro';
                             row.className = 'flex flex-wrap gap-2 items-center';
 
                             const optionInput = document.createElement('input');
-                            optionInput.className = 'flex-1 min-w-[12rem] border border-slate-300 p-2 text-sm text-slate-700';
+                            optionInput.className = 'flex-1 min-w-[12rem] border board-theme-border p-2 text-sm board-theme-text-primary';
                             optionInput.value = option.label || '';
                             optionInput.dataset.field = 'poll_option';
                             optionInput.dataset.optionId = option.id;
@@ -505,7 +507,7 @@ import Layout from '../../layouts/Layout.astro';
                             });
 
                             const removeBtn = document.createElement('button');
-                            removeBtn.className = 'border border-slate-300 px-2 py-1 text-xs whitespace-nowrap';
+                            removeBtn.className = 'border board-theme-border px-2 py-1 text-xs whitespace-nowrap';
                             removeBtn.textContent = 'Sil';
                             removeBtn.addEventListener('click', () => removePollOption(widget, option.id));
 
@@ -516,13 +518,13 @@ import Layout from '../../layouts/Layout.astro';
                         body.appendChild(optionsWrap);
 
                         const addOptionBtn = document.createElement('button');
-                        addOptionBtn.className = 'mt-2 border border-slate-300 px-2 py-1 text-xs';
+                        addOptionBtn.className = 'mt-2 border board-theme-border px-2 py-1 text-xs';
                         addOptionBtn.textContent = 'Seçenek ekle';
                         addOptionBtn.addEventListener('click', () => addPollOption(widget));
                         body.appendChild(addOptionBtn);
                     } else if (widget.type === 'clock') {
                         const showDateLabel = document.createElement('label');
-                        showDateLabel.className = 'flex items-center gap-2 text-xs text-slate-600';
+                        showDateLabel.className = 'flex items-center gap-2 text-xs board-theme-text-secondary';
 
                         const showDateInput = document.createElement('input');
                         showDateInput.type = 'checkbox';
@@ -539,7 +541,7 @@ import Layout from '../../layouts/Layout.astro';
                         body.appendChild(showDateLabel);
 
                         const showSecondsLabel = document.createElement('label');
-                        showSecondsLabel.className = 'mt-2 flex items-center gap-2 text-xs text-slate-600';
+                        showSecondsLabel.className = 'mt-2 flex items-center gap-2 text-xs board-theme-text-secondary';
 
                         const showSecondsInput = document.createElement('input');
                         showSecondsInput.type = 'checkbox';
@@ -557,7 +559,7 @@ import Layout from '../../layouts/Layout.astro';
                     } else if (widget.type === 'controls') {
                         const createCheckbox = (label, key) => {
                             const wrap = document.createElement('label');
-                            wrap.className = 'flex items-center gap-2 text-xs text-slate-600 mb-2';
+                            wrap.className = 'flex items-center gap-2 text-xs board-theme-text-secondary mb-2';
                             const input = document.createElement('input');
                             input.type = 'checkbox';
                             input.checked = Boolean(widget[key]);
@@ -584,7 +586,7 @@ import Layout from '../../layouts/Layout.astro';
                         controls.className = 'flex flex-wrap gap-2 mt-3';
 
                         const upBtn = document.createElement('button');
-                        upBtn.className = 'border border-slate-300 px-2 py-1 text-xs';
+                        upBtn.className = 'border board-theme-border px-2 py-1 text-xs';
                         upBtn.textContent = '↑';
                         upBtn.addEventListener('click', () => moveWidget(widget.key, -1));
                         if (widget.pinned && !canPin) {
@@ -593,7 +595,7 @@ import Layout from '../../layouts/Layout.astro';
                         }
 
                         const downBtn = document.createElement('button');
-                        downBtn.className = 'border border-slate-300 px-2 py-1 text-xs';
+                        downBtn.className = 'border board-theme-border px-2 py-1 text-xs';
                         downBtn.textContent = '↓';
                         downBtn.addEventListener('click', () => moveWidget(widget.key, 1));
                         if (widget.pinned && !canPin) {
@@ -602,7 +604,7 @@ import Layout from '../../layouts/Layout.astro';
                         }
 
                         const removeBtn = document.createElement('button');
-                        removeBtn.className = 'border border-slate-300 px-2 py-1 text-xs';
+                        removeBtn.className = 'border board-theme-border px-2 py-1 text-xs';
                         removeBtn.textContent = 'Kaldır';
                         removeBtn.addEventListener('click', () => removeWidget(widget.key));
                         if (widget.pinned) {
@@ -616,7 +618,7 @@ import Layout from '../../layouts/Layout.astro';
 
                         if (canPin) {
                             const pinBtn = document.createElement('button');
-                            pinBtn.className = 'border border-green-500 px-2 py-1 text-xs';
+                            pinBtn.className = 'border board-theme-border px-2 py-1 text-xs';
                             pinBtn.textContent = widget.pinned ? 'Sabitlemeyi kaldır' : 'Sabitle';
                             pinBtn.addEventListener('click', () => togglePin(widget.key));
                             controls.appendChild(pinBtn);
@@ -643,13 +645,13 @@ import Layout from '../../layouts/Layout.astro';
             presets.forEach((preset) => {
                 const card = document.createElement('button');
                 card.type = 'button';
-                card.className = 'text-left border border-slate-300 p-3 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400';
+                card.className = 'text-left border board-theme-border p-3 board-theme-card focus:outline-none focus:ring-2 focus:ring-slate-400';
                 if (preset.key === currentKey) {
                     card.classList.add('ring-2', 'ring-slate-500');
                 }
 
                 const header = document.createElement('div');
-                header.className = 'text-sm font-semibold text-slate-800';
+                header.className = 'text-sm font-semibold board-theme-text-primary';
                 header.textContent = preset.label || preset.key;
                 card.appendChild(header);
 
@@ -665,7 +667,7 @@ import Layout from '../../layouts/Layout.astro';
 
                 swatches.forEach((swatch) => {
                     const box = document.createElement('div');
-                    box.className = 'text-xs px-2 py-1 rounded border';
+                    box.className = 'text-xs px-2 py-1 rounded border board-theme-border';
                     box.textContent = swatch.label;
                     box.style.background = swatch.background || '#ffffff';
                     box.style.color = swatch.color || '#0f172a';
@@ -680,13 +682,13 @@ import Layout from '../../layouts/Layout.astro';
                     confettiWrap.className = 'flex flex-wrap items-center gap-2 mt-2 w-full';
 
                     const label = document.createElement('div');
-                    label.className = 'text-xs text-slate-600';
+                    label.className = 'text-xs board-theme-text-secondary';
                     label.textContent = 'Konfeti:';
                     confettiWrap.appendChild(label);
 
                     colors.confettiColors.forEach((color) => {
                         const dot = document.createElement('span');
-                        dot.className = 'inline-block w-4 h-4 rounded border';
+                        dot.className = 'inline-block w-4 h-4 rounded border board-theme-border';
                         dot.style.background = color;
                         dot.style.borderColor = colors.cardBorder || '#cbd5f5';
                         dot.title = color;

@@ -2,8 +2,8 @@
 const { title, className = '' } = Astro.props;
 ---
 
-<div class={`item-shell border border-slate-300 p-5 ${className}`}>
-    <h2 class="text-xl mb-5">{title}</h2>
+<div class={`item-shell border board-theme-border board-theme-card p-5 ${className}`}>
+    <h2 class="text-xl mb-5 board-theme-text-primary">{title}</h2>
 
     <div class="space-y-4">
         <slot /> </div>

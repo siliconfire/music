@@ -27,6 +27,17 @@
   --np-accent-muted: rgba(161, 98, 7, 0.2);
   --np-accent-bg: rgba(161, 98, 7, 0.06);
   --np-progress: 0%;
+  --board-text-primary: #0f172a;
+  --board-text-secondary: #475569;
+  --board-background: #f8fafc;
+  --board-card-bg: #ffffff;
+  --board-card-border: #cbd5f5;
+  --board-card-pinned-bg: #ecfdf5;
+  --board-card-pinned-bg-rgba: rgba(16,185,129,0.12);
+  --board-card-pinned-border: #6ee7b7;
+  --board-qr-bg: #ffffff;
+  --board-qr-border: #cbd5f5;
+  --board-qr-text: #0f172a;
 }
 
 .np-art {
@@ -53,4 +64,27 @@ legend {
   a.cool {
     @apply text-blue-600 underline hover:text-blue-800;
   }
+}
+
+.board-theme-text-primary {
+  color: var(--board-text-primary, #0f172a);
+}
+
+.board-theme-text-secondary {
+  color: var(--board-text-secondary, #475569);
+}
+
+.board-theme-card {
+  background: var(--board-card-bg, #ffffff);
+  border-color: var(--board-card-border, #cbd5f5);
+  color: var(--board-text-primary, #0f172a);
+}
+
+.board-theme-border {
+  border-color: var(--board-card-border, #cbd5f5);
+}
+
+body.board-theme {
+  background: var(--board-background, #f8fafc);
+  color: var(--board-text-primary, #0f172a);
 }
