@@ -72,48 +72,48 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-04T13:25:56.462301+00:00",
+    "updated_at": "2026-03-05T17:06:56.984624+00:00",
     "confetti_trigger": {
-        "id": "2026-03-04T09:38:11.043054+00:00",
-        "created_at": "2026-03-04T09:38:11.043054+00:00",
+        "id": "2026-03-05T16:51:43.310433+00:00",
+        "created_at": "2026-03-05T16:51:43.310433+00:00",
         "config": {
-            "particleCount": 100,
-            "durationMs": 3000,
-            "spawnDurationMs": 1200,
-            "spread": 0.5,
+            "particleCount": 10000,
+            "durationMs": 5000,
+            "spawnDurationMs": 2000,
+            "spread": 1.0,
             "sizeScale": 4.0,
-            "upwardBoost": 2.0
+            "upwardBoost": 1.0
         },
-        "created_by": "100000"
-    },
-    "restart_trigger": {
-        "id": "2026-03-03T17:36:32.599842+00:00",
-        "created_at": "2026-03-03T17:36:32.599842+00:00",
         "created_by": "0"
     },
+    "restart_trigger": {
+        "id": "2026-03-05T16:50:41.589865+00:00",
+        "created_at": "2026-03-05T16:50:41.589865+00:00",
+        "created_by": "100000"
+    },
     "debug_passkeys": [],
-    "theme_key": "telegram_pink2",
+    "theme_key": "cyberpunk",
     "theme": {
-        "key": "telegram_pink2",
-        "label": "Daha Gerçek Telegram Pembesi",
+        "key": "cyberpunk",
+        "label": "Geleceksel",
         "colors": {
-            "textPrimary": "#ffffff",
-            "textSecondary": "#94a3b8",
-            "background": "#1c1215",
-            "cardBackground": "#281a1e",
-            "cardBorder": "#3d262c",
-            "cardPinnedBackground": "#4c1d24",
-            "cardPinnedBorder": "#f472b6",
-            "qrButtonBackground": "#281a1e",
-            "qrButtonBorder": "#f472b6",
-            "qrButtonText": "#f472b6",
+            "textPrimary": "#fdf4ff",
+            "textSecondary": "#d8b4fe",
+            "background": "#020617",
+            "cardBackground": "#0f172a",
+            "cardBorder": "#581c87",
+            "cardPinnedBackground": "#2e1065",
+            "cardPinnedBorder": "#d946ef",
+            "qrButtonBackground": "#1e1b4b",
+            "qrButtonBorder": "#d946ef",
+            "qrButtonText": "#fdf4ff",
             "confettiColors": [
+                "#d946ef",
+                "#8b5cf6",
+                "#06b6d4",
                 "#f472b6",
-                "#be185d",
-                "#9d174d",
-                "#ec4899",
-                "#701a75",
-                "#f9a8d4"
+                "#22d3ee",
+                "#a855f7"
             ]
         }
     },
@@ -124,8 +124,8 @@
         "test_id": "clear"
     },
     "redirect_trigger": {
-        "id": "2026-03-03T20:26:29.197280+00:00",
-        "created_at": "2026-03-03T20:26:29.197280+00:00",
+        "id": "2026-03-05T16:46:09.890183+00:00",
+        "created_at": "2026-03-05T16:46:09.890183+00:00",
         "created_by": "0",
         "path": "/debug/screen"
     },

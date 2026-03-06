@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="WEB_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/music-backend/.venv/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/music-backend/.venv/lib" />
+      <excludeFolder url="file://$MODULE_DIR$/music-backend/.venv/lib64" />
+      <excludeFolder url="file://$MODULE_DIR$/music-frontend/.astro" />
+      <excludeFolder url="file://$MODULE_DIR$/music-frontend/.idea" />
+    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

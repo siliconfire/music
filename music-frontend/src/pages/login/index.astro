@@ -1,47 +1,49 @@
 ---
 import '../../styles/global.css'
 import Layout from '../../layouts/Layout.astro'
+import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
 ---
 
-<Layout>
-    <html>
-    <head>
-        <meta charset="utf-8"/>
-        <title>Giriş</title>
-    </head>
-    <body>
-    <p id="info"></p>
+<Layout title="Giriş">
+    <BoardThemeLoader />
+    <div class="m-10">
+        <div class="m-5 lg:m-10 mt-10 mb-5">
+            <h1 class="text-2xl board-theme-text-primary" id="title">Lütfen giriş yap.</h1>
+            <a href="/" class="inline-block text-sm board-theme-text-secondary hover:underline">
+                (ana sayfaya geri dön)
+            </a>
+        </div>
 
-    <!-- title -->
-    <div class="m-5 lg:m-10 mt-10 mb-5">
-        <h1 class="text-2xl text-slate-800" id="title">Lütfen giriş yap.</h1>
-        <a href="/" class="inline-block text-sm board-theme-text-secondary hover:underline">
-            (ana sayfaya geri dön)
-        </a>
-    </div>
-
-    <div class="flex flex-wrap">
-        <div class="border border-slate-400 m-5 lg:m-10 p-3">
-            <div id="view-no-token" style="display: none;">
-                <div id="error-box" class="hidden m-3 lg:m-10 p-3 border border-red-300 bg-red-100 text-red-700 rounded"></div>
-                <input type="text" id="user-id" class="m-2 p-1 border border-slate-400" placeholder="ID..."/>
-                <input type="password" id="password" class="m-2 p-1 border border-slate-400" placeholder="Şifre..."/>
-                <br>
-                <button id="btn-login" class="text-gray-900 border border-slate-400 m-2 p-3">Giriş yap</button>
-                <div class="m-2 text-sm text-slate-600">
-                    <a href="/login/code" class="underline text-blue-500">Benim bir giriş kodum var!</a>
+        <div class="flex flex-wrap m-5 lg:m-10 gap-5 max-w-full overflow-x-hidden">
+            <div class="border m-3 p-5 board-theme-card">
+                <p id="info" class="board-theme-text-secondary"></p>
+                <div id="view-no-token" style="display: none;">
+                    <div id="error-box" class="hidden mb-3 p-3 border board-theme-border board-theme-text-primary rounded"></div>
+                    <input type="text" id="user-id" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="ID..."/>
+                    <input type="password" id="password" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="Şifre..."/>
+                    <div>
+                        <button id="btn-login" class="border board-theme-border p-2 mt-3 inline-block">Giriş yap</button>
+                    </div>
+                    <div class="mt-3 text-sm board-theme-text-secondary">
+                        <a href="/login/code" class="underline">Benim bir giriş kodum var!</a>
+                    </div>
                 </div>
-                <hr class="my-1 text-slate-400">
+                <div id="view-invalid-token" style="display: none;">
+                    <span class="text-xl board-theme-text-primary">Oturumunuzun süresi dolmuş.</span>
+                    <div>
+                        <button class="btn-logout border board-theme-border p-2 mt-3 inline-block">Çıkış yap</button>
+                    </div>
+                </div>
             </div>
-            <div id="view-invalid-token" style="display: none;">
-                <h1>Oturumunuzun süresi dolmuş.</h1>
-                <button class="btn-logout">[Çıkış yap]</button>
+
+            <div class="border m-3 p-5 board-theme-card">
+                <span class="text-xl board-theme-text-primary">Yardım</span>
+                <div>
+                    <a href="/help" class="border board-theme-border p-2 mt-3 inline-block">Yardım sayfası</a>
+                </div>
             </div>
         </div>
-            <a href="/help" class="m-5 lg:m-10 mt-2 p-3 border border-slate-400">Yardım</a>
     </div>
-    </body>
-    </html>
 
     <script>
         import {API_URL} from "../../lib/constants.ts";
@@ -95,7 +97,7 @@ import Layout from '../../layouts/Layout.astro'
                 const data = await res.json();
 
                 if (data.valid) {
-                    info.innerHTML = "Yönlendiriliyorsunuz...";
+                    info.innerHTML = "<span class='inline-flex items-center gap-2'><img src='/loading.svg' alt='Yükleniyor' class='w-4 h-4'/>Yönlendiriliyorsunuz...</span>";
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 1000);
