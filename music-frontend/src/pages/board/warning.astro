@@ -1,0 +1,135 @@
+---
+import BoardDebugPanel from "@/components/BoardDebugPanel.astro"
+import Layout from "@/layouts/Layout.astro"
+---
+
+<Layout title="hey.">
+    <div class="m-10">
+        <h1 class="text-6xl board-theme-text-primary" id="title"><span id="tap-bartin">Beni kızdırıyorsun.</span></h1>
+        <BoardDebugPanel />
+        <br>
+        <p id="tap-lisesi" class="text-4xl">Kızgın tarafımı görmek istemezsin.</p>
+        <br>
+        <button class="text-3xl border border-slate-600 p-2 hidden" id="btn"></button>
+        <br>
+        <div class="flex flex-row">
+            <p id="info" class="text-xl"></p>
+        </div>
+        <br>
+        <hr class="text-slate-400">
+        <br>
+        <p class="text-4xl" id="logging-info"></p>
+        <br>
+        <button class="text-xl hidden" id="y">Evet</button>
+        <br>
+        <br>
+        <button class="text-xl hidden" id="idk">Belki</button>
+        <br>
+        <br>
+        <button class="text-xl hidden" id="n">Hayır</button>
+    </div>
+
+    <script>
+        const loggingEl = document.getElementById("logging-info");
+        const infoEl = document.getElementById("info");
+        const btnEl = document.getElementById("btn");
+        const yesEl = document.getElementById("y");
+        const idkEl = document.getElementById("idk");
+        const noEl = document.getElementById("n");
+
+        const randomTimeout = Math.floor(Math.random() * 500) + 750; // 1-1.5s
+
+        loggingEl.innerText = "Bir saniye..."
+        infoEl.innerText = ""
+        btnEl.innerText = ""
+        btnEl.classList.add("disabled", "bg-gray-300");
+
+        let timeLeft = 10;
+
+        setTimeout(() => {
+            loggingEl.innerText = "Sunucuya bağlanılıyor..."
+            setTimeout(() => {
+                loggingEl.innerText = "Sunucuya rapor gönderiliyor..."
+                setTimeout(() => {
+                    loggingEl.innerText = "Yaptığınız sunucuya rapor edildi. Bunun kaydı tutulacak."
+                    unlockButton()
+                }, randomTimeout);
+            }, randomTimeout);
+        }, 750);
+
+        const unlockButton = () => {
+            btnEl.classList.remove("bg-red-200")
+            btnEl.classList.add("disabled", "bg-gray-300");
+            btnEl.innerText = ""
+            yesEl.classList.add("hidden")
+            idkEl.classList.add("hidden")
+            noEl.classList.add("hidden")
+
+            const timer = setInterval(() => {
+                timeLeft--; // Subtract
+                infoEl.innerText = "(" + timeLeft + ")";
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    infoEl.innerText = "Devam etmek için yukarıdaki butona tıklayın.";
+                    btnEl.classList.remove("disabled", "bg-gray-300", "hidden");
+                    btnEl.classList.add("bg-red-200");
+                    btnEl.innerText = "Geri dön.";
+                }
+            }, 1000);
+        }
+
+        const stage2 = () => {
+            infoEl.innerText = "";
+            btnEl.classList.add("hidden")
+            loggingEl.innerText = "Bunu bir daha yapacak mısın?"
+            yesEl.classList.remove("hidden");
+            idkEl.classList.remove("hidden");
+            noEl.classList.remove("hidden");
+        }
+
+        btnEl.addEventListener("click", () => {
+            if (btnEl.classList.contains("disabled")) return;
+            stage2();
+        });
+
+        yesEl.addEventListener("click", () => {
+            loggingEl.innerText = "yanlış cevap."
+            yesEl.classList.add("hidden")
+            idkEl.classList.add("hidden")
+            noEl.classList.add("hidden")
+            setTimeout(() => {
+                loggingEl.innerText = ""
+                timeLeft = 30;
+                unlockButton()
+            }, 1500);
+        });
+
+        idkEl.addEventListener("click", () => {
+            loggingEl.innerText = "Emin olunca geri gel."
+                yesEl.classList.add("hidden")
+                idkEl.classList.add("hidden")
+                noEl.classList.add("hidden")
+            setTimeout(() => {
+                loggingEl.innerText = ""
+                btnEl.classList.remove("bg-red-200", "hidden")
+                btnEl.classList.add("bg-green-300");
+                btnEl.innerText = "Artık kararımı verdim."
+                infoEl.innerText = "Kararınızı verince yukarıdaki butona basın."
+            }, 1500);
+        });
+
+        noEl.addEventListener("click", () => {
+            loggingEl.innerText = "Görüşürüz."
+            yesEl.classList.add("hidden")
+            idkEl.classList.add("hidden")
+            noEl.classList.add("hidden")
+            btnEl.classList.add("hidden");
+            infoEl.innerText = ""
+
+            setTimeout(() => {
+                window.location.href = "/board";
+            }, 3000);
+        });
+    </script>
+</Layout>
