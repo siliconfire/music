@@ -72,7 +72,7 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-05T17:06:56.984624+00:00",
+    "updated_at": "2026-03-14T10:11:45.545056+00:00",
     "confetti_trigger": {
         "id": "2026-03-05T16:51:43.310433+00:00",
         "created_at": "2026-03-05T16:51:43.310433+00:00",
@@ -92,28 +92,28 @@
         "created_by": "100000"
     },
     "debug_passkeys": [],
-    "theme_key": "cyberpunk",
+    "theme_key": "telegram_pink2",
     "theme": {
-        "key": "cyberpunk",
-        "label": "Geleceksel",
+        "key": "telegram_pink2",
+        "label": "Daha Gerçek Telegram Pembesi",
         "colors": {
-            "textPrimary": "#fdf4ff",
-            "textSecondary": "#d8b4fe",
-            "background": "#020617",
-            "cardBackground": "#0f172a",
-            "cardBorder": "#581c87",
-            "cardPinnedBackground": "#2e1065",
-            "cardPinnedBorder": "#d946ef",
-            "qrButtonBackground": "#1e1b4b",
-            "qrButtonBorder": "#d946ef",
-            "qrButtonText": "#fdf4ff",
+            "textPrimary": "#ffffff",
+            "textSecondary": "#94a3b8",
+            "background": "#1c1215",
+            "cardBackground": "#281a1e",
+            "cardBorder": "#3d262c",
+            "cardPinnedBackground": "#4c1d24",
+            "cardPinnedBorder": "#f472b6",
+            "qrButtonBackground": "#281a1e",
+            "qrButtonBorder": "#f472b6",
+            "qrButtonText": "#f472b6",
             "confettiColors": [
-                "#d946ef",
-                "#8b5cf6",
-                "#06b6d4",
                 "#f472b6",
-                "#22d3ee",
-                "#a855f7"
+                "#be185d",
+                "#9d174d",
+                "#ec4899",
+                "#701a75",
+                "#f9a8d4"
             ]
         }
     },

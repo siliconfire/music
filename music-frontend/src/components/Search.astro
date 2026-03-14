@@ -17,7 +17,7 @@
 
     const token = localStorage.getItem("jwt_token");
     const searchInput = document.getElementById("inp-search") as HTMLInputElement;
-    const searchBtn = document.getElementById("btn-search");
+    const searchBtn = document.getElementById("btnEl-search");
     const resultsDiv = document.getElementById("search-results");
 
     searchBtn?.addEventListener("click", async () => {
@@ -66,7 +66,7 @@
         const trackName = target.getAttribute("data-name") || undefined;
 
         let res: Response;
-        if (target.classList.contains("play-btn")) {
+        if (target.classList.contains("play-btnEl")) {
             res = await fetch(`${API_URL}/play?uri=${encodeURIComponent(uri)}`, {
                 headers: {'X-Session-ID': token || ''},
                 method: 'POST'
