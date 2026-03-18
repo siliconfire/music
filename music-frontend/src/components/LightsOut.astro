@@ -24,6 +24,7 @@ const gridArray = Array.from({ length: size * size });
 
 <style>
   .lights-out-grid {
+    --grid-size: 5;
     display: grid;
     /* Grid size set via JS/Prop */
     grid-template-columns: repeat(var(--grid-size, 5), 1fr);
@@ -62,6 +63,23 @@ const gridArray = Array.from({ length: size * size });
 
         const size = parseInt(grid.dataset.size || '5');
         const lights = grid.querySelectorAll('.light') as NodeListOf<HTMLButtonElement>;
+        const pendingTimers: number[] = [];
+        let isAnimatingWin = false;
+
+        function clearPendingTimers() {
+            while (pendingTimers.length > 0) {
+                const timer = pendingTimers.pop();
+                if (timer !== undefined) {
+                    clearTimeout(timer);
+                }
+            }
+        }
+
+        function setAllLights(on: boolean) {
+            for (const light of lights) {
+                light.setAttribute('data-on', on.toString());
+            }
+        }
 
         function toggle(index: number) {
             if (index < 0 || index >= lights.length) return;
@@ -71,6 +89,8 @@ const gridArray = Array.from({ length: size * size });
         }
 
         function handlePress(index: number, isInitial = false) {
+            if (!isInitial && isAnimatingWin) return;
+
             const row = Math.floor(index / size);
             const col = index % size;
 
@@ -86,15 +106,178 @@ const gridArray = Array.from({ length: size * size });
         function checkWin() {
             const allOff = Array.from(lights).every(l => l.getAttribute('data-on') === 'false');
             if (allOff) {
-                // Simple alert for win state
-                setTimeout(() => alert('Board Clear!'), 50);
+                startWinSequence();
             }
         }
 
-        // Setup initial solvable state
-        for (let i = 0; i < size * 2; i++) {
-            handlePress(Math.floor(Math.random() * lights.length), true);
+        function resetBoard() {
+            clearPendingTimers();
+            isAnimatingWin = false;
+            grid.style.pointerEvents = '';
+            setAllLights(false);
+
+            // Rebuild into a solvable random board.
+            for (let i = 0; i < size * 2; i++) {
+                handlePress(Math.floor(Math.random() * lights.length), true);
+            }
         }
+
+        function buildPresetMapString(preset: string): string {
+            // 5x5 presets are intentionally kept as text maps so they can be edited quickly.
+            if (size === 5) {
+                const presets: Record<string, string> = {
+                    smiley: [
+                        '#####',
+                        '#.#.#',
+                        '#####',
+                        '.###.',
+                        '#...#'
+                    ].join('\n'),
+                    dot: [
+                        '.....',
+                        '.....',
+                        '..#..',
+                        '.....',
+                        '.....'
+                    ].join('\n'),
+                    border: [
+                        '#####',
+                        '#...#',
+                        '#...#',
+                        '#...#',
+                        '#####'
+                    ].join('\n'),
+                    checker: [
+                        '#.#.#',
+                        '.#.#.',
+                        '#.#.#',
+                        '.#.#.',
+                        '#.#.#'
+                    ].join('\n'),
+                    empty: [
+                        '.....',
+                        '.....',
+                        '.....',
+                        '.....',
+                        '.....'
+                    ].join('\n'),
+                    easywin: [
+                        '...#.',
+                        '..###',
+                        '...#.',
+                        '.....',
+                        '.....'
+                    ].join('\n'),
+
+                };
+                return presets[preset] || '';
+            }
+
+            // Fallback generator for non-5x5 boards.
+            const rows: string[] = [];
+            const mid = Math.floor(size / 2);
+            for (let row = 0; row < size; row += 1) {
+                let line = '';
+                for (let col = 0; col < size; col += 1) {
+                    let on = false;
+                    if (preset === 'plus') on = row === mid || col === mid;
+                    if (preset === 'x') on = row === col || row + col === size - 1;
+                    if (preset === 'border') on = row === 0 || col === 0 || row === size - 1 || col === size - 1;
+                    if (preset === 'checker') on = (row + col) % 2 === 0;
+                    line += on ? '#' : '.';
+                }
+                rows.push(line);
+            }
+            return rows.join('\n');
+        }
+
+        function loadPresetBoard(preset: string) {
+            const map = buildPresetMapString(String(preset || '').toLowerCase());
+            applyManualMap(map);
+        }
+
+        function applyManualMap(input: string) {
+            clearPendingTimers();
+            isAnimatingWin = false;
+            grid.style.pointerEvents = '';
+            setAllLights(false);
+
+            const raw = String(input || '').trim();
+            if (!raw) return;
+
+            // Strict grid mode: rows separated by newline or '/'.
+            // '#' means ON, '.' means OFF.
+            const lines = (raw.includes('/') ? raw.split('/') : raw.split(/\r?\n/))
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            for (let row = 0; row < Math.min(lines.length, size); row += 1) {
+                const line = lines[row];
+                for (let col = 0; col < Math.min(line.length, size); col += 1) {
+                    const ch = line[col];
+                    const index = row * size + col;
+                    const light = lights[index];
+                    if (!light) continue;
+                    if (ch === '#') {
+                        light.setAttribute('data-on', 'true');
+                    } else if (ch === '.') {
+                        light.setAttribute('data-on', 'false');
+                    }
+                }
+            }
+        }
+
+        function startWinSequence() {
+            if (isAnimatingWin) return;
+
+            isAnimatingWin = true;
+            grid.style.pointerEvents = 'none';
+
+            let step = 0;
+            const totalSteps = 6; // on/off repeated 3 times
+
+            const tick = () => {
+                if (step >= totalSteps) {
+                    const restartTimer = window.setTimeout(() => {
+                        resetBoard();
+                    }, 180);
+                    pendingTimers.push(restartTimer);
+                    return;
+                }
+
+                setAllLights(step % 2 === 0);
+                step += 1;
+
+                const nextTimer = window.setTimeout(tick, 140);
+                pendingTimers.push(nextTimer);
+            };
+
+            tick();
+        }
+
+        window.addEventListener('boardDebugLightsOutWin', () => {
+            startWinSequence();
+        });
+
+        window.addEventListener('boardDebugLightsOutReset', () => {
+            resetBoard();
+        });
+
+        window.addEventListener('boardDebugLightsOutPreset', (event) => {
+            const custom = event as CustomEvent<{ preset?: string }>;
+            const preset = custom?.detail?.preset;
+            if (!preset) return;
+            loadPresetBoard(preset);
+        });
+
+        window.addEventListener('boardDebugLightsOutManualMap', (event) => {
+            const custom = event as CustomEvent<{ input?: string }>;
+            const input = custom?.detail?.input;
+            if (typeof input !== 'string') return;
+            applyManualMap(input);
+        });
+
+        resetBoard();
 
         grid.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;

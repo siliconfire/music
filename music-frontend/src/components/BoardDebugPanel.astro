@@ -36,11 +36,29 @@
         <button id="board-browser-toggle" class="debug-btn">cihaz bilgisini göster</button>
         <details class="debug-btn">
             <summary>Debug</summary>
+            <div class="mt-2 flex flex-row gap-2">
             <a class="debug-btn" href="/debug/posthog">Posthog</a>
-            <a class="debug-btn" href="/debug/events">Events</a>
-            <a class="debug-btn" href="/debug/screen">Screen</a>
+            <a class="debug-btn" href="/debug/events">events</a>
+            <a class="debug-btn" href="/debug/screen">screen</a>
             <a class="debug-btn" href="/debug/spinner">spinner</a>
-
+            </div>
+        </details>
+        <details class="debug-btn">
+            <summary>lights</summary>
+            <div class="mt-2 flex flex-row gap-2">
+                <button id="board-lightsout-win-debug" class="debug-btn">simulate win</button>
+                <button id="board-lightsout-reset-debug" class="debug-btn">reset board</button>
+                <button id="board-lightsout-manual-debug" class="debug-btn">load manually...</button>
+            <details class="debug-btn">
+                <summary>Presets</summary>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="smiley">smiley</button>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="dot">dot</button>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="border">border</button>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="checker">checker</button>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="empty">empty</button>
+                <button class="debug-btn board-lightsout-preset-debug" data-preset="easywin">easy win</button>
+            </details>
+            </div>
         </details>
         <div id="board-browser-info" class="mt-2 text-sm hidden" aria-live="polite"></div>
         <div class="flex items-center gap-2 text-sm">
@@ -71,6 +89,10 @@
     const restartPaneEl = document.getElementById('board-restart-pane');
     const restartBtnEl = document.getElementById('board-restart-btn-manual');
     const restartCloseEl = document.getElementById('board-restart-close');
+    const lightsOutWinDebugEl = document.getElementById('board-lightsout-win-debug');
+    const lightsOutResetDebugEl = document.getElementById('board-lightsout-reset-debug');
+    const lightsOutManualDebugEl = document.getElementById('board-lightsout-manual-debug');
+    const lightsOutPresetDebugEls = document.querySelectorAll('.board-lightsout-preset-debug');
     const restartSplashEl = document.getElementById('board-restart-splash');
     const fullscreenEnterEl = document.getElementById('board-fullscreen-enter');
     const fullscreenExitEl = document.getElementById('board-fullscreen-exit');
@@ -401,6 +423,43 @@
 
     if (restartCloseEl) {
         restartCloseEl.addEventListener('click', hideRestartPane);
+    }
+
+    if (lightsOutWinDebugEl) {
+        lightsOutWinDebugEl.addEventListener('click', () => {
+            window.dispatchEvent(new CustomEvent('boardDebugLightsOutWin'));
+        });
+    }
+
+    if (lightsOutResetDebugEl) {
+        lightsOutResetDebugEl.addEventListener('click', () => {
+            window.dispatchEvent(new CustomEvent('boardDebugLightsOutReset'));
+        });
+    }
+
+    if (lightsOutManualDebugEl) {
+        lightsOutManualDebugEl.addEventListener('click', () => {
+            const raw = window.prompt(
+                '#=.=off\n\nSıraları ayırmak için ya yeni satıra geçebilirsiniz yada "/" işareti koyabilirsiniz.\n\nÖrnek:\n#....\n.#...\n..#..\n...#.\n....#\n\nyada\n#..../.#.../..#../...#./....#',
+                ''
+            );
+            if (raw === null) return;
+            window.dispatchEvent(new CustomEvent('boardDebugLightsOutManualMap', {
+                detail: { input: raw }
+            }));
+        });
+    }
+
+    if (lightsOutPresetDebugEls) {
+        lightsOutPresetDebugEls.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const preset = btn.getAttribute('data-preset');
+                if (!preset) return;
+                window.dispatchEvent(new CustomEvent('boardDebugLightsOutPreset', {
+                    detail: { preset }
+                }));
+            });
+        });
     }
 
     if (hideQrButtonEl) {
