@@ -1,0 +1,110 @@
+---
+import BoardThemeLoader from './BoardThemeLoader.astro';
+
+interface Props {
+    size?: number;
+}
+
+const { size = 5 } = Astro.props;
+const gridArray = Array.from({ length: size * size });
+---
+
+<BoardThemeLoader />
+
+<div class="lights-out-grid" data-size={size}>
+    {gridArray.map((_, i) => (
+            <button
+                    type="button"
+                    class="light"
+                    data-index={i}
+                    data-on="false"
+            ></button>
+    ))}
+</div>
+
+<style>
+  .lights-out-grid {
+    display: grid;
+    /* Grid size set via JS/Prop */
+    grid-template-columns: repeat(var(--grid-size, 5), 1fr);
+    gap: 2px;
+    padding: 10px;
+    width: fit-content;
+    /* No background on container */
+    background: none;
+  }
+
+  .light {
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    cursor: pointer;
+    border: 1px solid var(--board-card-border);
+    /* 'Off' state uses secondary text color */
+    background-color: var(--board-text-secondary);
+  }
+
+  /* 'On' state uses the Card Background value */
+  .light[data-on="true"] {
+    background-color: var(--board-card-bg);
+  }
+
+  .light:focus {
+    outline: none;
+    border-color: var(--board-card-pinned-border);
+  }
+</style>
+
+<script>
+    function initGame() {
+        const grid = document.querySelector('.lights-out-grid') as HTMLElement;
+        if (!grid) return;
+
+        const size = parseInt(grid.dataset.size || '5');
+        const lights = grid.querySelectorAll('.light') as NodeListOf<HTMLButtonElement>;
+
+        function toggle(index: number) {
+            if (index < 0 || index >= lights.length) return;
+            const light = lights[index];
+            const isCurrentlyOn = light.getAttribute('data-on') === 'true';
+            light.setAttribute('data-on', (!isCurrentlyOn).toString());
+        }
+
+        function handlePress(index: number, isInitial = false) {
+            const row = Math.floor(index / size);
+            const col = index % size;
+
+            toggle(index);
+            if (row > 0) toggle(index - size);
+            if (row < size - 1) toggle(index + size);
+            if (col > 0) toggle(index - 1);
+            if (col < size - 1) toggle(index + 1);
+
+            if (!isInitial) checkWin();
+        }
+
+        function checkWin() {
+            const allOff = Array.from(lights).every(l => l.getAttribute('data-on') === 'false');
+            if (allOff) {
+                // Simple alert for win state
+                setTimeout(() => alert('Board Clear!'), 50);
+            }
+        }
+
+        // Setup initial solvable state
+        for (let i = 0; i < size * 2; i++) {
+            handlePress(Math.floor(Math.random() * lights.length), true);
+        }
+
+        grid.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('light')) {
+                handlePress(parseInt(target.dataset.index || '0'));
+            }
+        });
+
+        grid.style.setProperty('--grid-size', size.toString());
+    }
+
+    initGame();
+</script>

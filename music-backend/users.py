@@ -560,7 +560,7 @@ def verify_user_password(user_id: str, password: str | None) -> bool:
 
     stored = user.get("password")
     if not stored:
-        return True
+        return False
 
     if password is None:
         return False

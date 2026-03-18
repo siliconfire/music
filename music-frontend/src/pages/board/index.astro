@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NowPlaying from '../../components/NowPlaying.astro';
 import Queue from '../../components/Queue.astro';
 import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
+import LightsOut from '../../components/LightsOut.astro';
 ---
 
 <Layout title="Bartın Lisesi (/board)">
@@ -101,6 +102,9 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
     <template id="tpl-queue">
         <Queue showControls={false} showHeader={false} />
     </template>
+    <template id="tpl-lights-out">
+        <LightsOut />
+    </template>
     <script>
         // @ts-nocheck
         import { API_URL } from '../../lib/constants';
@@ -119,6 +123,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
         const nowPlayingTemplate = /** @type {HTMLTemplateElement|null} */ (document.getElementById('tpl-now-playing'));
         /** @type {HTMLTemplateElement|null} */
         const queueTemplate = /** @type {HTMLTemplateElement|null} */ (document.getElementById('tpl-queue'));
+        /** @type {HTMLTemplateElement|null} */
+        const lightsOutTemplate = /** @type {HTMLTemplateElement|null} */ (document.getElementById('tpl-lights-out'));
         /** @type {HTMLElement|null} */
         const authWarningEl = /** @type {HTMLElement|null} */ (document.getElementById('board-auth-warning'));
         /** @type {HTMLElement|null} */
@@ -268,10 +274,11 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
             'search': 'Ara',
             'queue': 'Kuyruk',
             'text-block': 'Metin',
-            'clock': 'Saat'
+            'clock': 'Saat',
+            'lights-out': 'Işıklar'
         };
 
-        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls']);
+        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls', 'lights-out']);
 
         let boardData = null;
         let lastUpdatedAt = null;
@@ -640,6 +647,8 @@ import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
                     body.appendChild(nowPlayingTemplate?.content.cloneNode(true));
                 } else if (widget.type === 'queue') {
                     body.appendChild(queueTemplate?.content.cloneNode(true));
+                } else if (widget.type === 'lights-out') {
+                    body.appendChild(lightsOutTemplate?.content.cloneNode(true));
                 } else if (widget.type === 'text-block') {
                     body.classList.add('text-sm', 'board-theme-text-secondary', 'whitespace-pre-line');
                     body.textContent = widget.content || '';

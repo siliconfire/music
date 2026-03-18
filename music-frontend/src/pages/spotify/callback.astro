@@ -2,8 +2,7 @@
 // src/pages/spotify/callback.astro
 // This code runs on the server at build time or request time
 
-import {API_URL} from "../../lib/constants.ts";
-const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || `${API_URL}`;
+import { API_URL } from '../../lib/constants';
 
 // No server-side fetching here; all client-side to include JWT
 ---
@@ -23,22 +22,16 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || `${API_URL}`;
 <div id="status-message">Processing...</div>
 <div id="error-message" class="error"></div>
 
-<script is:inline>
+<script define:vars={{ API_BASE_URL: API_URL }}>
     // This script runs in the browser
-    const API_BASE_URL = `${API_URL}`;
+    const apiBase = String(API_BASE_URL || '').replace(/\/+$/, '');
     const statusMessage = document.getElementById('status-message');
     const errorMessageDiv = document.getElementById('error-message');
 
     async function processSpotifyCallback() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        const jwt = localStorage.getItem('jwt_token'); // Get your backend JWT
-
-        if (!jwt) {
-            errorMessageDiv.innerText = "Error: Not logged into the backend. Cannot complete Spotify linking.";
-            statusMessage.style.display = 'none';
-            return;
-        }
+        const state = params.get('state');
 
         if (!code) {
             errorMessageDiv.innerText = "Error: No Spotify authorization code found in URL.";
@@ -46,18 +39,22 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || `${API_URL}`;
             return;
         }
 
+        if (!state) {
+            errorMessageDiv.innerText = "Error: Missing Spotify OAuth state. Please restart from /spotify/connect.";
+            statusMessage.style.display = 'none';
+            return;
+        }
+
         try {
-            // Send the code AND your admin JWT to your backend's /callback
-            const response = await fetch(`${API_BASE_URL}ar/callback?code=${code}`, {
-                method: 'GET', // Or POST if you change your backend route
-                headers: {
-                    'X-Session-ID': jwt
-                }
+            // Complete callback using OAuth code+state from Spotify redirect.
+            const response = await fetch(`${apiBase}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`, {
+                method: 'GET'
             });
 
             if (response.ok) {
                 const data = await response.json();
-                statusMessage.innerHTML = `<span class="success">${data.status} Redirecting...</span>`;
+                const successText = data?.message || 'Spotify bağlantısı tamamlandı.';
+                statusMessage.innerHTML = `<span class="success">${successText} Redirecting...</span>`;
                 // Redirect to your main app page after successful link
                 window.location.href = '/';
             } else {

@@ -1,13 +1,8 @@
 ---
 // src/pages/spotify/connect.astro
 // This code runs on the server at build time or request time (if SSR enabled)
-const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
-let spotifyLoginUrl = null;
-let errorMessage = null;
-
-// This script will run on the client-side to fetch the link
-// and then the actual connection will happen on the client
+import { API_URL } from '../../lib/constants';
+// This script runs on the client-side; backend auth still uses JWT header.
 ---
 <html lang="en">
 <head>
@@ -31,16 +26,17 @@ let errorMessage = null;
 </div>
 <div id="error-message" class="error"></div>
 
-<script is:inline>
+<script define:vars={{ API_BASE_URL: API_URL }}>
     // This script runs in the browser
-    const API_BASE_URL = "http://127.0.0.1:8000"; // Ensure this matches your backend
+    const apiBase = String(API_BASE_URL || '').replace(/\/+$/, '');
     const statusMessage = document.getElementById('status-message');
     const loginLinkContainer = document.getElementById('login-link-container');
     const connectSpotifyBtn = document.getElementById('connect-spotify-btn');
     const errorMessageDiv = document.getElementById('error-message');
 
     async function fetchSpotifyLoginUrl() {
-        const jwt = localStorage.getItem('jwt_token');
+        const rawToken = localStorage.getItem('jwt_token') || '';
+        const jwt = rawToken.replace(/^Bearer\s+/i, '').trim();
         if (!jwt) {
             errorMessageDiv.innerText = "Error: Not logged into the backend. Please log in first.";
             statusMessage.style.display = 'none';
@@ -48,7 +44,20 @@ let errorMessage = null;
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/spotify/login`, {
+            const meRes = await fetch(`${apiBase}/me`, {
+                headers: {
+                    'X-Session-ID': jwt
+                }
+            });
+            if (!meRes.ok) {
+                const meData = await meRes.json().catch(() => ({}));
+                localStorage.removeItem('jwt_token');
+                errorMessageDiv.innerText = `Session invalid: ${meData.detail || meRes.statusText}. Please log in again.`;
+                statusMessage.style.display = 'none';
+                return;
+            }
+
+            const response = await fetch(`${apiBase}/admin/spotify/login`, {
                 headers: {
                     'X-Session-ID': jwt
                 }

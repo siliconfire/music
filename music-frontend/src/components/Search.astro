@@ -11,13 +11,12 @@
     <button id="btn-search" class="hover:text-yellow-800 font-medium text-sm">[Ara]</button>
 </div>
 <div id="search-results" class="mt-2 text-xs flex flex-col gap-1"></div>
-
 <script>
     import { API_URL } from '../lib/constants';
 
     const token = localStorage.getItem("jwt_token");
     const searchInput = document.getElementById("inp-search") as HTMLInputElement;
-    const searchBtn = document.getElementById("btnEl-search");
+    const searchBtn = document.getElementById("btn-search");
     const resultsDiv = document.getElementById("search-results");
 
     searchBtn?.addEventListener("click", async () => {
@@ -66,7 +65,7 @@
         const trackName = target.getAttribute("data-name") || undefined;
 
         let res: Response;
-        if (target.classList.contains("play-btnEl")) {
+        if (target.classList.contains("play-btn")) {
             res = await fetch(`${API_URL}/play?uri=${encodeURIComponent(uri)}`, {
                 headers: {'X-Session-ID': token || ''},
                 method: 'POST'

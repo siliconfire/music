@@ -94,7 +94,7 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
                 setPasskeyStatus('Bu tarayıcı passkey desteklemiyor.', true);
                 return;
             }
-            const btn = document.getElementById('passkey-enroll-btnEl');
+            const btn = document.getElementById('passkey-enroll-btn');
             if (btn) btn.disabled = true;
             setPasskeyStatus('Passkey kaydı hazırlanıyor...');
             try {
@@ -197,18 +197,18 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
 
 
         // buttons
-        document.getElementById('logout-btnEl')?.addEventListener('click', () => {
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
             window.posthog?.capture('user_logged_out');
             window.posthog?.reset();
             localStorage.removeItem('jwt_token');
             window.location.href = "/login";
         });
 
-        document.getElementById('home-btnEl')?.addEventListener('click', () => {
+        document.getElementById('home-btn')?.addEventListener('click', () => {
             window.location.href = "/";
         });
 
-        document.getElementById('passkey-enroll-btnEl')?.addEventListener('click', enrollPasskey);
+        document.getElementById('passkey-enroll-btn')?.addEventListener('click', enrollPasskey);
 
         loadAccount();
     </script>

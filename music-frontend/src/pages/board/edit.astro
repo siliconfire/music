@@ -39,6 +39,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                             <option value="poll">Anket</option>
                             <option value="clock">Saat</option>
                             <option value="controls">Kontroller</option>
+                            <option value="lights-out">Işıklar</option>
                         </select>
                         <button id="board-add-btn" class="border board-theme-border p-2">Ekle</button>
                         <div class="mt-4"></div>
@@ -121,10 +122,11 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
             'queue': 'Kuyruk',
             'text-block': 'Metin',
             'poll': 'Anket',
-            'clock': 'Saat'
+            'clock': 'Saat',
+            'lights-out': 'Işıklar'
         };
 
-        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls']);
+        const displayTypes = new Set(['now-playing', 'queue', 'text-block', 'poll', 'clock', 'controls', 'lights-out']);
 
         let boardData = null;
         let canEdit = false;

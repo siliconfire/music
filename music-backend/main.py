@@ -62,6 +62,8 @@ PASSKEY_REGISTER_CHALLENGES: dict[str, dict] = {}
 PASSKEY_LOGIN_CHALLENGES: dict[str, dict] = {}
 BOARD_LOGIN_APPROVALS: dict[str, dict] = {}
 BOARD_LOGIN_TTL_SEC = 300
+SPOTIFY_OAUTH_STATES: dict[str, dict] = {}
+SPOTIFY_OAUTH_STATE_TTL_SEC = 600
 SPOTIFY_REQUEST_TIMEOUT_SEC = float(os.getenv("SPOTIFY_REQUEST_TIMEOUT_SEC", "10"))
 
 
@@ -189,24 +191,23 @@ def login_to_app(user_id: str | None = None, password: str | None = None, code: 
         code = req.code
 
     if not user_id:
-        raise HTTPException(status_code=400, detail="User ID is required")
+        raise HTTPException(status_code=400, detail="ID girmezsen ben kim olduğunu nereden bilebilirim?")
 
     if password is not None and password.strip().startswith("74"):
         raise HTTPException(status_code=400, detail="stupid.")
 
     user = users.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User ID doesn't exist in users.json")
+        raise HTTPException(status_code=404, detail="böyle bir kullanıcı yok...? doğru ID girdiğinden emin misin?")
 
     set_password = "disabled"
 
-    if password and users.verify_user_password(user_id, password):
-        pass
-    else:
+    password_ok = bool(password) and users.verify_user_password(user_id, password)
+
+    if not password_ok:
         set_password = users.verify_login_code(user_id, code) or "disabled"
         if set_password == "disabled":
-            if users.has_password(user):
-                raise HTTPException(status_code=401, detail="Password required or invalid")
+            raise HTTPException(status_code=401, detail="geçersiz, doğru girdiğinizden emin olun")
 
     access_token = create_access_token(user_id)
     return {
@@ -299,6 +300,14 @@ def _cleanup_board_login():
             BOARD_LOGIN_APPROVALS.pop(key, None)
 
 
+def _cleanup_spotify_states():
+    now = time.time()
+    for key, payload in list(SPOTIFY_OAUTH_STATES.items()):
+        created_at = payload.get("created_at", 0)
+        if now - float(created_at) > SPOTIFY_OAUTH_STATE_TTL_SEC:
+            SPOTIFY_OAUTH_STATES.pop(key, None)
+
+
 def _consume_board_login(device_id: str):
     _cleanup_board_login()
     payload = BOARD_LOGIN_APPROVALS.pop(device_id, None)
@@ -330,6 +339,25 @@ def get_me(payload: dict = Depends(get_current_user)):
         "permissions": user.get("permissions", []),
         "banned": user.get("banned", False),
         "reason": user.get("reason", False)
+    }
+
+
+@app.post("/me/password")
+def set_my_password(req: SetPasswordRequest, payload: dict = Depends(get_current_user)):
+    if req.confirm is not None and req.password != req.confirm:
+        raise HTTPException(status_code=400, detail="şifreler uyuşsa ne güzel olurdu")
+    user_id = payload.get("sub")
+    users.set_user_password(user_id, req.password)
+    return {"ok": True}
+
+
+@app.get("/me/login-code")
+def get_my_login_code(payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    login_code = users.get_login_code_info(user_id)
+    return {
+        "has_code": bool(login_code),
+        "login_code": login_code
     }
 
 
@@ -481,14 +509,31 @@ def verify_login_passkey(req: PasskeyAuthenticationVerifyRequest):
 def login(auth_manager=Depends(get_auth_manager), payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
         raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
-    auth_url = auth_manager.get_authorize_url()
+    actor_id = payload.get("sub")
+    _cleanup_spotify_states()
+    state = uuid.uuid4().hex
+    SPOTIFY_OAUTH_STATES[state] = {
+        "user_id": actor_id,
+        "created_at": time.time()
+    }
+    auth_url = auth_manager.get_authorize_url(state=state)
     return {"login_uri": auth_url}
 
 
 @app.get("/callback")
-def callback(code: str, auth_manager=Depends(get_auth_manager), payload: dict = Depends(get_current_user)):
-    if not users.check_user_perm(payload.get("sub"), "admin"):
+def callback(code: str, state: str | None = None, auth_manager=Depends(get_auth_manager)):
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing OAuth state")
+
+    _cleanup_spotify_states()
+    payload = SPOTIFY_OAUTH_STATES.pop(state, None)
+    if not payload:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state")
+
+    actor_id = payload.get("user_id")
+    if not users.check_user_perm(actor_id, "admin"):
         raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+
     auth_manager.get_access_token(code)
     return {"message": "Login successful."}
 

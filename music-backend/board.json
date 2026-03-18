@@ -69,10 +69,16 @@
             "show_theme": true,
             "show_reload": true,
             "display_text": true
+        },
+        {
+            "key": "lights-out-mmqaxgo7-petsz",
+            "type": "lights-out",
+            "title": "Işıklar",
+            "pinned": false
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-14T10:11:45.545056+00:00",
+    "updated_at": "2026-03-18T19:21:58.002098+00:00",
     "confetti_trigger": {
         "id": "2026-03-05T16:51:43.310433+00:00",
         "created_at": "2026-03-05T16:51:43.310433+00:00",

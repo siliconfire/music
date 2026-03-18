@@ -11,6 +11,7 @@ ALLOWED_WIDGETS = {
     "poll": "Anket",
     "clock": "Saat",
     "controls": "Kontroller",
+    "lights-out": "Işıklar",
 }
 
 DEFAULT_WIDGET_ORDER = [

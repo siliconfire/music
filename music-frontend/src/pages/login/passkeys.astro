@@ -78,7 +78,7 @@ import Layout from '../../layouts/Layout.astro';
                 setStatus('Bu tarayıcı passkey desteklemiyor.', true);
                 return;
             }
-            const btn = document.getElementById('passkey-login-btnEl');
+            const btn = document.getElementById('passkey-login-btn');
             const btnEl = btn instanceof HTMLButtonElement ? btn : null;
             if (btnEl) btnEl.disabled = true;
             setStatus('Passkey doğrulaması hazırlanıyor...');
@@ -131,6 +131,6 @@ import Layout from '../../layouts/Layout.astro';
             }
         }
 
-        document.getElementById('passkey-login-btnEl')?.addEventListener('click', loginWithPasskey);
+        document.getElementById('passkey-login-btn')?.addEventListener('click', loginWithPasskey);
      </script>
 </Layout>

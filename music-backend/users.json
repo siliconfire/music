@@ -11,7 +11,7 @@
             ],
             "banned": false,
             "reason": null,
-            "password": "e314ccfe245d718677020bc373c1394a$fa9e78165f10de4e683b4fad674df369c4d648908b08f03c5b422cca8212250c",
+            "password": "1fdbb5b068be6f8b8badb6686c8af3ca$c5af18ffbc95d4c90f37e10574177108b83e779a10d4118ee794418acff950bd",
             "passkeys": []
         },
         "100": {
@@ -22,11 +22,12 @@
             "banned": false,
             "reason": null,
             "login_code": {
-                "code": "74325950",
+                "code": "74100",
                 "remaining_usage": -1,
-                "set_password": "disabled",
-                "valid_until": null
-            }
+                "set_password": "nudge",
+                "valid_until": "2026-03-18T21:39:41.775750Z"
+            },
+            "password": "f3db0d963c913ea8dbd0015d5cb35c80$0815b95444d21c059d1ed0a807ba58e6db1c05c7e32d479c1af7ccbd45c30ee1"
         },
         "101": {
             "name": "Furkan Kırıl",

@@ -19,13 +19,10 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
                 <p id="info" class="board-theme-text-secondary"></p>
                 <div id="view-no-token" style="display: none;">
                     <div id="error-box" class="hidden mb-3 p-3 border board-theme-border board-theme-text-primary rounded"></div>
-                    <input type="text" id="user-id" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="ID..."/>
-                    <input type="password" id="password" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="Şifre..."/>
+                    <input type="text" id="user-id" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="ID"/>
+                    <input type="password" id="credential" class="mt-3 p-2 border board-theme-border w-full max-w-xs" placeholder="Şifre veya Giriş kodu"/>
                     <div>
                         <button id="btn-login" class="border board-theme-border p-2 mt-3 inline-block">Giriş yap</button>
-                    </div>
-                    <div class="mt-3 text-sm board-theme-text-secondary">
-                        <a href="/login/code" class="underline">Benim bir giriş kodum var!</a>
                     </div>
                 </div>
                 <div id="view-invalid-token" style="display: none;">
@@ -117,9 +114,11 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
 
         async function handleLogin() {
             const usernameInput = document.getElementById('user-id') as HTMLInputElement;
-            const passwordInput = document.getElementById('password') as HTMLInputElement;
+            const credentialInput = document.getElementById('credential') as HTMLInputElement;
             const user_id = usernameInput.value;
-            const password = passwordInput?.value || '';
+            const credential = credentialInput?.value || '';
+            const trimmedCredential = credential.trim();
+            const isCodeLogin = trimmedCredential.startsWith('74');
 
             clearError();
 
@@ -128,17 +127,20 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
                 return;
             }
 
-            if (password.trim().startsWith('74')) {
-                showError("Bu bir şifre değil de giriş kodu gibi duruyor. <a href='/login/code' class='underline'>Giriş kodu kullanmak için buraya tıkla</a>.", true);
+            if (!trimmedCredential) {
+                showError("Şifre veya kod gerekli.");
                 return;
             }
 
             try {
-                // Using your specific FastAPI endpoint
+                const payload = isCodeLogin
+                    ? { user_id, code: trimmedCredential }
+                    : { user_id, password: credential };
+
                 const res = await fetch(`${API_URL}/token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id, password })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
@@ -161,7 +163,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
                         window.posthog?.identify(String(user_id));
                     }
 
-                    window.posthog?.capture('user_logged_in', { method: 'password' });
+                    window.posthog?.capture('user_logged_in', { method: isCodeLogin ? 'code' : 'password' });
                     if (data.set_password === 'forced') {
                         window.location.href = '/account/set-password?mode=forced';
                         return;
@@ -173,9 +175,9 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
                     await updateUI();
                 } else {
                     if (data?.detail === 'Use /login/code for code logins') {
-                        showError("Bu bir şifre değil de giriş kodu gibi duruyor. <a href='/login/code' class='underline'>Giriş kodu kullanmak için buraya tıkla</a>.", true);
+                        showError("Kod ile giriş için ayrı bir sayfa yok; kodunuzu buraya 74 ile başlayacak şekilde girin.");
                     } else {
-                        showError("Giriş başarısız. " + (data.detail || "Bilinmeyen hata") + ".");
+                        showError(data.detail || "Bilinmeyen hata");
                     }
                 }
             } catch (err) {
@@ -197,13 +199,9 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
         logoutButtons.forEach(button => {
             button.addEventListener('click', handleLogout);
         });
-        const passwordInput = document.getElementById('password');
-        passwordInput?.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            const value = target?.value?.trim() || '';
-            if (value.startsWith('74')) {
-                showError("Bu bir şifre değil de giriş kodu gibi duruyor. <a href='/login/code' class='underline'>Giriş kodu kullanmak için buraya tıkla</a>.", true);
-            } else if (errorBox?.classList.contains('hidden') === false) {
+        const credentialInput = document.getElementById('credential');
+        credentialInput?.addEventListener('input', () => {
+            if (errorBox?.classList.contains('hidden') === false) {
                 clearError();
             }
         });
