@@ -1,0 +1,189 @@
+---
+import '../../styles/global.css';
+import Layout from '../../layouts/Layout.astro';
+import AdminBack from '../../components/AdminBack.astro';
+---
+
+<Layout title="Yonetici - Guncelleme">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Sunucuyu Güncelle</h1>
+        <AdminBack />
+
+        <p>Bu panelden sunucuyu güncelleyebilirsiniz.</p>
+        <p>Sunucu zaten sık sık güncellemeleri kontrol ettiği için bunu sık sık yapmanıza gerek olmayabilir.</p>
+
+        <div id="notice"></div>
+        <div id="actor">Yükleniyor...</div>
+
+        <div class="border border-slate-300 p-5 my-5 inline-block min-w-md">
+            <div class="mb-3 text-sm text-slate-700" id="status-line">Durum: yükleniyor...</div>
+
+            <div class="mt-3">
+                <button id="btn-update" class="bg-green-100 p-2 mx-1" disabled>Normal Güncelleme</button>
+            </div>
+
+            <details class="mt-4">
+                <summary class="cursor-pointer text-sm text-slate-600">Tek yönlü eşitleme</summary>
+                <div class="mt-3 border border-red-200 bg-red-50 p-3">
+                    <p class="text-sm text-red-700">Yerel tracked değişiklikleri görmezden gelip sunucudan günceller. Bunu dikkatli kullanın.</p>
+                    <label class="mt-2 inline-flex items-center gap-2 text-sm">
+                        <input id="force-confirm" type="checkbox" />
+                        Yerel değişikliklerimin (varsa) silinebileceğini biliyorum.
+                    </label>
+                    <div class="mt-3">
+                        <button id="btn-force" class="bg-red-100 p-2 mx-1" disabled>Tek yönlü eşitle</button>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <div id="result" class="border border-slate-300 bg-slate-50 p-4 whitespace-pre-wrap text-sm">(henuz bir işlem yapılmadı)</div>
+    </div>
+
+    <script type="module">
+        const API_URL = 'http://127.0.0.1:8000';
+        const RANKS = ['music', 'musicpermanent', 'moderator', 'admin', 'superadmin', 'dev'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const statusLine = document.getElementById('status-line');
+            const resultDiv = document.getElementById('result');
+            const updateBtn = document.getElementById('btn-update');
+            const forceBtn = document.getElementById('btn-force');
+            const forceConfirm = document.getElementById('force-confirm');
+
+            if (!actorDiv || !noticeDiv || !statusLine || !resultDiv || !updateBtn || !forceBtn || !forceConfirm) {
+                return;
+            }
+
+            let actor = null;
+
+            function highestRankIndex(perms) {
+                const idx = perms.map(p => RANKS.indexOf(p)).filter(i => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => {
+                    if (noticeDiv.innerHTML) noticeDiv.innerHTML = '';
+                }, 5000);
+            }
+
+            function setBusy(busy) {
+                updateBtn.disabled = busy;
+                forceBtn.disabled = busy || !forceConfirm.checked;
+                updateBtn.textContent = busy ? 'Güncelleniyor...' : 'Normal Güncelleme';
+                forceBtn.textContent = busy ? 'Çalışıyor...' : 'Zorla Tek Yönlü Eşitle';
+            }
+
+            function renderActor() {
+                const actorRank = highestRankIndex(actor.permissions || []);
+                const actorRankName = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${actor.name}</strong> (${actor.id}/${actorRankName})`;
+            }
+
+            function renderStatusLine(status) {
+                statusLine.textContent = `Durum: ${status.message || 'bilinmiyor'} | state=${status.state || 'unknown'} | clean=${status.clean ? 'evet' : 'hayır'} | ${status.remote || 'origin'}/${status.branch || 'master'}`;
+            }
+
+            function renderResult(title, payload) {
+                const json = JSON.stringify(payload, null, 2);
+                resultDiv.textContent = `${title}\n\n${json}`;
+            }
+
+            async function fetchStatus() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const res = await fetch(`${API_URL}/admin/update/status`, {
+                    headers: { 'X-Session-ID': token }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Durum alınamadı.');
+                }
+                renderStatusLine(data);
+                return data;
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+                try {
+                    const meRes = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                    if (!meRes.ok) {
+                        actorDiv.textContent = 'Sunucuya baglanirken hata olustu.';
+                        showNotice('Sunucuya baglanirken hata olustu.', 'error');
+                        updateBtn.disabled = true;
+                        return;
+                    }
+                    actor = await meRes.json();
+                    renderActor();
+                    updateBtn.disabled = false;
+                } catch (err) {
+                    console.error(err);
+                    actorDiv.textContent = 'Sunucuya baglanirken hata olustu.';
+                    showNotice('Sunucuya baglanirken hata olustu.', 'error');
+                    updateBtn.disabled = true;
+                }
+            }
+
+            async function runUpdate(forceMode) {
+                const token = localStorage.getItem('jwt_token') || '';
+                setBusy(true);
+                try {
+                    const res = await fetch(`${API_URL}/admin/update/run`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-ID': token
+                        },
+                        body: JSON.stringify({ force: forceMode })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Güncelleme başarısız.', 'error');
+                        renderResult('Hata', data);
+                        return;
+                    }
+
+                    renderResult(forceMode ? 'Zorla eşitleme sonucu' : 'Normal güncelleme sonucu', data);
+                    if (data.ok) {
+                        showNotice(forceMode ? 'Tek yönlü eşitleme tamamlandı.' : (data.changed ? 'Güncelleme tamamlandı.' : 'Yeni güncelleme yok.'));
+                    } else {
+                        showNotice(data.message || 'İşlem başarısız.', 'error');
+                    }
+                    if (data.status) {
+                        renderStatusLine(data.status);
+                    } else {
+                        await fetchStatus();
+                    }
+                } catch (err) {
+                    showNotice(err?.message || 'Sunucu hatası.', 'error');
+                    renderResult('Hata', { error: err?.message || String(err) });
+                } finally {
+                    setBusy(false);
+                }
+            }
+
+            forceConfirm.addEventListener('change', () => {
+                forceBtn.disabled = !forceConfirm.checked;
+            });
+
+            updateBtn.addEventListener('click', () => runUpdate(false));
+            forceBtn.addEventListener('click', () => runUpdate(true));
+
+            (async () => {
+                await loadActor();
+                try {
+                    const status = await fetchStatus();
+                    renderResult('Güncelleme durumu', status);
+                } catch (err) {
+                    showNotice(err?.message || 'Durum alınamadı.', 'error');
+                    renderResult('Hata', { error: err?.message || String(err) });
+                }
+                setBusy(false);
+            })();
+        });
+    </script>
+</Layout>
+

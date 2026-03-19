@@ -185,6 +185,10 @@ class KillLoginCodeRequest(BaseModel):
     mode: str
 
 
+class AdminUpdateRunRequest(BaseModel):
+    force: bool = False
+
+
 class BoardUpdateRequest(BaseModel):
     widgets: list[dict] | None = None
     order: list[str] | None = None
@@ -787,6 +791,54 @@ def set_login_code_admin(target_id: str, req: LoginCodeRequest, payload: dict = 
         req.valid_until
     )
     return {"login_code": login_code}
+
+
+@app.get("/admin/update/status")
+def admin_update_status(payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+    return updater.get_status()
+
+
+@app.post("/admin/update/run")
+def admin_update_run(req: AdminUpdateRunRequest | None = None, force: bool | None = None, payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+
+    force_mode = req.force if req is not None else bool(force)
+
+    if not _update_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="Güncelleme zaten çalışıyor.")
+
+    try:
+        if force_mode:
+            ok = updater.force_sync()
+            return {
+                "ok": ok,
+                "mode": "force",
+                "status": updater.get_status()
+            }
+
+        has_update = updater.check_updates()
+        if not has_update:
+            return {
+                "ok": True,
+                "changed": False,
+                "mode": "normal",
+                "status": updater.get_status(),
+                "message": "Yeni bir güncelleme bulunamadı."
+            }
+
+        ok = updater.main()
+        return {
+            "ok": ok,
+            "changed": ok,
+            "mode": "normal",
+            "status": updater.get_status(),
+            "message": "Güncelleme uygulandı." if ok else "Güncelleme uygulanamadı."
+        }
+    finally:
+        _update_lock.release()
 
 
 @app.post("/me/login-code/kill")

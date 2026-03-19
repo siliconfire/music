@@ -48,33 +48,92 @@ def _working_tree_clean() -> bool:
         return False
 
 
-def check_updates() -> bool:
-    if not _is_git_repo():
-        print("[update] skipped: not a git repository")
-        return False
-    if not _ensure_remote():
-        return False
-
+def _sync_state() -> str:
+    """Return one of: up_to_date, behind, ahead, diverged, unknown."""
     try:
         _git(["fetch", REMOTE_NAME, BRANCH])
-        local_sha = (_git(["rev-parse", "HEAD"], capture_output=True).stdout or "").strip()
-        remote_sha = (_git(["rev-parse", f"{REMOTE_NAME}/{BRANCH}"], capture_output=True).stdout or "").strip()
-        has_update = bool(local_sha and remote_sha and local_sha != remote_sha)
-        print("[update] update available" if has_update else "[update] already up to date")
-        return has_update
-    except Exception as exc:
-        print(f"[update] check failed: {exc}")
+        result = _git(["rev-list", "--left-right", "--count", f"HEAD...{REMOTE_NAME}/{BRANCH}"], capture_output=True)
+        parts = (result.stdout or "").strip().split()
+        if len(parts) != 2:
+            return "unknown"
+        ahead = int(parts[0])
+        behind = int(parts[1])
+        if ahead == 0 and behind == 0:
+            return "up_to_date"
+        if ahead == 0 and behind > 0:
+            return "behind"
+        if ahead > 0 and behind == 0:
+            return "ahead"
+        return "diverged"
+    except Exception:
+        return "unknown"
+
+
+def _message_for_state(state: str) -> str:
+    if state == "up_to_date":
+        return "already up to date"
+    if state == "behind":
+        return "update available"
+    if state == "ahead":
+        return "local branch is ahead of remote"
+    if state == "diverged":
+        return "local and remote branches diverged"
+    return "unable to determine sync state"
+
+
+def get_status() -> dict:
+    if not _is_git_repo():
+        return {
+            "ok": False,
+            "state": "unknown",
+            "clean": False,
+            "message": "not a git repository",
+            "remote": REMOTE_NAME,
+            "branch": BRANCH,
+        }
+    if not _ensure_remote():
+        return {
+            "ok": False,
+            "state": "unknown",
+            "clean": _working_tree_clean(),
+            "message": "remote setup failed",
+            "remote": REMOTE_NAME,
+            "branch": BRANCH,
+        }
+
+    state = _sync_state()
+    return {
+        "ok": state != "unknown",
+        "state": state,
+        "clean": _working_tree_clean(),
+        "message": _message_for_state(state),
+        "remote": REMOTE_NAME,
+        "branch": BRANCH,
+    }
+
+
+def check_updates() -> bool:
+    status = get_status()
+    if not status.get("ok"):
+        print(f"[update] check failed: {status.get('message')}")
         return False
+    if status["state"] == "behind":
+        print("[update] update available")
+        return True
+    print(f"[update] skipped: {status.get('message')}")
+    return False
 
 
 def main() -> bool:
-    if not _is_git_repo():
-        print("[update] failed: not a git repository")
+    status = get_status()
+    if not status.get("ok"):
+        print(f"[update] failed: {status.get('message')}")
         return False
-    if not _ensure_remote():
-        return False
-    if not _working_tree_clean():
+    if not status.get("clean"):
         print("[update] skipped: working tree has local changes")
+        return False
+    if status["state"] != "behind":
+        print(f"[update] skipped: {status.get('message')}")
         return False
 
     try:
@@ -83,6 +142,22 @@ def main() -> bool:
         return True
     except Exception as exc:
         print(f"[update] pull failed: {exc}")
+        return False
+
+
+def force_sync() -> bool:
+    """One-way sync from remote by discarding local tracked changes/commits."""
+    status = get_status()
+    if not status.get("ok"):
+        print(f"[update] force sync failed: {status.get('message')}")
+        return False
+    try:
+        _git(["fetch", REMOTE_NAME, BRANCH])
+        _git(["reset", "--hard", f"{REMOTE_NAME}/{BRANCH}"])
+        print("[update] force sync completed")
+        return True
+    except Exception as exc:
+        print(f"[update] force sync failed: {exc}")
         return False
 
 
