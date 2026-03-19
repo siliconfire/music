@@ -767,7 +767,11 @@ import LightsOut from '../../components/LightsOut.astro';
                 const backgroundKey = data?.background_image_key || data?.background_image_url || null;
                 const backdropBlur = Number.isFinite(Number(data?.backdrop_blur_px)) ? Number(data?.backdrop_blur_px) : 0;
                 const cardBlur = Number.isFinite(Number(data?.card_blur_px)) ? Number(data?.card_blur_px) : 12;
-                if (boardData && widgetStamp === lastWidgetStamp && themeKey === lastThemeKey && backgroundKey === lastBackgroundKey && backdropBlur === lastBackdropBlur && cardBlur === lastCardBlur) {
+                const hadBoardData = Boolean(boardData);
+                const widgetsChanged = widgetStamp !== lastWidgetStamp;
+                const visualsChanged = themeKey !== lastThemeKey || backgroundKey !== lastBackgroundKey || backdropBlur !== lastBackdropBlur || cardBlur !== lastCardBlur;
+
+                if (hadBoardData && !widgetsChanged && !visualsChanged) {
                     clearStatus();
                     if (errorVisible) {
                         scheduleReloadAfterRecovery();
@@ -789,8 +793,12 @@ import LightsOut from '../../components/LightsOut.astro';
                 lastBackgroundKey = backgroundKey;
                 lastBackdropBlur = backdropBlur;
                 lastCardBlur = cardBlur;
-                applyTheme(data?.theme || null, data?.background_image_url || null, backdropBlur, cardBlur);
-                renderBoard();
+                if (!hadBoardData || visualsChanged) {
+                    applyTheme(data?.theme || null, data?.background_image_url || null, backdropBlur, cardBlur);
+                }
+                if (!hadBoardData || widgetsChanged) {
+                    renderBoard();
+                }
                 clearStatus();
                 if (errorVisible) {
                     scheduleReloadAfterRecovery();
