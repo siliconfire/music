@@ -41,7 +41,8 @@ def _ensure_remote() -> bool:
 
 def _working_tree_clean() -> bool:
     try:
-        result = _git(["status", "--porcelain"], capture_output=True)
+        # Ignore untracked files so local logs/cache files do not block updates.
+        result = _git(["status", "--porcelain", "--untracked-files=no"], capture_output=True)
         return (result.stdout or "").strip() == ""
     except Exception:
         return False
