@@ -62,6 +62,27 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                     <div id="board-theme-list" class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
                 </fieldset>
                 <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Arkaplan ve Bulanıklık</legend>
+                    <div class="mt-1 flex flex-wrap gap-2 items-center">
+                        <label for="board-background-image" class="text-sm board-theme-text-secondary">Arkaplan</label>
+                        <select id="board-background-image" class="border board-theme-border p-2 text-sm min-w-[18rem]"></select>
+                        <button id="board-background-save" class="border board-theme-border p-2">Arkaplanı kaydet</button>
+                        <button id="board-background-clear" class="border board-theme-border p-2">Arkaplanı kaldır</button>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2 items-center">
+                        <label for="board-backdrop-blur" class="text-sm board-theme-text-secondary">Arkaplan bulanıklığı</label>
+                        <input id="board-backdrop-blur" class="border board-theme-border p-2" type="range" min="0" max="40" step="1" value="0" />
+                        <span id="board-backdrop-blur-value" class="text-sm board-theme-text-secondary min-w-12">0px</span>
+                        <button id="board-backdrop-blur-save" class="border board-theme-border p-2">Bulanıklığı kaydet</button>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2 items-center">
+                        <label for="board-card-blur" class="text-sm board-theme-text-secondary">Kart bulanıklığı</label>
+                        <input id="board-card-blur" class="border board-theme-border p-2" type="range" min="0" max="30" step="1" value="12" />
+                        <span id="board-card-blur-value" class="text-sm board-theme-text-secondary min-w-12">12px</span>
+                        <button id="board-card-blur-save" class="border board-theme-border p-2">Kart bulanıklığını kaydet</button>
+                    </div>
+                </fieldset>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
                     <legend class="board-theme-text-primary">Konfeti</legend>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <input id="confetti-count" class="border board-theme-border p-2 text-xs" type="number" min="10" max="5000" placeholder="Partikül sayısı (3000)" />
@@ -151,7 +172,78 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
         const restartBtnEl = document.getElementById('board-restart-btn');
         const themeRandomEl = document.getElementById('board-theme-random');
         const themeListEl = document.getElementById('board-theme-list');
+        const backgroundInputEl = document.getElementById('board-background-image') as HTMLSelectElement | null;
+        const backgroundSaveEl = document.getElementById('board-background-save');
+        const backgroundClearEl = document.getElementById('board-background-clear');
+        const backdropBlurEl = document.getElementById('board-backdrop-blur') as HTMLInputElement | null;
+        const backdropBlurValueEl = document.getElementById('board-backdrop-blur-value');
+        const backdropBlurSaveEl = document.getElementById('board-backdrop-blur-save');
+        const cardBlurEl = document.getElementById('board-card-blur') as HTMLInputElement | null;
+        const cardBlurValueEl = document.getElementById('board-card-blur-value');
+        const cardBlurSaveEl = document.getElementById('board-card-blur-save');
         const debugScreenBtnEl = document.getElementById('board-debug-screen-btn');
+
+        function normalizeBackgroundImageKey(value) {
+            return String(value || '').trim();
+        }
+
+        function normalizeBackdropBlur(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 0;
+            if (num < 0) return 0;
+            if (num > 40) return 40;
+            return Math.round(num);
+        }
+
+        function normalizeCardBlur(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 12;
+            if (num < 0) return 0;
+            if (num > 30) return 30;
+            return Math.round(num);
+        }
+
+        function renderBackdropBlurValue() {
+            if (!backdropBlurValueEl || !backdropBlurEl) return;
+            backdropBlurValueEl.textContent = `${normalizeBackdropBlur(backdropBlurEl.value)}px`;
+        }
+
+        function renderCardBlurValue() {
+            if (!cardBlurValueEl || !cardBlurEl) return;
+            cardBlurValueEl.textContent = `${normalizeCardBlur(cardBlurEl.value)}px`;
+        }
+
+        function syncBackgroundInput() {
+            if (!backgroundInputEl || !boardData) return;
+            const catalog = Array.isArray(boardData.background_catalog) ? boardData.background_catalog : [];
+            backgroundInputEl.innerHTML = '';
+
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = 'Varsayılan tema arkaplanı';
+            backgroundInputEl.appendChild(emptyOption);
+
+            catalog.forEach((entry) => {
+                const option = document.createElement('option');
+                option.value = entry.key || '';
+                option.textContent = entry.label || entry.key || 'Arkaplan';
+                backgroundInputEl.appendChild(option);
+            });
+
+            backgroundInputEl.value = boardData.background_image_key || '';
+        }
+
+        function syncBackdropBlurInput() {
+            if (!backdropBlurEl || !boardData) return;
+            backdropBlurEl.value = String(normalizeBackdropBlur(boardData.backdrop_blur_px));
+            renderBackdropBlurValue();
+        }
+
+        function syncCardBlurInput() {
+            if (!cardBlurEl || !boardData) return;
+            cardBlurEl.value = String(normalizeCardBlur(boardData.card_blur_px));
+            renderCardBlurValue();
+        }
 
         function showPermissionError(message) {
             if (editorRootEl) editorRootEl.classList.add('hidden');
@@ -373,7 +465,10 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                         }
                         return entry;
                     }),
-                theme_key: boardData.theme_key || null
+                theme_key: boardData.theme_key || null,
+                background_image_key: normalizeBackgroundImageKey(boardData.background_image_key),
+                backdrop_blur_px: normalizeBackdropBlur(boardData.backdrop_blur_px),
+                card_blur_px: normalizeCardBlur(boardData.card_blur_px)
             };
             const res = await fetch(`${API_URL}/board`, {
                 method: 'PUT',
@@ -414,6 +509,9 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
             clearFieldErrors();
             renderBoard();
             renderThemeOptions();
+            syncBackgroundInput();
+            syncBackdropBlurInput();
+            syncCardBlurInput();
             showStatus('Saved.');
         }
 
@@ -748,9 +846,104 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 }
                 boardData = await res.json();
                 renderThemeOptions();
+                syncBackgroundInput();
+                syncBackdropBlurInput();
+                syncCardBlurInput();
                 showStatus('Tema kaydedildi.');
             } catch (err) {
                 showStatus('Tema kaydedilemedi.', true);
+            }
+        }
+
+        async function saveBackground() {
+            if (!boardData) return;
+            clearStatus();
+            try {
+                const nextValue = normalizeBackgroundImageKey(backgroundInputEl ? backgroundInputEl.value : '');
+                const res = await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ background_image_key: nextValue })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Arkaplan kaydedilemedi.', true);
+                    return;
+                }
+                boardData = await res.json();
+                renderThemeOptions();
+                syncBackgroundInput();
+                syncBackdropBlurInput();
+                syncCardBlurInput();
+                showStatus('Arkaplan kaydedildi.');
+            } catch (err) {
+                showStatus('Arkaplan kaydedilemedi.', true);
+            }
+        }
+
+        async function saveBackdropBlur() {
+            if (!boardData) return;
+            clearStatus();
+            try {
+                const nextValue = normalizeBackdropBlur(backdropBlurEl ? backdropBlurEl.value : 0);
+                const res = await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ backdrop_blur_px: nextValue })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Bulanıklık kaydedilemedi.', true);
+                    return;
+                }
+                boardData = await res.json();
+                syncBackdropBlurInput();
+                syncCardBlurInput();
+                showStatus('Bulanıklık kaydedildi.');
+            } catch (err) {
+                showStatus('Bulanıklık kaydedilemedi.', true);
+            }
+        }
+
+        async function saveCardBlur() {
+            if (!boardData) return;
+            clearStatus();
+            try {
+                const nextValue = normalizeCardBlur(cardBlurEl ? cardBlurEl.value : 12);
+                const res = await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ card_blur_px: nextValue })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Kart bulanıklığı kaydedilemedi.', true);
+                    return;
+                }
+                boardData = await res.json();
+                syncBackdropBlurInput();
+                syncCardBlurInput();
+                showStatus('Kart bulanıklığı kaydedildi.');
+            } catch (err) {
+                showStatus('Kart bulanıklığı kaydedilemedi.', true);
             }
         }
 
@@ -792,6 +985,9 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 normalizeOrder();
                 renderBoard();
                 renderThemeOptions();
+                syncBackgroundInput();
+                syncBackdropBlurInput();
+                syncCardBlurInput();
             } catch (err) {
                 if (err && err.message === 'permission') {
                     showPermissionError('Düzenlemek için yetkiniz yok.');
@@ -939,6 +1135,45 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
 
          if (debugScreenBtnEl) {
              debugScreenBtnEl.addEventListener('click', triggerBoardDebugScreen);
+         }
+
+         if (backgroundSaveEl) {
+             backgroundSaveEl.addEventListener('click', saveBackground);
+         }
+
+         if (backgroundClearEl) {
+             backgroundClearEl.addEventListener('click', () => {
+                 if (backgroundInputEl) {
+                     backgroundInputEl.value = '';
+                 }
+                 saveBackground();
+             });
+         }
+
+         if (backdropBlurEl) {
+             backdropBlurEl.addEventListener('input', () => {
+                 if (boardData) {
+                     boardData.backdrop_blur_px = normalizeBackdropBlur(backdropBlurEl.value);
+                 }
+                 renderBackdropBlurValue();
+             });
+         }
+
+         if (cardBlurEl) {
+             cardBlurEl.addEventListener('input', () => {
+                 if (boardData) {
+                     boardData.card_blur_px = normalizeCardBlur(cardBlurEl.value);
+                 }
+                 renderCardBlurValue();
+             });
+         }
+
+         if (backdropBlurSaveEl) {
+             backdropBlurSaveEl.addEventListener('click', saveBackdropBlur);
+         }
+
+         if (cardBlurSaveEl) {
+             cardBlurSaveEl.addEventListener('click', saveCardBlur);
          }
 
          init();

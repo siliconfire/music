@@ -156,6 +156,9 @@ import LightsOut from '../../components/LightsOut.astro';
         let confettiActive = false;
         let lastConfettiId = null;
         let lastThemeKey = null;
+        let lastBackgroundKey = null;
+        let lastBackdropBlur = null;
+        let lastCardBlur = null;
         let themeConfettiColors = null;
         let initialConfettiShown = false;
         const restartStorageKey = 'board.restartTriggerId';
@@ -473,7 +476,7 @@ import LightsOut from '../../components/LightsOut.astro';
             if (!pick) return;
 
             // Apply locally immediately
-            applyTheme(pick);
+            applyTheme(pick, boardData?.background_image_url || null);
             lastThemeKey = pick.key;
 
             try {
@@ -761,7 +764,10 @@ import LightsOut from '../../components/LightsOut.astro';
                 const widgetStamp = JSON.stringify(data.widgets || []);
                 const stamp = data.updated_at || widgetStamp;
                 const themeKey = data?.theme_key || data?.theme?.key || null;
-                if (boardData && widgetStamp === lastWidgetStamp && themeKey === lastThemeKey) {
+                const backgroundKey = data?.background_image_key || data?.background_image_url || null;
+                const backdropBlur = Number.isFinite(Number(data?.backdrop_blur_px)) ? Number(data?.backdrop_blur_px) : 0;
+                const cardBlur = Number.isFinite(Number(data?.card_blur_px)) ? Number(data?.card_blur_px) : 12;
+                if (boardData && widgetStamp === lastWidgetStamp && themeKey === lastThemeKey && backgroundKey === lastBackgroundKey && backdropBlur === lastBackdropBlur && cardBlur === lastCardBlur) {
                     clearStatus();
                     if (errorVisible) {
                         scheduleReloadAfterRecovery();
@@ -780,7 +786,10 @@ import LightsOut from '../../components/LightsOut.astro';
                 lastWidgetStamp = widgetStamp;
                 boardData = data;
                 lastThemeKey = themeKey;
-                applyTheme(data?.theme || null);
+                lastBackgroundKey = backgroundKey;
+                lastBackdropBlur = backdropBlur;
+                lastCardBlur = cardBlur;
+                applyTheme(data?.theme || null, data?.background_image_url || null, backdropBlur, cardBlur);
                 renderBoard();
                 clearStatus();
                 if (errorVisible) {
@@ -903,7 +912,7 @@ import LightsOut from '../../components/LightsOut.astro';
             upwardBoost: 2
         };
 
-        function applyTheme(theme) {
+        function applyTheme(theme, backgroundImageUrl = null, backdropBlur = 0, cardBlur = 12) {
             const colors = theme?.colors || {};
             const style = document.documentElement.style;
             style.setProperty('--board-text-primary', colors.textPrimary || '#0f172a');
@@ -922,8 +931,28 @@ import LightsOut from '../../components/LightsOut.astro';
             style.setProperty('--board-qr-bg', colors.qrButtonBackground || '#ffffff');
             style.setProperty('--board-qr-border', colors.qrButtonBorder || '#cbd5f5');
             style.setProperty('--board-qr-text', colors.qrButtonText || '#0f172a');
+            const cardBlurPx = Number.isFinite(Number(cardBlur)) ? Math.max(0, Math.min(30, Number(cardBlur))) : 12;
+            style.setProperty('--board-card-blur', `${cardBlurPx}px`);
             if (themeBackdropEl) {
                 themeBackdropEl.style.backgroundColor = colors.background || '#f8fafc';
+                const imageUrl = typeof backgroundImageUrl === 'string' ? backgroundImageUrl.trim() : '';
+                if (imageUrl) {
+                    const safeUrl = imageUrl.replace(/"/g, '\\"');
+                    themeBackdropEl.style.backgroundImage = `url("${safeUrl}")`;
+                    themeBackdropEl.style.backgroundSize = 'cover';
+                    themeBackdropEl.style.backgroundPosition = 'center center';
+                    themeBackdropEl.style.backgroundRepeat = 'no-repeat';
+                    themeBackdropEl.style.backgroundAttachment = 'fixed';
+                } else {
+                    themeBackdropEl.style.backgroundImage = 'none';
+                    themeBackdropEl.style.backgroundSize = '';
+                    themeBackdropEl.style.backgroundPosition = '';
+                    themeBackdropEl.style.backgroundRepeat = '';
+                    themeBackdropEl.style.backgroundAttachment = '';
+                }
+                const blurPx = Number.isFinite(Number(backdropBlur)) ? Math.max(0, Math.min(40, Number(backdropBlur))) : 0;
+                themeBackdropEl.style.filter = blurPx > 0 ? `blur(${blurPx}px)` : '';
+                themeBackdropEl.style.transform = blurPx > 0 ? 'scale(1.04)' : '';
             }
             themeConfettiColors = Array.isArray(colors.confettiColors) ? colors.confettiColors : null;
             if (!initialConfettiShown) {
@@ -1112,6 +1141,7 @@ import LightsOut from '../../components/LightsOut.astro';
             /* default rgba tint for pinned cards (used as a fallback before JS runs) */
             --board-card-pinned-bg-rgba: rgba(16,185,129,0.12);
             --board-card-pinned-border: #6ee7b7;
+            --board-card-blur: 12px;
             --board-qr-bg: #ffffff;
             --board-qr-border: #cbd5f5;
             --board-qr-text: #0f172a;
@@ -1133,8 +1163,8 @@ import LightsOut from '../../components/LightsOut.astro';
         /* Make the widget cards frosted glass so they blend with the backdrop */
         :global(.board-card) {
             background: rgba(255,255,255,0.04);
-            backdrop-filter: blur(12px) saturate(120%);
-            -webkit-backdrop-filter: blur(12px) saturate(120%);
+            backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
+            -webkit-backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
             border: 1px solid rgba(255,255,255,0.08);
             color: var(--board-text-primary);
             flex: 1 0 22rem;
@@ -1149,8 +1179,8 @@ import LightsOut from '../../components/LightsOut.astro';
         :global(.board-card-pinned) {
             /* use a subtle rgba tint derived from theme while keeping the frosted backdrop */
             background: var(--board-card-pinned-bg-rgba, rgba(16,185,129,0.06));
-            backdrop-filter: blur(12px) saturate(120%);
-            -webkit-backdrop-filter: blur(12px) saturate(120%);
+            backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
+            -webkit-backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
             border-color: var(--board-card-pinned-border);
             overflow: hidden; /* contain tint overlay */
         }

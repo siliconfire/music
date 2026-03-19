@@ -22,6 +22,11 @@ DEFAULT_WIDGET_ORDER = [
 ]
 
 DEFAULT_THEME_KEY = "classic"
+ALLOWED_WALLPAPER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".svg"}
+WALLPAPER_DIR_CANDIDATES = [
+    Path(__file__).resolve().parents[1] / "music-frontend" / "public" / "wallpapers",
+    Path(__file__).resolve().parent / "public" / "wallpapers",
+]
 THEME_PRESETS = {
     "classic": {
         "key": "classic",
@@ -387,6 +392,117 @@ def _normalize_theme_key(value):
     return DEFAULT_THEME_KEY
 
 
+def _normalize_background_image_url(value):
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return cleaned
+
+
+def _normalize_backdrop_blur_px(value):
+    if value is None:
+        return 0
+    try:
+        number = int(float(value))
+    except (TypeError, ValueError):
+        return 0
+    if number < 0:
+        return 0
+    if number > 40:
+        return 40
+    return number
+
+
+def _normalize_card_blur_px(value):
+    if value is None:
+        return 12
+    try:
+        number = int(float(value))
+    except (TypeError, ValueError):
+        return 12
+    if number < 0:
+        return 0
+    if number > 30:
+        return 30
+    return number
+
+
+def _resolve_wallpaper_dir():
+    for candidate in WALLPAPER_DIR_CANDIDATES:
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+    return WALLPAPER_DIR_CANDIDATES[0]
+
+
+def _background_catalog_entries():
+    wallpapers_dir = _resolve_wallpaper_dir()
+    if not wallpapers_dir.exists() or not wallpapers_dir.is_dir():
+        return []
+
+    entries = []
+    used_keys = set()
+
+    for path in sorted(wallpapers_dir.iterdir(), key=lambda p: p.name.lower()):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in ALLOWED_WALLPAPER_EXTENSIONS:
+            continue
+
+        base_key = path.stem.strip().lower().replace(" ", "-")
+        key = base_key or path.name.lower().replace(" ", "-")
+        if key in used_keys:
+            key = f"{key}-{path.suffix.lower().lstrip('.')}"
+        used_keys.add(key)
+
+        label = path.stem.replace("-", " ").strip() or path.stem
+        entries.append({
+            "key": key,
+            "label": label,
+            "url": f"/wallpapers/{path.name}"
+        })
+
+    return entries
+
+
+def _background_catalog_map():
+    return {entry["key"]: entry for entry in _background_catalog_entries()}
+
+
+def _background_catalog_payload():
+    return _background_catalog_entries()
+
+
+def _normalize_background_image_key(value):
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    catalog = _background_catalog_map()
+    if cleaned not in catalog:
+        return None
+    return cleaned
+
+
+def _background_key_from_url(value):
+    clean_url = _normalize_background_image_url(value)
+    if not clean_url:
+        return None
+    for key, entry in _background_catalog_map().items():
+        if entry.get("url") == clean_url:
+            return key
+    return None
+
+
+def _background_image_url_from_key(key):
+    clean_key = _normalize_background_image_key(key)
+    if not clean_key:
+        return None
+    return _background_catalog_map()[clean_key]["url"]
+
+
 def _theme_payload(theme_key):
     preset = THEME_PRESETS.get(theme_key) or THEME_PRESETS[DEFAULT_THEME_KEY]
     return {
@@ -414,7 +530,11 @@ def load_board():
             "updated_by": None,
             "updated_at": None,
             "debug_passkeys": [],
-            "theme_key": DEFAULT_THEME_KEY
+            "theme_key": DEFAULT_THEME_KEY,
+            "background_image_key": None,
+            "background_image_url": None,
+            "backdrop_blur_px": 0,
+            "card_blur_px": 12
         }
         save_board(data)
         return data
@@ -427,6 +547,14 @@ def load_board():
     data["debug_passkeys"] = _normalize_passkeys(data.get("debug_passkeys"))
     theme_key = _normalize_theme_key(data.get("theme_key"))
     data["theme_key"] = theme_key
+    background_key = _normalize_background_image_key(data.get("background_image_key"))
+    if background_key is None:
+        background_key = _background_key_from_url(data.get("background_image_url"))
+    data["background_image_key"] = background_key
+    data["background_image_url"] = _background_image_url_from_key(background_key)
+    data["background_catalog"] = _background_catalog_payload()
+    data["backdrop_blur_px"] = _normalize_backdrop_blur_px(data.get("backdrop_blur_px"))
+    data["card_blur_px"] = _normalize_card_blur_px(data.get("card_blur_px"))
     data["theme"] = _theme_payload(theme_key)
     data["theme_presets"] = _theme_presets_payload()
     return data
@@ -437,7 +565,7 @@ def save_board(data):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None, theme_key=None):
+def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None, theme_key=None, background_image_url=None, background_image_key=None, backdrop_blur_px=None, card_blur_px=None):
     data = load_board()
 
     if widgets is not None:
@@ -517,7 +645,25 @@ def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None,
     if theme_key is not None:
         data["theme_key"] = _normalize_theme_key(theme_key)
 
+    if background_image_key is not None:
+        next_key = _normalize_background_image_key(background_image_key)
+        data["background_image_key"] = next_key
+        data["background_image_url"] = _background_image_url_from_key(next_key)
+    elif background_image_url is not None:
+        next_key = _background_key_from_url(background_image_url)
+        data["background_image_key"] = next_key
+        data["background_image_url"] = _background_image_url_from_key(next_key)
+
+    if backdrop_blur_px is not None:
+        data["backdrop_blur_px"] = _normalize_backdrop_blur_px(backdrop_blur_px)
+
+    if card_blur_px is not None:
+        data["card_blur_px"] = _normalize_card_blur_px(card_blur_px)
+
     data["theme"] = _theme_payload(data.get("theme_key"))
+    data["background_catalog"] = _background_catalog_payload()
+    data["backdrop_blur_px"] = _normalize_backdrop_blur_px(data.get("backdrop_blur_px"))
+    data["card_blur_px"] = _normalize_card_blur_px(data.get("card_blur_px"))
     data["theme_presets"] = _theme_presets_payload()
     data["updated_by"] = updated_by
     data["updated_at"] = datetime.now(timezone.utc).isoformat()

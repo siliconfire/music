@@ -77,49 +77,49 @@
             "pinned": false
         }
     ],
-    "updated_by": "100000",
-    "updated_at": "2026-03-18T20:47:09.766542+00:00",
+    "updated_by": "0",
+    "updated_at": "2026-03-19T17:48:40.248388+00:00",
     "confetti_trigger": {
-        "id": "2026-03-05T16:51:43.310433+00:00",
-        "created_at": "2026-03-05T16:51:43.310433+00:00",
+        "id": "2026-03-18T21:19:56.788934+00:00",
+        "created_at": "2026-03-18T21:19:56.788934+00:00",
         "config": {
-            "particleCount": 10000,
-            "durationMs": 5000,
-            "spawnDurationMs": 2000,
-            "spread": 1.0,
+            "particleCount": 100,
+            "durationMs": 3000,
+            "spawnDurationMs": 1200,
+            "spread": 0.5,
             "sizeScale": 4.0,
-            "upwardBoost": 1.0
+            "upwardBoost": 2.0
         },
-        "created_by": "0"
-    },
-    "restart_trigger": {
-        "id": "2026-03-18T20:47:09.766542+00:00",
-        "created_at": "2026-03-18T20:47:09.766542+00:00",
         "created_by": "100000"
     },
+    "restart_trigger": {
+        "id": "2026-03-18T21:19:35.395655+00:00",
+        "created_at": "2026-03-18T21:19:35.395655+00:00",
+        "created_by": "0"
+    },
     "debug_passkeys": [],
-    "theme_key": "cyberpunk",
+    "theme_key": "deep_forest",
     "theme": {
-        "key": "cyberpunk",
-        "label": "Geleceksel",
+        "key": "deep_forest",
+        "label": "Yeşil Madde",
         "colors": {
-            "textPrimary": "#fdf4ff",
-            "textSecondary": "#d8b4fe",
-            "background": "#020617",
-            "cardBackground": "#0f172a",
-            "cardBorder": "#581c87",
-            "cardPinnedBackground": "#2e1065",
-            "cardPinnedBorder": "#d946ef",
-            "qrButtonBackground": "#1e1b4b",
-            "qrButtonBorder": "#d946ef",
-            "qrButtonText": "#fdf4ff",
+            "textPrimary": "#ecfdf5",
+            "textSecondary": "#a7f3d0",
+            "background": "#061612",
+            "cardBackground": "#0c221d",
+            "cardBorder": "#164e41",
+            "cardPinnedBackground": "#14532d",
+            "cardPinnedBorder": "#4ade80",
+            "qrButtonBackground": "#0c221d",
+            "qrButtonBorder": "#164e41",
+            "qrButtonText": "#4ade80",
             "confettiColors": [
-                "#d946ef",
-                "#8b5cf6",
-                "#06b6d4",
-                "#f472b6",
-                "#22d3ee",
-                "#a855f7"
+                "#065f46",
+                "#059669",
+                "#10b981",
+                "#34d399",
+                "#6ee7b7",
+                "#a7f3d0"
             ]
         }
     },
@@ -130,8 +130,8 @@
         "test_id": "clear"
     },
     "redirect_trigger": {
-        "id": "2026-03-05T16:46:09.890183+00:00",
-        "created_at": "2026-03-05T16:46:09.890183+00:00",
+        "id": "2026-03-18T21:19:37.871150+00:00",
+        "created_at": "2026-03-18T21:19:37.871150+00:00",
         "created_by": "0",
         "path": "/debug/screen"
     },
@@ -472,5 +472,16 @@
                 ]
             }
         }
-    ]
+    ],
+    "background_image_url": "/wallpapers/Yellow-Flowers.png",
+    "background_image_key": "yellow-flowers",
+    "background_catalog": [
+        {
+            "key": "yellow-flowers",
+            "label": "Yellow Flowers",
+            "url": "/wallpapers/Yellow-Flowers.png"
+        }
+    ],
+    "backdrop_blur_px": 0,
+    "card_blur_px": 6
 }

@@ -137,6 +137,10 @@ class BoardUpdateRequest(BaseModel):
     order: list[str] | None = None
     pinned: list[str] | None = None
     theme_key: str | None = None
+    background_image_key: str | None = None
+    background_image_url: str | None = None
+    backdrop_blur_px: int | None = None
+    card_blur_px: int | None = None
 
 
 class BoardPollVoteRequest(BaseModel):
@@ -927,7 +931,11 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
         order_ids=req.order,
         pinned_ids=req.pinned,
         updated_by=user_id,
-        theme_key=req.theme_key
+        theme_key=req.theme_key,
+        background_image_url=req.background_image_url,
+        background_image_key=req.background_image_key,
+        backdrop_blur_px=req.backdrop_blur_px,
+        card_blur_px=req.card_blur_px
     )
 
 
