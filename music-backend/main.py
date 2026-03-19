@@ -3,6 +3,7 @@ import base64
 import json
 import time
 import uuid
+import threading
 import requests
 
 from dotenv import load_dotenv
@@ -30,6 +31,7 @@ from webauthn.helpers.structs import (
 
 import cors
 import users
+import update as updater
 from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
 import board
 from content_checker import content_checker, reload_blacklists, find_blacklist_match
@@ -46,6 +48,57 @@ content_logger.propagate = False
 
 load_dotenv()
 app = FastAPI()
+
+UPDATE_INTERVAL_SECONDS = 60 * 60
+_update_lock = threading.Lock()
+_update_stop_event = threading.Event()
+_update_thread: threading.Thread | None = None
+update_logger = logging.getLogger("auto_update")
+
+
+def run_update_cycle():
+    # Guard against overlapping runs when an update takes longer than the interval.
+    if not _update_lock.acquire(blocking=False):
+        update_logger.info("Update cycle skipped: previous cycle is still running.")
+        return
+
+    original_cwd = os.getcwd()
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        os.chdir(backend_dir)
+        if updater.check_updates():
+            update_logger.info("Update found. Running updater.")
+            updater.main()
+        else:
+            update_logger.info("No update found.")
+    except Exception:
+        update_logger.exception("Auto-update cycle failed.")
+    finally:
+        os.chdir(original_cwd)
+        _update_lock.release()
+
+
+def update_scheduler_loop():
+    run_update_cycle()
+    while not _update_stop_event.wait(UPDATE_INTERVAL_SECONDS):
+        run_update_cycle()
+
+
+@app.on_event("startup")
+def start_update_scheduler():
+    global _update_thread
+    if _update_thread and _update_thread.is_alive():
+        return
+    _update_stop_event.clear()
+    _update_thread = threading.Thread(target=update_scheduler_loop, name="auto-updater", daemon=True)
+    _update_thread.start()
+
+
+@app.on_event("shutdown")
+def stop_update_scheduler():
+    _update_stop_event.set()
+    if _update_thread and _update_thread.is_alive():
+        _update_thread.join(timeout=2)
 
 cors.setup(app)
 
