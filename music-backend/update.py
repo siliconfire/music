@@ -81,6 +81,47 @@ def _message_for_state(state: str) -> str:
     return "unable to determine sync state"
 
 
+def _latest_commit_info() -> dict | None:
+    try:
+        # %G? => signature status, %GS => signer name, %GK => key id
+        result = _git(
+            [
+                "log",
+                "-1",
+                "--pretty=format:%H%x1f%s%x1f%an%x1f%ae%x1f%aI%x1f%G?%x1f%GS%x1f%GK",
+            ],
+            capture_output=True,
+        )
+        raw = (result.stdout or "").strip()
+        if not raw:
+            return None
+
+        parts = raw.split("\x1f")
+        if len(parts) < 8:
+            return None
+
+        sig_code = (parts[5] or "").strip() or "N"
+        signer = (parts[6] or "").strip()
+        key_id = (parts[7] or "").strip()
+
+        # G/U are acceptable signatures, everything else is treated as not verified.
+        signature_ok = sig_code in {"G", "U"}
+
+        return {
+            "hash": parts[0],
+            "message": parts[1],
+            "author_name": parts[2],
+            "author_email": parts[3],
+            "authored_at": parts[4],
+            "signature_status": sig_code,
+            "signature_ok": signature_ok,
+            "signed_by": signer or None,
+            "signing_key": key_id or None,
+        }
+    except Exception:
+        return None
+
+
 def get_status() -> dict:
     if not _is_git_repo():
         return {
@@ -90,6 +131,7 @@ def get_status() -> dict:
             "message": "not a git repository",
             "remote": REMOTE_NAME,
             "branch": BRANCH,
+            "latest_commit": None,
         }
     if not _ensure_remote():
         return {
@@ -99,6 +141,7 @@ def get_status() -> dict:
             "message": "remote setup failed",
             "remote": REMOTE_NAME,
             "branch": BRANCH,
+            "latest_commit": _latest_commit_info(),
         }
 
     state = _sync_state()
@@ -109,6 +152,7 @@ def get_status() -> dict:
         "message": _message_for_state(state),
         "remote": REMOTE_NAME,
         "branch": BRANCH,
+        "latest_commit": _latest_commit_info(),
     }
 
 
