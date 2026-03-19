@@ -1,5 +1,5 @@
 ---
-const { title = "Bartın Lisesi" } = Astro.props;
+const { title = "Bartın Lisesi", themeLoading = false } = Astro.props;
 import '@fontsource/google-sans-flex/400.css';
 import '@fontsource/google-sans-flex/500.css';
 import '@fontsource/google-sans-flex/700.css';
@@ -16,7 +16,10 @@ import PostHog from '../components/Posthog.astro'
         <title>{title}</title>
         <PostHog />
     </head>
-    <body class="bg-background text-foreground antialiased max-w-full overflow-x-hidden">
+    <body class:list={[
+        'bg-background text-foreground antialiased max-w-full overflow-x-hidden',
+        { 'theme-loading': themeLoading }
+    ]}>
         <div id="authbounce-warning"></div>
         <slot />
     </body>
@@ -24,6 +27,26 @@ import PostHog from '../components/Posthog.astro'
 
 <script>
     import {API_URL} from "../lib/constants.ts";
+
+    function clearThemeLoading() {
+        document.body?.classList.remove('theme-loading');
+    }
+
+    if (!document.body?.classList.contains('theme-loading')) {
+        // This page did not opt into pre-theme loading fallback.
+    } else {
+        // If a themed page is active, BoardThemeLoader will emit this once it applies/falls back.
+        window.addEventListener('boardThemeLoaded', clearThemeLoading, { once: true });
+
+        // Safety fallback in case BoardThemeLoader never fires.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(clearThemeLoading, 900);
+            });
+        } else {
+            setTimeout(clearThemeLoading, 900);
+        }
+    }
 
     async function authBouncer() {
         const path = window.location.pathname;

@@ -62,3 +62,15 @@ def is_token_valid(token: str) -> bool:
         return True
     except JWTError:
         return False
+
+
+def extract_user_id_from_token(token: str | None) -> str | None:
+    """Returns the token subject (`sub`) when the token is valid, otherwise None."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        return str(user_id) if user_id is not None else None
+    except JWTError:
+        return None

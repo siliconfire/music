@@ -1,0 +1,346 @@
+---
+import '../../styles/global.css';
+import Layout from '../../layouts/Layout.astro';
+import AdminBack from '../../components/AdminBack.astro';
+---
+
+<Layout title="Yönetici - Loglar">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Sunucu Logları</h1>
+        <AdminBack />
+
+        <p>Buradan sunucunun son log kayıtlarını görebilirsiniz.</p>
+
+        <div id="notice"></div>
+        <div id="actor" class="mb-3">Yükleniyor...</div>
+
+        <fieldset class="border border-slate-300 p-4 my-4 inline-block min-w-md">
+            <legend>Filtre</legend>
+            <div class="flex flex-wrap items-end gap-3">
+                <label class="text-sm">
+                    Akış
+                    <select id="stream" class="border border-slate-300 px-2 py-1">
+                        <option value="requests">requests</option>
+                        <option value="song_queries">song_queries</option>
+                        <option value="song_actions">song_actions</option>
+                        <option value="board_edits">board_edits</option>
+                    </select>
+                </label>
+
+                <label class="text-sm">
+                    Son kaç kayıt
+                    <input id="limit" type="number" min="1" max="500" value="100" class="border border-slate-300 px-2 py-1 w-24" />
+                </label>
+
+                <button id="btn-refresh" class="border border-slate-300 bg-gray-100 px-3 py-2">Yenile</button>
+                <button id="btn-download" class="border border-slate-300 bg-gray-100 px-3 py-2" disabled>İndir (.jsonl)</button>
+            </div>
+        </fieldset>
+
+        <details class="border border-slate-300 p-4 my-4 max-w-3xl" id="advanced-options">
+            <summary class="cursor-pointer font-medium">Sil...</summary>
+
+            <div class="mt-4 border border-red-300 bg-red-50 p-3 max-w-2xl">
+                <p class="text-sm text-red-700 mb-2">Seçili dosyayı tamamen sil</p>
+                <label class="inline-flex items-center gap-2 text-sm">
+                    <input id="clear-confirm" type="checkbox" />
+                    Eminim, son kararım
+                </label>
+                <div class="mt-3">
+                    <button id="btn-clear-stream" class="border border-red-300 bg-red-100 px-3 py-2" disabled>Sil</button>
+                </div>
+            </div>
+
+        <details class="border border-slate-300 p-4 my-4 max-w-3xl" id="advanced-options">
+            <summary class="cursor-pointer font-medium">otomatik silme politikası</summary>
+            <div class="mt-4 flex flex-wrap items-end gap-3">
+                <label class="text-sm">
+                    MAX_LINES
+                    <input id="policy-max-lines" type="number" min="1000" step="100" value="20000" class="border border-slate-300 px-2 py-1 w-36" />
+                </label>
+
+                <label class="text-sm">
+                    DROP_LINES
+                    <input id="policy-drop-lines" type="number" min="1" step="100" value="1000" class="border border-slate-300 px-2 py-1 w-36" />
+                </label>
+
+                <button id="btn-save-policy" class="border border-slate-300 bg-gray-100 px-3 py-2">Kaydet</button>
+            </div>
+        </details>
+
+        </details>
+
+
+        <div id="summary" class="text-sm text-slate-600 mb-3"></div>
+
+        <div class="border border-slate-300 bg-slate-50 p-3 text-xs whitespace-pre-wrap overflow-auto max-h-[60vh]" id="log-box">(henüz yüklenmedi)</div>
+    </div>
+
+    <script type="module">
+        const API_URL = 'http://127.0.0.1:8000';
+        const RANKS = ['music', 'musicpermanent', 'moderator', 'admin', 'superadmin', 'dev'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const streamSelect = document.getElementById('stream');
+            const limitInput = document.getElementById('limit');
+            const refreshBtn = document.getElementById('btn-refresh');
+            const downloadBtn = document.getElementById('btn-download');
+            const summaryDiv = document.getElementById('summary');
+            const logBox = document.getElementById('log-box');
+            const policyMaxLinesInput = document.getElementById('policy-max-lines');
+            const policyDropLinesInput = document.getElementById('policy-drop-lines');
+            const savePolicyBtn = document.getElementById('btn-save-policy');
+            const clearConfirm = document.getElementById('clear-confirm');
+            const clearStreamBtn = document.getElementById('btn-clear-stream');
+
+            if (!actorDiv || !noticeDiv || !streamSelect || !limitInput || !refreshBtn || !downloadBtn || !summaryDiv || !logBox || !policyMaxLinesInput || !policyDropLinesInput || !savePolicyBtn || !clearConfirm || !clearStreamBtn) {
+                return;
+            }
+
+            let streamOptions = [];
+            let visibleEntries = [];
+            let visibleStream = 'requests';
+
+            function highestRankIndex(perms) {
+                const idx = perms.map((p) => RANKS.indexOf(p)).filter((i) => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => {
+                    if (noticeDiv.innerHTML) noticeDiv.innerHTML = '';
+                }, 5000);
+            }
+
+            function renderActor(actor) {
+                const actorRank = highestRankIndex(actor.permissions || []);
+                const actorRankName = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${actor.name}</strong> (${actor.id}/${actorRankName})`;
+            }
+
+            function clampLimit(raw) {
+                const num = Number(raw);
+                if (!Number.isFinite(num)) return 100;
+                return Math.max(1, Math.min(500, Math.floor(num)));
+            }
+
+            function clampMaxLines(raw) {
+                const num = Number(raw);
+                if (!Number.isFinite(num)) return 20000;
+                return Math.max(1000, Math.floor(num));
+            }
+
+            function clampDropLines(raw, maxLines) {
+                const num = Number(raw);
+                if (!Number.isFinite(num)) return 1000;
+                return Math.max(1, Math.min(Math.floor(num), Math.max(1, maxLines - 1)));
+            }
+
+            function syncStreams(streams, selected) {
+                if (!Array.isArray(streams) || !streams.length) return;
+                const next = Array.from(new Set(streams));
+                const changed = next.join(',') !== streamOptions.join(',');
+                if (!changed) {
+                    if (selected && streamSelect.value !== selected && next.includes(selected)) {
+                        streamSelect.value = selected;
+                    }
+                    return;
+                }
+                streamOptions = next;
+                streamSelect.innerHTML = next.map((stream) => `<option value="${stream}">${stream}</option>`).join('');
+                if (selected && next.includes(selected)) {
+                    streamSelect.value = selected;
+                }
+            }
+
+            function syncPolicy(policy) {
+                if (!policy || typeof policy !== 'object') return;
+                const maxLines = clampMaxLines(policy.max_lines);
+                const dropLines = clampDropLines(policy.drop_lines, maxLines);
+                policyMaxLinesInput.value = String(maxLines);
+                policyDropLinesInput.value = String(dropLines);
+            }
+
+            function renderEntries(entries) {
+                if (!Array.isArray(entries) || !entries.length) {
+                    logBox.textContent = '(kayıt yok)';
+                    return;
+                }
+                const lines = entries.map((entry) => JSON.stringify(entry, null, 2));
+                logBox.textContent = lines.join('\n\n');
+            }
+
+            function downloadVisibleLogs() {
+                if (!Array.isArray(visibleEntries) || !visibleEntries.length) {
+                    showNotice('İndirilecek kayıt yok.', 'error');
+                    return;
+                }
+
+                const now = new Date();
+                const stamp = now.toISOString().replace(/[:.]/g, '-');
+                const safeStream = String(visibleStream || 'logs').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const filename = `${safeStream}-${stamp}.jsonl`;
+                const content = visibleEntries.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
+
+                const blob = new Blob([content], { type: 'application/x-ndjson;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(link.href);
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const res = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                if (!res.ok) {
+                    throw new Error('Kullanıcı bilgisi alınamadı.');
+                }
+                const actor = await res.json();
+                renderActor(actor);
+            }
+
+            async function loadLogs() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const stream = streamSelect.value;
+                const limit = clampLimit(limitInput.value);
+                limitInput.value = String(limit);
+
+                refreshBtn.disabled = true;
+                downloadBtn.disabled = true;
+                refreshBtn.textContent = 'Yükleniyor...';
+                summaryDiv.textContent = 'Loglar yükleniyor...';
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/logs?stream=${encodeURIComponent(stream)}&limit=${encodeURIComponent(limit)}`, {
+                        headers: { 'X-Session-ID': token }
+                    });
+                    const data = await res.json().catch(() => ({}));
+
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'Loglar alınamadı.');
+                    }
+
+                    syncStreams(data.streams, data.stream);
+                    syncPolicy(data.policy);
+
+                    const entries = Array.isArray(data.entries) ? data.entries : [];
+                    const warnings = Number(data.parse_warnings || 0);
+                    const totalEntries = Number(data.total_entries || 0);
+                    visibleEntries = entries;
+                    visibleStream = data.stream || stream;
+                    downloadBtn.disabled = entries.length === 0;
+                    summaryDiv.textContent = `Akış: ${data.stream} | Gösterilen: ${entries.length} | Toplam: ${totalEntries} | Parse uyarısı: ${warnings} | Dosya: ${data.exists ? 'var' : 'yok'}`;
+                    renderEntries(entries);
+                } catch (err) {
+                    summaryDiv.textContent = 'Hata';
+                    logBox.textContent = '(yükleme başarısız)';
+                    visibleEntries = [];
+                    downloadBtn.disabled = true;
+                    showNotice(err?.message || 'Sunucu hatası.', 'error');
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = 'Yenile';
+                }
+            }
+
+            async function savePolicy() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const maxLines = clampMaxLines(policyMaxLinesInput.value);
+                const dropLines = clampDropLines(policyDropLinesInput.value, maxLines);
+                policyMaxLinesInput.value = String(maxLines);
+                policyDropLinesInput.value = String(dropLines);
+
+                savePolicyBtn.disabled = true;
+                savePolicyBtn.textContent = 'Kaydediliyor...';
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/logs/policy`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-ID': token
+                        },
+                        body: JSON.stringify({ max_lines: maxLines, drop_lines: dropLines })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'Politika kaydedilemedi.');
+                    }
+                    syncPolicy(data.policy);
+                    showNotice('Temizleme politikası kaydedildi.');
+                } catch (err) {
+                    showNotice(err?.message || 'Sunucu hatası.', 'error');
+                } finally {
+                    savePolicyBtn.disabled = false;
+                    savePolicyBtn.textContent = 'Politikayı Kaydet';
+                }
+            }
+
+            async function clearSelectedStream() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const stream = streamSelect.value;
+
+                if (!clearConfirm.checked) {
+                    showNotice('Emin olunca geri gel', 'error');
+                    return;
+                }
+
+
+                clearStreamBtn.disabled = true;
+                clearStreamBtn.textContent = 'Temizleniyor...';
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/logs/clear`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Session-ID': token
+                        },
+                        body: JSON.stringify({ stream, confirm: true })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'Akış temizlenemedi.');
+                    }
+                    showNotice(`${stream} akışı temizlendi.`);
+                    clearConfirm.checked = false;
+                    clearStreamBtn.disabled = true;
+                    await loadLogs();
+                } catch (err) {
+                    showNotice(err?.message || 'Sunucu hatası.', 'error');
+                } finally {
+                    clearStreamBtn.textContent = 'Sil';
+                    if (clearConfirm.checked) {
+                        clearStreamBtn.disabled = false;
+                    }
+                }
+            }
+
+            refreshBtn.addEventListener('click', loadLogs);
+            downloadBtn.addEventListener('click', downloadVisibleLogs);
+            streamSelect.addEventListener('change', loadLogs);
+            savePolicyBtn.addEventListener('click', savePolicy);
+            clearStreamBtn.addEventListener('click', clearSelectedStream);
+            clearConfirm.addEventListener('change', () => {
+                clearStreamBtn.disabled = !clearConfirm.checked;
+            });
+
+            (async () => {
+                try {
+                    await loadActor();
+                } catch (err) {
+                    showNotice(err?.message || 'Kullanıcı doğrulanamadı.', 'error');
+                    actorDiv.textContent = 'Kullanıcı yüklenemedi.';
+                }
+                await loadLogs();
+            })();
+        });
+    </script>
+</Layout>
+

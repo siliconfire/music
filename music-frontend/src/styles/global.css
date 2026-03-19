@@ -27,9 +27,10 @@
   --np-accent-muted: rgba(161, 98, 7, 0.2);
   --np-accent-bg: rgba(161, 98, 7, 0.06);
   --np-progress: 0%;
-  --board-text-primary: #0f172a;
-  --board-text-secondary: #475569;
-  --board-background: #f8fafc;
+  /* Dark defaults prevent white flash before BoardThemeLoader applies theme vars. */
+  --board-text-primary: #e2e8f0;
+  --board-text-secondary: #94a3b8;
+  --board-background: #000000;
   --board-card-bg: #ffffff;
   --board-card-border: #cbd5f5;
   --board-card-pinned-bg: #ecfdf5;
@@ -88,3 +89,9 @@ body.board-theme {
   background: var(--board-background, #f8fafc);
   color: var(--board-text-primary, #0f172a);
 }
+
+body.theme-loading {
+  background: #000000;
+  color: #e2e8f0;
+}
+

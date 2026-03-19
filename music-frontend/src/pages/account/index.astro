@@ -2,32 +2,44 @@
 import '../../styles/global.css'
 import Layout from '../../layouts/Layout.astro'
 import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
+import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
 ---
 
-<Layout>
-    <div id="account-container" class="m-10">
-        <h1 class="text-2xl text-slate-800">Hesap bilgileri:</h1>
+<Layout title="Hesabım" themeLoading={true}>
+    <BoardThemeLoader />
+    <div id="account-container" class="m-5 lg:m-10 account-themed">
+        <h1 class="text-2xl board-theme-text-primary mt-10">Hesap bilgileri</h1>
+        <a href="/" class="inline-block text-sm board-theme-text-secondary hover:underline">
+            (ana sayfaya geri dön)
+        </a>
 
-        <div id="ban-info" class=""></div>
-        <div id="user-info" class="mx-2 mt-8 p-4 border border-blue-300 rounded-2xl bg-blue-100 inline-block">Loading user data...</div>
-        <br>
+        <div id="ban-info" class="mt-4"></div>
 
-        <SetPasswordPanel />
-        <br>
+        <div class="flex flex-wrap gap-5 mt-4 max-w-full overflow-x-hidden">
+            <div id="user-info" class="border board-theme-border board-theme-card p-5 inline-block min-w-[18rem] board-theme-text-primary">Kullanıcı verileri yükleniyor...</div>
 
-        <div class="mt-4 border border-slate-300 rounded p-4 inline-block">
-            <div class="text-sm text-slate-600">Passkey</div>
-            <div class="mt-2 flex items-center gap-2">
-                <button id="passkey-enroll-btn" class="border border-slate-300 rounded px-3 py-2">Passkey kaydet</button>
-                <div id="passkey-status" class="text-sm text-slate-600"></div>
+            <div class="border board-theme-border board-theme-card p-5 inline-block">
+                <SetPasswordPanel themed={true} />
             </div>
-            <div class="text-xs text-slate-500 mt-2">Eğer cihazınız passkey destekliyor ise, giriş yaparken onu da kullanabilirsiniz.</div>
-        </div>
-        <br>
 
-        <button id="home-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Ana sayfaya dön</button>
-        <button id="logout-btn" class="m-2 mt-4 p-3 border border-slate-300 rounded">Çıkış yap</button>
+            <div class="border board-theme-border board-theme-card p-5 inline-block max-w-xl">
+                <div class="text-sm board-theme-text-secondary">Passkey</div>
+            <div class="mt-2 flex items-center gap-2">
+                <button id="passkey-enroll-btn" class="border board-theme-border px-3 py-2">Passkey oluştur</button>
+                <div id="passkey-status" class="text-sm board-theme-text-secondary"></div>
+            </div>
+                <div class="text-xs board-theme-text-secondary mt-2">Eğer cihazınız kullanımını destekliyorsa (çok büyük ihtimalle destekliyordur), giriş yaparken şifreniz yerine oluşturduğunuz passkey'i kullanabilirsiniz.</div>
+                <div class="text-xs board-theme-text-secondary mt-2">Şu anlık yanlızca 1 tane passkey ekleyebilirsiniz, yeni bir tane eklerseniz eskisi silinir.</div>
+                <div class="text-xs board-theme-text-secondary mt-2">Passkey kullanımı hakkında daha fazla bilgi için <a class="board-theme-text-primary" href="/help/passkeys">buraya</a> tıklayın.</div>
+            </div>
+        </div>
+
+        <div class="mt-5">
+            <button id="home-btn" class="border board-theme-border p-2 mt-3 inline-block">Ana sayfaya dön</button>
+            <button id="logout-btn" class="border board-theme-border p-2 mt-3 inline-block">Çıkış yap</button>
+        </div>
     </div>
+
 
     <script>
         import { API_URL } from '../../lib/constants.ts';
@@ -53,7 +65,7 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
             if (!statusEl) return;
             statusEl.textContent = message || '';
             statusEl.classList.toggle('text-red-600', isError);
-            statusEl.classList.toggle('text-slate-600', !isError);
+            statusEl.classList.toggle('board-theme-text-secondary', !isError);
         }
 
         function normalizeRegistrationOptions(options) {
@@ -165,7 +177,6 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
 
                 const user = await response.json();
 
-                console.log("response", user);
                 // check for ban
                 if (user.banned) {
                     const reasonLine = user.reason ? `<div class='mt-1 text-sm'>Kapatılma sebebi: ${user.reason}</div>` : '';
@@ -174,24 +185,24 @@ import SetPasswordPanel from '../../components/SetPasswordPanel.astro'
 
                 // find the stronger rank
                 let displayContent = `
-            <p>${user.name} (ID: ${user.id})</p>
+            <p class='font-medium board-theme-text-primary'>${user.name} (ID: ${user.id})</p>
           `;
 
                 if (user.permissions.includes('admin') || user.permissions.includes('dev')) {
                     // high perms
-                    displayContent += `<p>Yetkiler: ${user.permissions.join(', ')}</p>`;
+                    displayContent += `<p class='board-theme-text-secondary mt-1'>Yetkiler: ${user.permissions.join(', ')}</p>`;
                 } else if (user.permissions.includes('music') || user.permissions.includes('musicpermanent')) {
                     // music
-                    displayContent += `<p>Müzik seçme için seçildi</p>`;
+                    displayContent += `<p class='board-theme-text-secondary mt-1'>Müzik seçme için seçildi</p>`;
                 } else {
                     // No perms
-                    displayContent += `<p>Normal kullanıcı<p>`;
+                    displayContent += `<p class='board-theme-text-secondary mt-1'>Normal kullanıcı</p>`;
                 }
 
                 infoDiv.innerHTML = displayContent;
 
             } catch (err) {
-                infoDiv.innerHTML = "<p>sunucuya bağlanırken hata.</p>";
+                infoDiv.innerHTML = "<p class='text-red-600'>Sunucuya bağlanırken hata oluştu.</p>";
             }
         }
 

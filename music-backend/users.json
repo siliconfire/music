@@ -12,7 +12,14 @@
             "banned": false,
             "reason": null,
             "password": "1fdbb5b068be6f8b8badb6686c8af3ca$c5af18ffbc95d4c90f37e10574177108b83e779a10d4118ee794418acff950bd",
-            "passkeys": []
+            "passkeys": [
+                {
+                    "id": "NaXJT8wn4RH8DHluwEe14pyUMOIzsEqE91J8poJlRFgeiLumAIJsPXLf4IhzL3-l",
+                    "public_key": "pQECAyYgASFYIDWlyU_MJ-ER_Ax5bsDmHjyZaXPpLLhK6MrIePYOP5hkIlggCUaO1a51DXWapD4d406Q1GKu_W2XmUwxhTBOJIAnbHM",
+                    "sign_count": 4,
+                    "created_at": null
+                }
+            ]
         },
         "100": {
             "name": "Nejat Demir Vural",

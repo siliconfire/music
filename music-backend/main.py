@@ -7,7 +7,7 @@ import threading
 import requests
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Header, Security
+from fastapi import FastAPI, Depends, HTTPException, Header, Security, Request
 from pydantic import BaseModel, Field
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth, CacheFileHandler
@@ -32,10 +32,18 @@ from webauthn.helpers.structs import (
 import cors
 import users
 import update as updater
-from jwt import get_current_user, create_access_token, create_permanent_token, is_token_valid, api_key_header
+from jwt import (
+    get_current_user,
+    create_access_token,
+    create_permanent_token,
+    is_token_valid,
+    api_key_header,
+    extract_user_id_from_token,
+)
 import board
 from content_checker import content_checker, reload_blacklists, find_blacklist_match
 import logging
+import server_logging as server_log
 
 # Logger for blocked content checks
 content_logger = logging.getLogger("content_checks")
@@ -48,6 +56,44 @@ content_logger.propagate = False
 
 load_dotenv()
 app = FastAPI()
+
+
+def _clip_value(value: str | None, max_len: int = 200) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if len(value) <= max_len:
+        return value
+    return value[:max_len] + "..."
+
+
+@app.middleware("http")
+async def log_request_middleware(request: Request, call_next):
+    started = time.perf_counter()
+    request_id = uuid.uuid4().hex
+    user_id = extract_user_id_from_token(request.headers.get("X-Session-ID"))
+    status_code = 500
+    error_name = None
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    except Exception as exc:
+        error_name = exc.__class__.__name__
+        raise
+    finally:
+        duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        server_log.log_request(
+            request_id=request_id,
+            method=request.method,
+            path=request.url.path,
+            query=_clip_value(str(request.url.query) if request.url.query else None, 400),
+            status_code=status_code,
+            duration_ms=duration_ms,
+            user_id=user_id,
+            client_ip=request.client.host if request.client else None,
+            error=error_name,
+        )
 
 UPDATE_INTERVAL_SECONDS = 60 * 60
 _update_lock = threading.Lock()
@@ -187,6 +233,16 @@ class KillLoginCodeRequest(BaseModel):
 
 class AdminUpdateRunRequest(BaseModel):
     force: bool = False
+
+
+class AdminLogsPolicyRequest(BaseModel):
+    max_lines: int | None = None
+    drop_lines: int | None = None
+
+
+class AdminLogsClearRequest(BaseModel):
+    stream: str
+    confirm: bool = False
 
 
 class BoardUpdateRequest(BaseModel):
@@ -631,22 +687,35 @@ def get_status(sp: Spotify = Depends(get_sp)):  # no auth
 
 @app.get("/search")
 def search(q: str, limit: int = 5, sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
-    if not users.check_user_perm(payload.get("sub"), "music"):
+    user_id = payload.get("sub")
+    if not users.check_user_perm(user_id, "music"):
         raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
-    return sp.search(q=q, limit=limit, type="track")
+    result = sp.search(q=q, limit=limit, type="track")
+    tracks = result.get("tracks", {}).get("items", []) if isinstance(result, dict) else []
+    server_log.log_song_query(
+        user_id=user_id,
+        query=_clip_value(q, 200),
+        limit=limit,
+        result_count=len(tracks),
+    )
+    return result
 
 
 @app.post("/add")
 def add_to_queue(uri: str, sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.add_to_queue(uri=uri)
+    server_log.log_song_action("queue_add", user_id=user_id, uri=_clip_value(uri, 300))
     return {"message": f"nailed it"}
 
 
 @app.post("/play")
 def play_now(uri: str, sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.start_playback(uris=[uri])
+    server_log.log_song_action("play_now", user_id=user_id, uri=_clip_value(uri, 300))
     return {"message": f"nailed it"}
 
 
@@ -663,28 +732,36 @@ def list_queue(sp: Spotify = Depends(get_sp)):  # no auth
 @app.post("/pause")
 def pause(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.pause_playback()
+    server_log.log_song_action("pause", user_id=user_id)
     return {"message": "nailed it"}
 
 
 @app.post("/resume")
 def resume(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.start_playback()
+    server_log.log_song_action("resume", user_id=user_id)
     return {"message": "nailed it"}
 
 
 @app.post("/next")
 def skip_track(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.next_track()
+    server_log.log_song_action("next", user_id=user_id)
     return {"message": "nailed it"}
 
 
 @app.post("/previous")
 def previous_track(sp: Spotify = Depends(get_sp), payload: dict = Depends(get_current_user)):
     ensure_music_control(payload)
+    user_id = payload.get("sub")
     sp.previous_track()
+    server_log.log_song_action("previous", user_id=user_id)
     return {"message": "nailed it"}
 
 
@@ -800,6 +877,42 @@ def admin_update_status(payload: dict = Depends(get_current_user)):
     return updater.get_status()
 
 
+@app.get("/admin/logs")
+def admin_logs(stream: str = "requests", limit: int = 100, payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+    try:
+        return {
+            "ok": True,
+            "streams": server_log.list_streams(),
+            "policy": server_log.get_policy(),
+            **server_log.tail_stream(stream=stream, limit=limit),
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz log akışı.")
+
+
+@app.post("/admin/logs/policy")
+def admin_logs_policy(req: AdminLogsPolicyRequest, payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+    policy = server_log.set_policy(max_lines=req.max_lines, drop_lines=req.drop_lines)
+    return {"ok": True, "policy": policy}
+
+
+@app.post("/admin/logs/clear")
+def admin_logs_clear(req: AdminLogsClearRequest, payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+    if not req.confirm:
+        raise HTTPException(status_code=400, detail="Onay kutusu gerekli.")
+    try:
+        server_log.clear_stream(req.stream)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz log akışı.")
+    return {"ok": True, "stream": req.stream}
+
+
 @app.post("/admin/update/run")
 def admin_update_run(req: AdminUpdateRunRequest | None = None, force: bool | None = None, payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
@@ -872,13 +985,15 @@ def get_board_lockdown():  # no auth
 
 @app.post("/board/lockdown")
 def set_board_lockdown(req: BoardLockdownRequest | None = None, locked: bool | None = None, payload: dict = Depends(get_current_user)):
-    if not users.check_user_rank_or_higher(payload.get("sub"), "moderator"):
+    user_id = payload.get("sub")
+    if not users.check_user_rank_or_higher(user_id, "moderator"):
         raise HTTPException(status_code=403, detail="'moderator' yetkisine sahip değilsiniz.")
     value = req.locked if req is not None else locked
     if value is None:
         raise HTTPException(status_code=400, detail="Missing 'locked' value.")
     global BOARD_LOCKDOWN
     BOARD_LOCKDOWN = bool(value)
+    server_log.log_board_edit("board_lockdown", user_id=user_id, locked=BOARD_LOCKDOWN)
     return {"locked": BOARD_LOCKDOWN}
 
 
@@ -1031,7 +1146,7 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
                                     }
                                     raise HTTPException(status_code=400, detail=detail)
 
-    return board.update_board(
+    updated_board = board.update_board(
         widgets=req.widgets,
         order_ids=req.order,
         pinned_ids=req.pinned,
@@ -1042,6 +1157,19 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
         backdrop_blur_px=req.backdrop_blur_px,
         card_blur_px=req.card_blur_px
     )
+    server_log.log_board_edit(
+        "board_update",
+        user_id=user_id,
+        widgets_count=len(req.widgets) if isinstance(req.widgets, list) else None,
+        order_count=len(req.order) if isinstance(req.order, list) else None,
+        pinned_count=len(req.pinned) if isinstance(req.pinned, list) else None,
+        theme_key=req.theme_key,
+        background_image_key=req.background_image_key,
+        background_image_url=_clip_value(req.background_image_url, 300),
+        backdrop_blur_px=req.backdrop_blur_px,
+        card_blur_px=req.card_blur_px,
+    )
+    return updated_board
 
 
 @app.post("/board/poll/vote")
@@ -1049,6 +1177,12 @@ def vote_on_poll(req: BoardPollVoteRequest):
     updated = board.vote_poll(req.widget_key, req.option_id)
     if not updated:
         raise HTTPException(status_code=404, detail="Poll option not found")
+    server_log.log_board_edit(
+        "poll_vote",
+        widget_key=req.widget_key,
+        option_id=req.option_id,
+        votes=updated.get("votes") if isinstance(updated, dict) else None,
+    )
     return {"option": updated}
 
 
@@ -1060,6 +1194,13 @@ def trigger_board_confetti(req: BoardConfettiRequest, payload: dict = Depends(ge
     ensure_board_edit(payload)
     config = req.dict(by_alias=True, exclude_none=True)
     trigger = board.set_confetti_trigger(config=config, updated_by=user_id)
+    server_log.log_board_edit(
+        "board_confetti",
+        user_id=user_id,
+        particle_count=config.get("particleCount"),
+        duration_ms=config.get("durationMs"),
+        spawn_duration_ms=config.get("spawnDurationMs"),
+    )
     return {"ok": True, "trigger": trigger}
 
 
@@ -1070,6 +1211,7 @@ def trigger_board_redirect(req: BoardRedirectRequest, payload: dict = Depends(ge
         raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     ensure_board_edit(payload)
     trigger = board.set_redirect_trigger(path=req.path, updated_by=user_id)
+    server_log.log_board_edit("board_redirect", user_id=user_id, path=_clip_value(req.path, 200))
     return {"ok": True, "trigger": trigger}
 
 
@@ -1080,5 +1222,6 @@ def trigger_board_restart(payload: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="'music' yetkisine sahip değilsiniz.")
     ensure_board_edit(payload)
     trigger = board.set_restart_trigger(updated_by=user_id)
+    server_log.log_board_edit("board_restart", user_id=user_id)
     return {"ok": True, "trigger": trigger}
 

@@ -30,6 +30,9 @@ const { addBodyClass = true } = Astro.props;
             applyTheme(data?.theme || null);
         } catch (e) {
             // Keep defaults on failure.
+        } finally {
+            document.body.classList.remove('theme-loading');
+            window.dispatchEvent(new Event('boardThemeLoaded'));
         }
     }
 
