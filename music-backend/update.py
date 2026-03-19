@@ -1,204 +1,90 @@
-import getpass
 import os
 import subprocess
-import sys
 
-dry = False  # fake atması (dry run) için True yapın.
-GITHUB_REPO = "siliconfire/music"
-GITHUB_BRANCH = "master"
-
-
-def pull_variables():
-    github_repo = GITHUB_REPO
-    github_branch = GITHUB_BRANCH
-    print("\n[+] | Güncelleme kaynağı sabit olarak ayarlandı:")
-    print(f"    | {github_repo} ({github_branch})")
-    return github_repo, github_branch
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_URL = "https://github.com/siliconfire/music.git"
+REMOTE_NAME = "origin"
+BRANCH = "master"
 
 
-def run(command: str, sudo: bool = True):
-    if sudo:
-        command = "sudo -S " + command
-    if dry:
-        print(f"[DRY RUN] {command}")
-        return
-    command = command.split()
-    subprocess.run(command)
+def _git(args: list[str], check: bool = True, capture_output: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        cwd=REPO_DIR,
+        check=check,
+        text=True,
+        capture_output=capture_output,
+    )
 
 
-def download_file(file_name: str, github_repo: str, github_branch: str, failed_before: bool = False):
-    """belirtilen dosyayı githubdan indirir. inşallah indirecek. bilmiyorum genelde dua etmek yardımcı oluyor.
-    önce curl ile deneriz, olmazsa apt üzerinden curl kurup tekrar deneriz, yoksa hata verir çıkarız.."""
-    file_url = f"https://raw.githubusercontent.com/{github_repo}/{github_branch}/{file_name}"
-    temp_file_name = file_name + ".tmp_new"
-    curl_command = f"curl -#L -o {temp_file_name} {file_url}"
-
-    print(f"[+] | {file_name} dosyasını indiriyorum...")
+def _is_git_repo() -> bool:
     try:
-        run(curl_command)
-    except:  # noqa, seninle mi uğraşacam ya.
-        if failed_before:
-            print(f"\n[!] | ikinci kere {file_name} dosyasını indiremedim. internetini kontrol et.")
-            print("    | kapatıyorum görüşürüz.")
-            sys.exit(1)
-        else:
-            print("\n[!] | curl ile indirme başarısız oldu. ya curl yüklü değildir yada internet yoktur.")
-            print("    | ben bi curl yüklemeyi deneyeyim...")
-            run("apt install -y curl")
-            print("    | yüklenme işlemi bitti, tekrar deniyorum...")
-            download_file(file_name, github_repo, github_branch, True)
-
-
-def check_file(temp_file_name: str):
-    """belirtilen dosyanın var olup olmadığını kontrol eder. yoksa hata verip çıkar."""
-    if dry:
+        _git(["rev-parse", "--is-inside-work-tree"], capture_output=True)
         return True
-    if not os.path.exists(temp_file_name) or os.path.getsize(temp_file_name) == 0:
-        print(f"[!] | dosya {temp_file_name} indirildi fakat varlık kontolünden geçemedi.")
-        print("    | bu hata muhtemelen benim tarafımda. (Çınar Mert Çeçen, cinar@cinarcecen.dev)")
-        if os.path.exists(temp_file_name):
-            os.remove(temp_file_name)
+    except Exception:
         return False
-    return True
 
 
-def replace_file(old, new):
-    """eski dosyayı yeni dosyayla değiştirir."""
-    print(f"[»] | {old} » {new}...")
-    if dry:
-        return
-    os.replace(old, new)
-
-
-def fetch_file_list(github_repo: str, github_branch: str):
-    file_list = []
-    """dosya listesini çeker."""
-    download_file("file_list.txt", github_repo, github_branch)
-    if dry:
-        file_list = ["file1.txt", "file2.txt", "example.py"]
-    else:
-        with open("file_list.txt.tmp_new", "r") as f:
-            file_list = f.read().splitlines()
-    print("\n[+] | Güncellenecek dosyalar:")
-    print(f"    | {file_list}\n")
-    return file_list
-
-def cleanup(file_name):
-    if dry:
-        pass
-    temp_file_name = file_name + ".tmp_new"
-    if os.path.exists(temp_file_name):
-        os.remove(temp_file_name)
-    if os.path.exists("file_list.txt.tmp_new"):
-        os.remove("file_list.txt.tmp_new")
-
-def fix_perms(file_name: str):
-    """belirtilen dosyanın izinlerini düzeltir."""
-    username = getpass.getuser()
-    print(f"[+] | {file_name} dosyasının sahibi {username} yapılıyor...")
-    if not dry:
-        run(f"chown -R {username}:{username} {file_name}", sudo=True)
-
-    print(f"[+] | {file_name} dosyasının yetkileri 755 yapılıyor...")
-    if not dry:
-        run(f"chmod -R 755 {file_name}", sudo=True)
-
-
-def main():
-    if "download_config" not in globals():
-        global download_config
-        download_config = False
-    github_repo, github_branch = pull_variables()
-
-    print("\n[+] | Güncellenecek dosya adları çekiliyor...")
-    file_list = fetch_file_list(github_repo, github_branch)
-    # indir
-    for file_name in file_list:
-        download_file(file_name, github_repo, github_branch)
-
-    # yerleştir
-    for file_name in file_list:
-        temp_file_name = file_name + ".tmp_new"
-        if check_file(temp_file_name):
-            replace_file(temp_file_name, file_name)
-        else:
-            print("[!] | güncelleme tamamlanamadı. kapatıyorum görüşürüz.")
-            sys.exit(1)
-    print()
-
-    # temizle
-    for file_name in file_list:
-        cleanup(file_name)
-    print()
-
-    # yetkileri düzelt
-    for file_name in file_list:
-        fix_perms(file_name)
-
-    print("\n\n" + "-"*20 + "\n")
-    print("[+] | Güncelleme tamamlandı. Görüşürüz.")
-
-
-def check_updates():
-    """güncelleme olup olmadığını kontrol eder."""
-    print("[+] | Güncelleme kontrolü yapıyorum...")
+def _ensure_remote() -> bool:
     try:
-        with open("version", "r") as f:
-            ver = f.read()
-    except FileNotFoundError:
-        print("\n[!] | Versiyon dosyanız yok, muhtemelen bu ilk kurulumunuz. Hoşgeldiniz.")
-        print("    | Güncelleme başlatıyorum.")
+        result = _git(["remote", "get-url", REMOTE_NAME], check=False, capture_output=True)
+        current_url = (result.stdout or "").strip()
+        if result.returncode != 0:
+            _git(["remote", "add", REMOTE_NAME, REPO_URL])
+        elif current_url != REPO_URL:
+            _git(["remote", "set-url", REMOTE_NAME, REPO_URL])
         return True
-    else:
-        print("[+] | Versiyon dosyanız var.")
+    except Exception as exc:
+        print(f"[update] remote setup failed: {exc}")
+        return False
 
-    github_repo, github_branch = pull_variables()
 
-    download_file("version", github_repo, github_branch)
-    if dry:
+def _working_tree_clean() -> bool:
+    try:
+        result = _git(["status", "--porcelain"], capture_output=True)
+        return (result.stdout or "").strip() == ""
+    except Exception:
+        return False
+
+
+def check_updates() -> bool:
+    if not _is_git_repo():
+        print("[update] skipped: not a git repository")
+        return False
+    if not _ensure_remote():
+        return False
+
+    try:
+        _git(["fetch", REMOTE_NAME, BRANCH])
+        local_sha = (_git(["rev-parse", "HEAD"], capture_output=True).stdout or "").strip()
+        remote_sha = (_git(["rev-parse", f"{REMOTE_NAME}/{BRANCH}"], capture_output=True).stdout or "").strip()
+        has_update = bool(local_sha and remote_sha and local_sha != remote_sha)
+        print("[update] update available" if has_update else "[update] already up to date")
+        return has_update
+    except Exception as exc:
+        print(f"[update] check failed: {exc}")
+        return False
+
+
+def main() -> bool:
+    if not _is_git_repo():
+        print("[update] failed: not a git repository")
+        return False
+    if not _ensure_remote():
+        return False
+    if not _working_tree_clean():
+        print("[update] skipped: working tree has local changes")
+        return False
+
+    try:
+        _git(["pull", "--ff-only", REMOTE_NAME, BRANCH])
+        print("[update] pull completed")
         return True
-    with open("version.tmp_new", "r") as f:
-        latest_ver = f.read()
-    if latest_ver > ver:
-        print("[!] | Sunucuda daha yeni bir sürüm var.")
-        print("    | GÜncelleme başlatıyorum.")
-        return True
-    return False
+    except Exception as exc:
+        print(f"[update] pull failed: {exc}")
+        return False
 
 
-if "__main__" == __name__:
-    print("Güncelleme kontrolcüsüne hoşgeldiniz.")
-    download_config = False
-    while True:
-        print(f"""
-[1] Programı güncelle (güncelleme var ise yapar ve gerekenleri indirir, yoksa yapmaz)
-[2] Zorla güncelle (güncelleme olsa da olmasa da güncelleme yapar)
-[3] Sürümü kontrol et (yeni sürüm var mı?)
-
-[8] Çalışıyor gibi yap, gerçekten birşey yapma ({dry})
-[9] Config dosyamı da sıfırla ({download_config})
-
-""")
-        choice = input("Seçiminiz: ")
-
-        if choice == "1":
-            if check_updates():
-                main()
-            else:
-                print("\n[+] | Zaten en son sürümü kullanıyorsunuz. Güncelleme yapmıyorum.")
-            break
-        elif choice == "2":
-            main()
-            break
-        elif choice == "3":
-            if check_updates():
-                print("\n[!] | Yeni sürüm mevcut.")
-            else:
-                print("\n[+] | Zaten en son sürümü kullanıyorsunuz.")
-            break
-        elif choice == "8":
-            dry = not dry
-        elif choice == "9":
-            download_config = not download_config
-        else:
-            print("\n" + "-"*20 + "\nYanlış seçim yaptınız. Lütfen istediğiniz rakamı girip ENTER tuşuna basın.")
+if __name__ == "__main__":
+    if check_updates():
+        main()
