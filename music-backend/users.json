@@ -64,7 +64,8 @@
                 "remaining_usage": -1,
                 "set_password": "disabled",
                 "valid_until": null
-            }
+            },
+            "lights_out_score": 3
         }
     }
 }

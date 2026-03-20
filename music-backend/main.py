@@ -300,6 +300,10 @@ class PasskeyAuthenticationVerifyRequest(BaseModel):
     credential: dict
 
 
+class LightsOutScoreSyncRequest(BaseModel):
+    score: int
+
+
 @app.post("/token")
 def login_to_app(user_id: str | None = None, password: str | None = None, code: str | None = None, req: LoginRequest | None = None):
     if req is not None:
@@ -476,6 +480,19 @@ def get_my_login_code(payload: dict = Depends(get_current_user)):
         "has_code": bool(login_code),
         "login_code": login_code
     }
+
+
+@app.get("/me/lights-out/score")
+def get_my_lights_out_score(payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    return {"score": users.get_lights_out_score(user_id)}
+
+
+@app.post("/me/lights-out/score/sync")
+def sync_my_lights_out_score(req: LightsOutScoreSyncRequest, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    score = users.sync_lights_out_score(user_id, req.score)
+    return {"score": score}
 
 
 @app.post("/account/passkeys/options")

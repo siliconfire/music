@@ -45,6 +45,43 @@ def get_user_by_id(user_id: str):
     return data.get("users", {}).get(str(user_id))
 
 
+def get_lights_out_score(user_id: str) -> int:
+    user = get_user_by_id(user_id)
+    if not user:
+        return 0
+    value = user.get("lights_out_score", 0)
+    if isinstance(value, int) and value >= 0:
+        return value
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return parsed if parsed >= 0 else 0
+
+
+def sync_lights_out_score(user_id: str, local_score: int) -> int:
+    db = load_db()
+    user = db.get("users", {}).get(str(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        local_value = int(local_score)
+    except (TypeError, ValueError):
+        local_value = 0
+    if local_value < 0:
+        local_value = 0
+
+    server_value = get_lights_out_score(user_id)
+    final_value = local_value if local_value > server_value else server_value
+
+    if server_value != final_value:
+        user["lights_out_score"] = final_value
+        save_db(db)
+
+    return final_value
+
+
 def list_users():
     db = load_db()
     users = db.get("users", {})

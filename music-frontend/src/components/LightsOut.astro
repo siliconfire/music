@@ -21,6 +21,7 @@ const gridArray = Array.from({ length: size * size });
             ></button>
     ))}
 </div>
+<div class="lights-out-score board-theme-text-secondary text-sm mt-2" data-lights-score>Skor: 0</div>
 
 <style>
   .lights-out-grid {
@@ -57,14 +58,100 @@ const gridArray = Array.from({ length: size * size });
 </style>
 
 <script>
+    import { API_URL } from '../lib/constants';
+
     function initGame() {
         const grid = document.querySelector('.lights-out-grid') as HTMLElement;
         if (!grid) return;
+        const scoreEl = document.querySelector('[data-lights-score]') as HTMLElement | null;
 
         const size = parseInt(grid.dataset.size || '5');
         const lights = grid.querySelectorAll('.light') as NodeListOf<HTMLButtonElement>;
         const pendingTimers: number[] = [];
+        const syncTimers: number[] = [];
         let isAnimatingWin = false;
+        const token = localStorage.getItem('jwt_token') || '';
+
+        function parseJwtPayload(rawToken: string) {
+            try {
+                const parts = String(rawToken || '').split('.');
+                if (parts.length < 2) return null;
+                let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                while (payload.length % 4) payload += '=';
+                const decoded = atob(payload);
+                const json = decodeURIComponent(Array.from(decoded).map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(json);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function getScoreStorageKey() {
+            const payload = parseJwtPayload(token);
+            const userId = String(payload?.sub ?? payload?.user_id ?? payload?.id ?? '').trim();
+            return userId ? `lightsOutScore:${userId}` : 'lightsOutScore';
+        }
+
+        const scoreStorageKey = getScoreStorageKey();
+
+        function normalizeScore(value: unknown) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 0;
+            if (num < 0) return 0;
+            return Math.floor(num);
+        }
+
+        function getLocalScore() {
+            return normalizeScore(localStorage.getItem(scoreStorageKey));
+        }
+
+        function setLocalScore(score: number) {
+            localStorage.setItem(scoreStorageKey, String(normalizeScore(score)));
+        }
+
+        function renderScore(score: number) {
+            if (!scoreEl) return;
+            scoreEl.textContent = `Skor: ${normalizeScore(score)}`;
+        }
+
+        async function syncScoreWithServer() {
+            if (!token) return;
+            const localScore = getLocalScore();
+            try {
+                const res = await fetch(`${API_URL}/me/lights-out/score/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ score: localScore })
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const serverScore = normalizeScore(data?.score);
+                if (serverScore !== localScore) {
+                    setLocalScore(serverScore);
+                }
+                renderScore(serverScore);
+            } catch (e) {
+                // Keep local score if sync fails.
+            }
+        }
+
+        function scheduleTopOfHourSync() {
+            const now = new Date();
+            const nextHour = new Date(now.getTime());
+            nextHour.setMinutes(0, 0, 0);
+            nextHour.setHours(now.getHours() + 1);
+            const jitterMs = Math.floor(Math.random() * 60000);
+            const delayMs = Math.max(1000, nextHour.getTime() - now.getTime() + jitterMs);
+
+            const timer = window.setTimeout(async () => {
+                await syncScoreWithServer();
+                scheduleTopOfHourSync();
+            }, delayMs);
+            syncTimers.push(timer);
+        }
 
         function clearPendingTimers() {
             while (pendingTimers.length > 0) {
@@ -233,6 +320,11 @@ const gridArray = Array.from({ length: size * size });
             isAnimatingWin = true;
             grid.style.pointerEvents = 'none';
 
+            const nextScore = getLocalScore() + 1;
+            setLocalScore(nextScore);
+            renderScore(nextScore);
+            syncScoreWithServer();
+
             let step = 0;
             const totalSteps = 6; // on/off repeated 3 times
 
@@ -278,6 +370,9 @@ const gridArray = Array.from({ length: size * size });
         });
 
         resetBoard();
+        renderScore(getLocalScore());
+        syncScoreWithServer();
+        scheduleTopOfHourSync();
 
         grid.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;
