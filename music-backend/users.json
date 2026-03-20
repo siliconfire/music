@@ -94,7 +94,7 @@
                 "set_password": "disabled",
                 "valid_until": null
             },
-            "lights_out_score": 6
+            "lights_out_score": 10
         }
     }
 }

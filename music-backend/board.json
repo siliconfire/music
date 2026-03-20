@@ -78,17 +78,13 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-20T18:56:13.068326+00:00",
+    "updated_at": "2026-03-20T19:10:57.449556+00:00",
     "confetti_trigger": {
-        "id": "2026-03-20T18:55:48.601807+00:00",
-        "created_at": "2026-03-20T18:55:48.601807+00:00",
+        "id": "2026-03-20T19:10:57.449556+00:00",
+        "created_at": "2026-03-20T19:10:57.449556+00:00",
         "config": {
             "particleCount": 10000,
-            "durationMs": 5000,
-            "spawnDurationMs": 3000,
-            "spread": 1.0,
-            "sizeScale": 10.0,
-            "upwardBoost": 2.0
+            "sizeScale": 10.0
         },
         "created_by": "0"
     },
@@ -98,28 +94,28 @@
         "created_by": "100000"
     },
     "debug_passkeys": [],
-    "theme_key": "deep_ocean",
+    "theme_key": "gruvbox_dark",
     "theme": {
-        "key": "deep_ocean",
-        "label": "Zoktay Mavisi",
+        "key": "gruvbox_dark",
+        "label": "Lidya Sarısı",
         "colors": {
-            "textPrimary": "#f0f9ff",
-            "textSecondary": "#7dd3fc",
-            "background": "#020617",
-            "cardBackground": "#0f172a",
-            "cardBorder": "#1e3a8a",
-            "cardPinnedBackground": "#172554",
-            "cardPinnedBorder": "#38bdf8",
-            "qrButtonBackground": "#0f172a",
-            "qrButtonBorder": "#38bdf8",
-            "qrButtonText": "#38bdf8",
+            "textPrimary": "#ebdbb2",
+            "textSecondary": "#a89984",
+            "background": "#1d2021",
+            "cardBackground": "#282828",
+            "cardBorder": "#3c3836",
+            "cardPinnedBackground": "#32302f",
+            "cardPinnedBorder": "#fabd2f",
+            "qrButtonBackground": "#3c3836",
+            "qrButtonBorder": "#504945",
+            "qrButtonText": "#fabd2f",
             "confettiColors": [
-                "#0ea5e9",
-                "#2563eb",
-                "#06b6d4",
-                "#7dd3fc",
-                "#1d4ed8",
-                "#67e8f9"
+                "#fb4934",
+                "#b8bb26",
+                "#fabd2f",
+                "#83a598",
+                "#d3869b",
+                "#8ec07c"
             ]
         }
     },
