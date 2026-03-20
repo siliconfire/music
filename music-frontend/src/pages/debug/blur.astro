@@ -1,0 +1,433 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Debug Blur">
+    <div id="blur-theme-backdrop" class="fixed inset-0 -z-20"></div>
+    <div id="blur-theme-overlay" class="fixed inset-0 -z-10"></div>
+
+    <main class="m-6 lg:m-10">
+            <p class="text-sm board-theme-text-secondary">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci autem dicta excepturi fuga, illum ipsum iure molestiae mollitia quasi rem reprehenderit sapiente ut veritatis voluptate, voluptates? Corporis, cum, delectus esse ex hic illo illum in minus quidem repellat repudiandae similique soluta totam! Alias amet esse illo reiciendis repellendus unde voluptatum.</p>
+        <div class="my-6 flex items-center gap-3">
+            <a href="/board" class="text-xl underline board-theme-text-secondary">(tahtaya geri dön)</a>
+            <button class="text-lg underline board-theme-text-secondary" id="btn-reload">(Sayfayı yenile)</button>
+        </div>
+
+
+        <section class="board-card mt-6 p-4 max-w-4xl">
+        <h1 class="text-3xl font-semibold board-theme-text-primary">Blur test</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-end">
+                <label class="text-sm board-theme-text-primary">
+                    Tema
+                    <select id="theme-select" class="mt-1 w-full border rounded px-2 py-2 blur-input">
+                        <option value="__board__">Tahtadaki tema</option>
+                    </select>
+                </label>
+                <label class="text-sm board-theme-text-primary">
+                    Arkaplan
+                    <select id="background-select" class="mt-1 w-full border rounded px-2 py-2 blur-input">
+                        <option value="__board__">Tahtadaki seçim</option>
+                        <option value="__none__">Arkaplan görseli yok</option>
+                    </select>
+                </label>
+
+                <label class="text-sm board-theme-text-primary">
+                    Arkaplan bulanıklığı: <span id="backdrop-blur-value">0px</span>
+                    <input id="backdrop-blur" type="range" min="0" max="40" step="1" value="0" class="mt-2 w-full" />
+                </label>
+
+                <label class="text-sm board-theme-text-primary">
+                    Kart bulanıklığı: <span id="card-blur-value">12px</span>
+                    <input id="card-blur" type="range" min="0" max="30" step="1" value="12" class="mt-2 w-full" />
+                </label>
+
+                <button id="reset-btn" class="h-10 border rounded px-3 py-2 board-theme-text-primary blur-input">
+                    (tahta değerleri)
+                </button>
+            </div>
+
+            <div id="status" class="mt-3 text-sm board-theme-text-secondary"></div>
+        </section>
+
+        <section class="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <article class="board-card p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #1</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Şu anda çalıyor</h2>
+                <p class="mt-2 board-theme-text-secondary">Test - Test.</p>
+            </article>
+
+            <article class="board-card board-card-pinned p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #2 (Sabitli)</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Sabitli Rengi</h2>
+                <p class="mt-2 board-theme-text-secondary">(sabitli kartların rengi)</p>
+            </article>
+
+            <article class="board-card p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #3</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Uzun Metin</h2>
+                <p class="mt-2 board-theme-text-secondary">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere eu turpis vitae luctus.</p>
+            </article>
+
+            <article class="board-card p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #4</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Anket</h2>
+                <p class="mt-2 board-theme-text-secondary">A) ahmet</p>
+                <p class="board-theme-text-secondary">B) mehmet</p>
+                <p class="board-theme-text-secondary">C) muhittin</p>
+            </article>
+
+            <article class="board-card p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #5</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Kontroller</h2>
+                <div class="mt-3 flex gap-2">
+                    <button class="border rounded px-2 py-1 blur-input">Konfeti</button>
+                    <button class="border rounded px-2 py-1 blur-input">Tema</button>
+                </div>
+            </article>
+
+            <article class="board-card p-4">
+                <p class="text-xs board-theme-text-secondary">Örnek Kart #6</p>
+                <h2 class="mt-2 text-xl font-semibold board-theme-text-primary">Saat</h2>
+                <p id="clock" class="mt-3 text-3xl board-theme-text-primary">--:--:--</p>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        // @ts-nocheck
+        const API_URL = 'http://127.0.0.1:8000';
+
+        const state = {
+            boardData: null,
+            catalog: [],
+            themePresets: [],
+            selectedThemeKey: '__board__',
+            selectedMode: '__board__',
+            backdropBlur: 0,
+            cardBlur: 12,
+        };
+
+        const backdropEl = document.getElementById('blur-theme-backdrop');
+        const overlayEl = document.getElementById('blur-theme-overlay');
+        const statusEl = document.getElementById('status');
+        const themeSelectEl = document.getElementById('theme-select');
+        const bgSelectEl = document.getElementById('background-select');
+        const backdropBlurEl = document.getElementById('backdrop-blur');
+        const cardBlurEl = document.getElementById('card-blur');
+        const backdropBlurValueEl = document.getElementById('backdrop-blur-value');
+        const cardBlurValueEl = document.getElementById('card-blur-value');
+        const resetBtnEl = document.getElementById('reset-btn');
+        const clockEl = document.getElementById('clock');
+        const reloadEl = document.getElementById('btn-reload');
+
+        function normalizeBackdropBlur(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 0;
+            if (num < 0) return 0;
+            if (num > 40) return 40;
+            return Math.round(num);
+        }
+
+        function normalizeCardBlur(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 12;
+            if (num < 0) return 0;
+            if (num > 30) return 30;
+            return Math.round(num);
+        }
+
+        function hexToRgba(input, alpha = 0.12) {
+            try {
+                const s = String(input || '').trim();
+                if (s.startsWith('rgba')) return s;
+                if (s.startsWith('rgb')) return s.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+                const hex = s.replace('#', '');
+                if (hex.length === 3) {
+                    const r = parseInt(hex[0] + hex[0], 16);
+                    const g = parseInt(hex[1] + hex[1], 16);
+                    const b = parseInt(hex[2] + hex[2], 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                }
+                if (hex.length === 6) {
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                }
+            } catch (err) {}
+            return `rgba(16, 185, 129, ${alpha})`;
+        }
+
+        function findBackgroundUrl() {
+            if (state.selectedMode === '__none__') return '';
+            if (state.selectedMode === '__board__') return String(state.boardData?.background_image_url || '').trim();
+            const found = state.catalog.find((entry) => entry?.key === state.selectedMode);
+            return String(found?.url || '').trim();
+        }
+
+        function findTheme() {
+            if (state.selectedThemeKey === '__board__') {
+                return state.boardData?.theme || null;
+            }
+            const found = state.themePresets.find((entry) => entry?.key === state.selectedThemeKey);
+            return found || state.boardData?.theme || null;
+        }
+
+        function applyTheme(theme, backgroundImageUrl, backdropBlur, cardBlur) {
+            const colors = theme?.colors || {};
+            const style = document.documentElement.style;
+            style.setProperty('--board-text-primary', colors.textPrimary || '#0f172a');
+            style.setProperty('--board-text-secondary', colors.textSecondary || '#475569');
+            style.setProperty('--board-background', colors.background || '#f8fafc');
+            style.setProperty('--board-card-bg', colors.cardBackground || '#ffffff');
+            style.setProperty('--board-card-border', colors.cardBorder || '#cbd5f5');
+            style.setProperty('--board-card-pinned-bg', colors.cardPinnedBackground || '#ecfdf5');
+            style.setProperty('--board-card-pinned-bg-rgba', hexToRgba(colors.cardPinnedBackground || '#10b981', 0.12));
+            style.setProperty('--board-card-pinned-border', colors.cardPinnedBorder || '#6ee7b7');
+            style.setProperty('--board-card-blur', `${cardBlur}px`);
+
+            if (backdropEl) {
+                backdropEl.style.backgroundColor = colors.background || '#f8fafc';
+                if (backgroundImageUrl) {
+                    const safeUrl = backgroundImageUrl.replace(/"/g, '\\"');
+                    backdropEl.style.backgroundImage = `url("${safeUrl}")`;
+                    backdropEl.style.backgroundSize = 'cover';
+                    backdropEl.style.backgroundPosition = 'center center';
+                    backdropEl.style.backgroundRepeat = 'no-repeat';
+                    backdropEl.style.backgroundAttachment = 'fixed';
+                } else {
+                    backdropEl.style.backgroundImage = 'none';
+                    backdropEl.style.backgroundSize = '';
+                    backdropEl.style.backgroundPosition = '';
+                    backdropEl.style.backgroundRepeat = '';
+                    backdropEl.style.backgroundAttachment = '';
+                }
+                backdropEl.style.filter = backdropBlur > 0 ? `blur(${backdropBlur}px)` : '';
+                backdropEl.style.transform = backdropBlur > 0 ? 'scale(1.04)' : '';
+            }
+
+            if (overlayEl) {
+                overlayEl.style.background = 'linear-gradient(180deg, rgba(2,6,23,0.18), rgba(2,6,23,0.28))';
+            }
+        }
+
+        function syncCatalogSelect() {
+            if (!bgSelectEl) return;
+            const options = [
+                '<option value="__board__">Tahtadaki seçim</option>',
+                '<option value="__none__">Arkaplan görseli yok</option>',
+            ];
+            state.catalog.forEach((entry) => {
+                const key = String(entry?.key || '');
+                const label = String(entry?.label || key || 'Arkaplan');
+                if (!key) return;
+                options.push(`<option value="${key.replace(/"/g, '&quot;')}">${label}</option>`);
+            });
+            bgSelectEl.innerHTML = options.join('');
+            bgSelectEl.value = state.selectedMode;
+        }
+
+        function syncThemeSelect() {
+            if (!themeSelectEl) return;
+            const options = ['<option value="__board__">Tahtadaki tema</option>'];
+            state.themePresets.forEach((entry) => {
+                const key = String(entry?.key || '');
+                const label = String(entry?.label || key || 'Tema');
+                if (!key) return;
+                options.push(`<option value="${key.replace(/"/g, '&quot;')}">${label}</option>`);
+            });
+            themeSelectEl.innerHTML = options.join('');
+            themeSelectEl.value = state.selectedThemeKey;
+        }
+
+        function renderBlurLabels() {
+            if (backdropBlurValueEl) backdropBlurValueEl.textContent = `${state.backdropBlur}px`;
+            if (cardBlurValueEl) cardBlurValueEl.textContent = `${state.cardBlur}px`;
+        }
+
+        function applyPreview() {
+            const url = findBackgroundUrl();
+            const theme = findTheme();
+            applyTheme(theme, url, state.backdropBlur, state.cardBlur);
+            renderBlurLabels();
+        }
+
+        function resetToBoardValues() {
+            state.selectedThemeKey = '__board__';
+            state.selectedMode = '__board__';
+            state.backdropBlur = normalizeBackdropBlur(state.boardData?.backdrop_blur_px);
+            state.cardBlur = normalizeCardBlur(state.boardData?.card_blur_px);
+            if (themeSelectEl) themeSelectEl.value = state.selectedThemeKey;
+            if (bgSelectEl) bgSelectEl.value = state.selectedMode;
+            if (backdropBlurEl) backdropBlurEl.value = String(state.backdropBlur);
+            if (cardBlurEl) cardBlurEl.value = String(state.cardBlur);
+            applyPreview();
+        }
+
+        async function loadBoardData() {
+            if (statusEl) statusEl.textContent = 'Tahta verisi yükleniyor...';
+            try {
+                const res = await fetch(`${API_URL}/board`);
+                if (!res.ok) {
+                    state.boardData = {
+                        theme: null,
+                        theme_presets: [],
+                        background_image_url: '',
+                        backdrop_blur_px: 0,
+                        card_blur_px: 12,
+                    };
+                    state.catalog = [];
+                    state.themePresets = [];
+                    resetToBoardValues();
+                    syncThemeSelect();
+                    syncCatalogSelect();
+                    applyPreview();
+                    if (statusEl) {
+                        statusEl.textContent = `Tahta verisi alınamadı (HTTP ${res.status}). Varsayılan tema kullanılacak.`;
+                    }
+                    return;
+                }
+                const data = await res.json();
+                state.boardData = data || {};
+                state.catalog = Array.isArray(data?.background_catalog) ? data.background_catalog : [];
+                state.themePresets = Array.isArray(data?.theme_presets) ? data.theme_presets : [];
+                resetToBoardValues();
+                syncThemeSelect();
+                syncCatalogSelect();
+                applyPreview();
+                if (statusEl) {
+                    statusEl.textContent = `Katalog yüklendi (${state.catalog.length} arkaplan).`;
+                }
+            } catch (err) {
+                state.boardData = {
+                    theme: null,
+                    theme_presets: [],
+                    background_image_url: '',
+                    backdrop_blur_px: 0,
+                    card_blur_px: 12,
+                };
+                state.catalog = [];
+                state.themePresets = [];
+                resetToBoardValues();
+                syncThemeSelect();
+                syncCatalogSelect();
+                applyPreview();
+                if (statusEl) {
+                    statusEl.textContent = 'Tahta verisi alınamadı. Sayfa varsayılan tema ile çalışıyor.';
+                }
+            }
+        }
+
+        if (themeSelectEl) {
+            themeSelectEl.addEventListener('change', () => {
+                state.selectedThemeKey = themeSelectEl.value || '__board__';
+                applyPreview();
+            });
+        }
+
+        if (bgSelectEl) {
+            bgSelectEl.addEventListener('change', () => {
+                state.selectedMode = bgSelectEl.value || '__board__';
+                applyPreview();
+            });
+        }
+
+        if (backdropBlurEl) {
+            backdropBlurEl.addEventListener('input', () => {
+                state.backdropBlur = normalizeBackdropBlur(backdropBlurEl.value);
+                applyPreview();
+            });
+        }
+
+        if (cardBlurEl) {
+            cardBlurEl.addEventListener('input', () => {
+                state.cardBlur = normalizeCardBlur(cardBlurEl.value);
+                applyPreview();
+            });
+        }
+
+        if (resetBtnEl) {
+            resetBtnEl.addEventListener('click', resetToBoardValues);
+        }
+
+        if (reloadEl) {
+            reloadEl.addEventListener('click', () => {
+                // reload page
+                location.reload()
+            });
+        }
+
+
+        setInterval(() => {
+            if (!clockEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString('tr-TR', { hour12: false });
+        }, 500);
+
+        loadBoardData();
+    </script>
+
+    <style>
+        :root {
+            --board-text-primary: #0f172a;
+            --board-text-secondary: #475569;
+            --board-background: #f8fafc;
+            --board-card-bg: #ffffff;
+            --board-card-border: #cbd5f5;
+            --board-card-pinned-bg: #ecfdf5;
+            --board-card-pinned-bg-rgba: rgba(16, 185, 129, 0.12);
+            --board-card-pinned-border: #6ee7b7;
+            --board-card-blur: 12px;
+        }
+
+        :global(body) {
+            background: var(--board-background);
+        }
+
+        :global(.board-theme-text-primary) {
+            color: var(--board-text-primary);
+        }
+
+        :global(.board-theme-text-secondary) {
+            color: var(--board-text-secondary);
+        }
+
+        :global(.board-card) {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
+            -webkit-backdrop-filter: blur(var(--board-card-blur, 12px)) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 26px rgba(2, 6, 23, 0.15);
+            border-radius: 0.75rem;
+        }
+
+        :global(.board-card-pinned) {
+            background: var(--board-card-pinned-bg-rgba, rgba(16, 185, 129, 0.12));
+            border-color: var(--board-card-pinned-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        :global(.board-card-pinned::before) {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--board-card-pinned-bg-rgba, rgba(16, 185, 129, 0.12));
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        :global(.board-card-pinned > *) {
+            position: relative;
+            z-index: 1;
+        }
+
+        :global(.blur-input) {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</Layout>
+

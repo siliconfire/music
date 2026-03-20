@@ -41,7 +41,7 @@ import Item from '../components/Item.astro';
 					</select>
 					<br>
 					<button id="btn-set-device" class="text-sm border board-theme-border px-2 py-1">Onayla</button>
-					<hr class="text-slate-400 my-3">
+					<hr class="board-theme-border my-3">
 					<p class="text-sm mb-2">Eğer müzik çalmıyor ise, buradan cihaz seçip ardından tekrar deneyin.</p>
 					<p class="text-xs board-theme-text-secondary mb-2">(Bazen spotify garip davranabiliyor.)</p>
 				</div>
@@ -84,7 +84,7 @@ import Item from '../components/Item.astro';
 				fetchDevices();
 			} else {
 				const devWrap = document.getElementById('div-devices');
-				if (devWrap) devWrap.innerHTML = '<p class="text-xs text-red-600">Cihaz değiştirmek için "music" yetkisine sahip olmalısınız.</p>';
+				if (devWrap) devWrap.innerHTML = '<p class="text-xs board-theme-text-error">Cihaz değiştirmek için "music" yetkisine sahip olmalısınız.</p>';
 			}
 		}
 

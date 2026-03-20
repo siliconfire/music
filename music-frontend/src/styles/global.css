@@ -75,6 +75,10 @@ legend {
   color: var(--board-text-secondary, #475569);
 }
 
+.board-theme-text-error {
+  color: var(--board-text-error, #dc2626);
+}
+
 .board-theme-card {
   background: var(--board-card-bg, #ffffff);
   border-color: var(--board-card-border, #cbd5f5);
@@ -83,6 +87,27 @@ legend {
 
 .board-theme-border {
   border-color: var(--board-card-border, #cbd5f5);
+}
+
+.board-theme-input::placeholder {
+  color: var(--board-text-secondary, #475569);
+}
+
+.board-theme-action-btn {
+  color: var(--board-text-primary, #0f172a);
+}
+
+.board-theme-action-btn:hover {
+  opacity: 0.8;
+}
+
+.board-theme-inline-link {
+  color: var(--board-text-primary, #0f172a);
+  text-decoration: underline;
+}
+
+.board-theme-inline-link:hover {
+  opacity: 0.8;
 }
 
 body.board-theme {

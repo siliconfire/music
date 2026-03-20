@@ -78,7 +78,7 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-19T20:54:46.156819+00:00",
+    "updated_at": "2026-03-20T08:20:00.986659+00:00",
     "confetti_trigger": {
         "id": "2026-03-19T19:16:30.225339+00:00",
         "created_at": "2026-03-19T19:16:30.225339+00:00",
@@ -98,28 +98,28 @@
         "created_by": "0"
     },
     "debug_passkeys": [],
-    "theme_key": "telegram_pink",
+    "theme_key": "midnight",
     "theme": {
-        "key": "telegram_pink",
-        "label": "Gerçek Telegram Pembesi",
+        "key": "midnight",
+        "label": "Akşam Saati",
         "colors": {
-            "textPrimary": "#ffffff",
-            "textSecondary": "#aaaaaa",
-            "background": "#18222d",
-            "cardBackground": "#242f3d",
-            "cardBorder": "#323d4d",
-            "cardPinnedBackground": "#2b394a",
-            "cardPinnedBorder": "#ee6aa7",
-            "qrButtonBackground": "#242f3d",
-            "qrButtonBorder": "#ee6aa7",
-            "qrButtonText": "#ee6aa7",
+            "textPrimary": "#e2e8f0",
+            "textSecondary": "#94a3b8",
+            "background": "#0b1120",
+            "cardBackground": "#111827",
+            "cardBorder": "#334155",
+            "cardPinnedBackground": "#0f172a",
+            "cardPinnedBorder": "#64748b",
+            "qrButtonBackground": "#111827",
+            "qrButtonBorder": "#334155",
+            "qrButtonText": "#e2e8f0",
             "confettiColors": [
-                "#ee6aa7",
-                "#f9a8d4",
+                "#38bdf8",
+                "#818cf8",
                 "#f472b6",
-                "#db2777",
-                "#9d174d",
-                "#fdf2f8"
+                "#facc15",
+                "#34d399",
+                "#22d3ee"
             ]
         }
     },

@@ -5,10 +5,10 @@
     <input
             type="text"
             id="inp-search"
-            class="bg-transparent border-b border-yellow-700 outline-none w-32"
+            class="bg-transparent border-b board-theme-border outline-none w-32 board-theme-text-primary board-theme-input"
             placeholder="<...>"
     >
-    <button id="btn-search" class="hover:text-yellow-800 font-medium text-sm">[Ara]</button>
+    <button id="btn-search" class="font-medium text-sm board-theme-text-primary hover:opacity-80">[Ara]</button>
 </div>
 <div id="search-results" class="mt-2 text-xs flex flex-col gap-1"></div>
 <script>
@@ -23,7 +23,7 @@
         const query = searchInput.value;
         if (!query) return;
 
-        resultsDiv.innerHTML = "<span class='italic'>Aranıyor...</span>";
+        resultsDiv.innerHTML = "<span class='italic board-theme-text-secondary'>Aranıyor...</span>";
 
         try {
             const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, {
@@ -37,22 +37,22 @@
             window.posthog?.capture('music_searched', { query, result_count: results.length });
             results.forEach(track => {
                 const row = document.createElement("div");
-                row.className = "flex justify-between items-center gap-4 border-t border-yellow-500/30 pt-1";
+                row.className = "flex justify-between items-center gap-4 border-t board-theme-border pt-1 board-theme-text-secondary";
                 row.innerHTML = `
-          <span class="truncate w-32">${track.name}</span>
-          <button class="play-btn font-semibold hover:bg-yellow-300" data-uri="${track.uri}" data-name="${track.name}">[şimdi çal]</button>
-          <button class="add-btn font-bold hover:bg-yellow-300" data-uri="${track.uri}" data-name="${track.name}">[sıraya ekle]</button>
+          <span class="truncate w-32 board-theme-text-primary">${track.name}</span>
+          <button class="play-btn font-semibold board-theme-action-btn" data-uri="${track.uri}" data-name="${track.name}">[şimdi çal]</button>
+          <button class="add-btn font-bold board-theme-action-btn" data-uri="${track.uri}" data-name="${track.name}">[sıraya ekle]</button>
         `;
                 resultsDiv.appendChild(row);
             });
         } catch (e) {
             window.posthog?.captureException(e);
-            resultsDiv.innerHTML = "<span class='text-red-600'>Hata." +
+            resultsDiv.innerHTML = "<span class='board-theme-text-error'>Hata." +
                 "<br><br>normalde yetkin yok derdim ama yetkin olmasa bu sayfaya zaten gelemezdin ki...?" +
                 "<br>acaba ben mi hatalıyım?" +
                 "<br>yada sunucu mu kapalı?" +
                 "<br>bence mantıklısı sunucunun kapalı olması." +
-                "<br><br>Eğer kısa süre içinde düzelmez ise, yardım için <a href='/help' class='bg-blue-300'>BURAYA</a> tıklayın.</span>";
+                "<br><br>Eğer kısa süre içinde düzelmez ise, yardım için <a href='/help' class='board-theme-inline-link'>BURAYA</a> tıklayın.</span>";
         }
     });
 
