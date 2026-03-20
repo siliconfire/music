@@ -1,15 +1,17 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
 import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 ---
 
 <Layout title="Tahta Kurulumu">
-    <h1 class="text-2xl text-slate-800 m-10" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
+    <BoardThemeLoader />
+    <h1 class="text-2xl board-theme-text-primary m-10" id="title"><span id="tap-bartin">Bartın</span> <span id="tap-lisesi">Lisesi</span></h1>
     <BoardDebugPanel />
 
-    <div class="m-10 border border-pink-700 bg-pink-100 p-4">
-        <h1 class="text-4xl">Geçerli bir oturum bulunamadı.</h1>
-        <p class="mt-2 text-xl">Güvenlik nedenlerinden dolayı, her oturumun onaylanması lazım. Lütfen yardım alın.</p>
-        <p class="text-slate-600 mt-2">(Eğer ilk kurulumunuz değil ise, nedense jwt anahtarı görünürde yok. Tarayıcı verileri siliniyor olabilir mi?)</p>
+    <div class="m-10 border board-theme-card p-4">
+        <h1 class="text-4xl board-theme-text-primary">Geçerli bir oturum bulunamadı.</h1>
+        <p class="mt-2 text-xl board-theme-text-primary">Güvenlik nedenlerinden dolayı, her oturumun onaylanması lazım. Lütfen yardım alın.</p>
+        <p class="mt-2 board-theme-text-secondary">(Eğer ilk kurulumunuz değil ise, nedense jwt anahtarı görünürde yok. Tarayıcı verileri siliniyor olabilir mi?)</p>
     </div>
 </Layout>

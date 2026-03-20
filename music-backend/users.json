@@ -11,12 +11,41 @@
             ],
             "banned": false,
             "reason": null,
-            "password": "1fdbb5b068be6f8b8badb6686c8af3ca$c5af18ffbc95d4c90f37e10574177108b83e779a10d4118ee794418acff950bd",
+            "password": "e9f02b45c6d5db47e1248f88269cd701$49364bac72f6b1f8484025c1e80a6e36430bdd013b0ef6e83af8cc89c413cf06",
             "passkeys": [
                 {
-                    "id": "NaXJT8wn4RH8DHluwEe14pyUMOIzsEqE91J8poJlRFgeiLumAIJsPXLf4IhzL3-l",
-                    "public_key": "pQECAyYgASFYIDWlyU_MJ-ER_Ax5bsDmHjyZaXPpLLhK6MrIePYOP5hkIlggCUaO1a51DXWapD4d406Q1GKu_W2XmUwxhTBOJIAnbHM",
-                    "sign_count": 7
+                    "id": "O2tlXIcrSdEHaQ1fOQitl1x13uBc245FJxCG60I0ZSlEANHGNRBQ1fKhocMScPRL",
+                    "public_key": "pQECAyYgASFYIDtrZVyHK0nRB2kNXzn9KE4lQHH6QrQ91kIVeyYPp93cIlggOEJiFSojxAsD-2W3AgqzcJJW-m10bGdfSupQFDvoB2c",
+                    "sign_count": 6,
+                    "created_at": "2026-03-20T10:23:52.573180+00:00",
+                    "label": "Yubikey 5",
+                    "transports": [
+                        "nfc",
+                        "usb"
+                    ],
+                    "authenticator_attachment": "single_device",
+                    "device_info": {
+                        "platform": "Linux x86_64",
+                        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                        "language": "en"
+                    }
+                },
+                {
+                    "id": "WSWcekYP3zWTZ8KetZZ2cg",
+                    "public_key": "pQECAyYgASFYIGT_c6pU_ZYu0Ut16vruFZDTsUenTZqLGBZFMS2ec22QIlggrZmeZNhJbTM5vNcrL5jzqlKACHS_x3bD7bT1asDbmrM",
+                    "sign_count": 0,
+                    "created_at": "2026-03-20T10:28:22.621278+00:00",
+                    "label": "internal (Linux x86_64, en)",
+                    "transports": [
+                        "hybrid",
+                        "internal"
+                    ],
+                    "authenticator_attachment": "multi_device",
+                    "device_info": {
+                        "platform": "Linux x86_64",
+                        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                        "language": "en"
+                    }
                 }
             ]
         },
@@ -65,7 +94,7 @@
                 "set_password": "disabled",
                 "valid_until": null
             },
-            "lights_out_score": 3
+            "lights_out_score": 5
         }
     }
 }

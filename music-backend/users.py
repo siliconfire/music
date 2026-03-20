@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -115,13 +116,70 @@ def _normalize_passkeys(passkeys):
             continue
         if cred_id in seen:
             continue
+        label = item.get("label")
+        clean_label = label.strip() if isinstance(label, str) else ""
+        transports = item.get("transports")
+        clean_transports = []
+        if isinstance(transports, list):
+            for transport in transports:
+                if isinstance(transport, str) and transport.strip():
+                    clean_transports.append(transport.strip().lower())
+
+        attachment = item.get("authenticator_attachment")
+        clean_attachment = attachment.strip().lower() if isinstance(attachment, str) and attachment.strip() else None
+
+        device_info = item.get("device_info") if isinstance(item.get("device_info"), dict) else {}
+        clean_device_info = {}
+        for key in ("platform", "user_agent", "language"):
+            value = device_info.get(key)
+            if isinstance(value, str) and value.strip():
+                clean_device_info[key] = value.strip()[:240]
+
         rows.append({
             "id": cred_id.strip(),
             "public_key": public_key.strip(),
-            "sign_count": int(item.get("sign_count", 0)) if str(item.get("sign_count", "")).isdigit() else 0
+            "sign_count": int(item.get("sign_count", 0)) if str(item.get("sign_count", "")).isdigit() else 0,
+            "created_at": item.get("created_at"),
+            "label": clean_label or None,
+            "transports": clean_transports,
+            "authenticator_attachment": clean_attachment,
+            "device_info": clean_device_info
         })
         seen.add(cred_id)
     return rows
+
+
+def _passkey_type_label(passkey: dict) -> str:
+    transports = [str(item).lower() for item in (passkey.get("transports") or [])]
+    attachment = str(passkey.get("authenticator_attachment") or "").lower().strip()
+
+    if "internal" in transports or attachment == "platform":
+        return "internal"
+    if "usb" in transports:
+        return "usb"
+    if "nfc" in transports:
+        return "nfc"
+    if "ble" in transports:
+        return "ble"
+    if "hybrid" in transports:
+        return "hybrid"
+    return "unknown"
+
+
+def get_passkey_default_label(passkey: dict) -> str:
+    kind = _passkey_type_label(passkey)
+    device_info = passkey.get("device_info") if isinstance(passkey.get("device_info"), dict) else {}
+    platform = str(device_info.get("platform") or "").strip()
+    language = str(device_info.get("language") or "").strip()
+
+    details = []
+    if platform:
+        details.append(platform)
+    if language:
+        details.append(language)
+
+    suffix = f" ({', '.join(details)})" if details else ""
+    return f"{kind}{suffix}"
 
 
 def get_user_passkeys(user: dict | None):
@@ -149,7 +207,16 @@ def get_passkey_users_public():
     return rows
 
 
-def add_user_passkey(user_id: str, credential_id: str, public_key: str, sign_count: int = 0):
+def add_user_passkey(
+    user_id: str,
+    credential_id: str,
+    public_key: str,
+    sign_count: int = 0,
+    label: str | None = None,
+    transports: list[str] | None = None,
+    authenticator_attachment: str | None = None,
+    device_info: dict | None = None,
+):
     db = load_db()
     user = db.get("users", {}).get(str(user_id))
     if not user:
@@ -162,7 +229,15 @@ def add_user_passkey(user_id: str, credential_id: str, public_key: str, sign_cou
         "id": credential_id,
         "public_key": public_key,
         "sign_count": int(sign_count) if isinstance(sign_count, int) and sign_count >= 0 else 0,
-        "created_at": user.get("passkey_created_at") or None
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "label": label.strip()[:64] if isinstance(label, str) and label.strip() else None,
+        "transports": [str(t).strip().lower() for t in (transports or []) if isinstance(t, str) and str(t).strip()][:8],
+        "authenticator_attachment": authenticator_attachment.strip().lower() if isinstance(authenticator_attachment, str) and authenticator_attachment.strip() else None,
+        "device_info": {
+            "platform": str((device_info or {}).get("platform") or "").strip()[:120],
+            "user_agent": str((device_info or {}).get("user_agent") or "").strip()[:240],
+            "language": str((device_info or {}).get("language") or "").strip()[:40],
+        }
     }
     passkeys.append(entry)
     user["passkeys"] = passkeys
@@ -180,6 +255,26 @@ def remove_user_passkey(user_id: str, credential_id: str):
     if len(next_passkeys) == len(passkeys):
         return False
     user["passkeys"] = next_passkeys
+    save_db(db)
+    return True
+
+
+def update_user_passkey_label(user_id: str, credential_id: str, label: str | None):
+    db = load_db()
+    user = db.get("users", {}).get(str(user_id))
+    if not user:
+        return False
+    passkeys = get_user_passkeys(user)
+    clean_label = label.strip()[:64] if isinstance(label, str) and label.strip() else None
+    updated = False
+    for entry in passkeys:
+        if entry.get("id") == credential_id:
+            entry["label"] = clean_label
+            updated = True
+            break
+    if not updated:
+        return False
+    user["passkeys"] = passkeys
     save_db(db)
     return True
 

@@ -300,6 +300,10 @@ class PasskeyAuthenticationVerifyRequest(BaseModel):
     credential: dict
 
 
+class AccountPasskeyLabelRequest(BaseModel):
+    label: str | None = None
+
+
 class LightsOutScoreSyncRequest(BaseModel):
     score: int
 
@@ -562,9 +566,84 @@ def verify_account_passkey(req: PasskeyRegistrationVerifyRequest, payload: dict 
 
     credential_id = _base64url_encode(info.credential_id)
     public_key = _base64url_encode(info.credential_public_key)
-    users.add_user_passkey(user_id, credential_id, public_key, info.sign_count)
+    meta = req.credential.get("meta") if isinstance(req.credential, dict) else None
+    transports = []
+    device_info = {}
+    label = None
+    if isinstance(meta, dict):
+        raw_transports = meta.get("transports")
+        if isinstance(raw_transports, list):
+            transports = [str(item).strip().lower() for item in raw_transports if isinstance(item, str) and item.strip()]
+        if isinstance(meta.get("label"), str) and meta.get("label", "").strip():
+            label = str(meta.get("label")).strip()[:64]
+        device_info = {
+            "platform": str(meta.get("platform") or "").strip()[:120],
+            "user_agent": str(meta.get("userAgent") or "").strip()[:240],
+            "language": str(meta.get("language") or "").strip()[:40]
+        }
+
+    users.add_user_passkey(
+        user_id,
+        credential_id,
+        public_key,
+        info.sign_count,
+        label=label,
+        transports=transports,
+        authenticator_attachment=getattr(info, "credential_device_type", None),
+        device_info=device_info,
+    )
     PASSKEY_REGISTER_CHALLENGES.pop(req.challenge_id, None)
     return {"ok": True, "credential_id": credential_id}
+
+
+@app.get("/account/passkeys")
+def list_account_passkeys(payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    user = users.get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        raise HTTPException(status_code=403, detail="Hayır.")
+
+    passkeys = users.get_user_passkeys(user)
+    rows = []
+    for entry in passkeys:
+        effective_label = entry.get("label") or users.get_passkey_default_label(entry)
+        rows.append({
+            "id": entry.get("id"),
+            "sign_count": entry.get("sign_count", 0),
+            "created_at": entry.get("created_at"),
+            "label": entry.get("label"),
+            "default_label": users.get_passkey_default_label(entry),
+            "effective_label": effective_label,
+            "transports": entry.get("transports", []),
+            "authenticator_attachment": entry.get("authenticator_attachment")
+        })
+    return {"passkeys": rows}
+
+
+@app.delete("/account/passkeys/{credential_id}")
+def delete_account_passkey(credential_id: str, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    user = users.get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        raise HTTPException(status_code=403, detail="Hayır.")
+
+    if not users.remove_user_passkey(user_id, credential_id):
+        raise HTTPException(status_code=404, detail="Passkey bulunamadı.")
+
+    return {"ok": True, "deleted_id": credential_id}
+
+
+@app.patch("/account/passkeys/{credential_id}")
+def update_account_passkey_label(credential_id: str, req: AccountPasskeyLabelRequest, payload: dict = Depends(get_current_user)):
+    user_id = payload.get("sub")
+    user = users.get_user_by_id(user_id)
+    if not user or user.get("banned"):
+        raise HTTPException(status_code=403, detail="Hayır.")
+
+    if not users.update_user_passkey_label(user_id, credential_id, req.label):
+        raise HTTPException(status_code=404, detail="Passkey bulunamadı.")
+
+    return {"ok": True, "id": credential_id}
 
 
 @app.post("/login/passkeys/options")
