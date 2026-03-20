@@ -1,0 +1,239 @@
+---
+import '../../styles/global.css';
+import Layout from '../../layouts/Layout.astro';
+import AdminBack from '../../components/AdminBack.astro';
+---
+
+<Layout title="Yonetici - Sistem">
+    <div class="m-10">
+        <h1 class="text-2xl text-slate-800 mt-10">Sistem Bilgisi ve Kullanım</h1>
+        <AdminBack />
+
+        <p>Sunucunun durumu hakkında bilgileri görüntüle.</p>
+
+        <div id="notice"></div>
+
+        <div class="flex flex-wrap items-center gap-3 my-4">
+            <div id="actor" class="text-sm text-slate-600">Yükleniyor...</div>
+            <button id="btn-refresh" class="border border-slate-300 bg-gray-100 px-3 py-1">Yenile</button>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2 mb-3">
+            <div class="border border-slate-300 bg-slate-50 p-3">
+                <div class="text-xs uppercase text-slate-500">Backend Uptime</div>
+                <div id="uptime-backend" class="text-lg text-slate-800">-</div>
+            </div>
+            <div class="border border-slate-300 bg-slate-50 p-3">
+                <div class="text-xs uppercase text-slate-500">System Uptime</div>
+                <div id="uptime-system" class="text-lg text-slate-800">-</div>
+            </div>
+        </div>
+
+        <div id="summary" class="text-sm text-slate-600 mb-2">Durum yukleniyor...</div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <fieldset class="border border-slate-300 p-4">
+                <legend>Platform</legend>
+                <div id="platform" class="text-sm whitespace-pre-wrap">(yok)</div>
+            </fieldset>
+
+            <fieldset class="border border-slate-300 p-4">
+                <legend>Runtime</legend>
+                <div id="runtime" class="text-sm whitespace-pre-wrap">(yok)</div>
+            </fieldset>
+
+            <fieldset class="border border-slate-300 p-4">
+                <legend>CPU / Load</legend>
+                <div id="cpu" class="text-sm whitespace-pre-wrap">(yok)</div>
+            </fieldset>
+
+            <fieldset class="border border-slate-300 p-4">
+                <legend>Bellek</legend>
+                <div id="memory" class="text-sm whitespace-pre-wrap">(yok)</div>
+            </fieldset>
+
+            <fieldset class="border border-slate-300 p-4 lg:col-span-2">
+                <legend>Disk</legend>
+                <div id="disk" class="text-sm whitespace-pre-wrap">(yok)</div>
+            </fieldset>
+        </div>
+    </div>
+
+    <script type="module">
+        const API_URL = 'http://127.0.0.1:8000';
+        const RANKS = ['music', 'musicpermanent', 'moderator', 'admin', 'superadmin', 'dev'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const actorDiv = document.getElementById('actor');
+            const noticeDiv = document.getElementById('notice');
+            const summaryDiv = document.getElementById('summary');
+            const refreshBtn = document.getElementById('btn-refresh');
+            const platformDiv = document.getElementById('platform');
+            const runtimeDiv = document.getElementById('runtime');
+            const cpuDiv = document.getElementById('cpu');
+            const memoryDiv = document.getElementById('memory');
+            const diskDiv = document.getElementById('disk');
+            const backendUptimeDiv = document.getElementById('uptime-backend');
+            const systemUptimeDiv = document.getElementById('uptime-system');
+
+            if (!actorDiv || !noticeDiv || !summaryDiv || !refreshBtn || !platformDiv || !runtimeDiv || !cpuDiv || !memoryDiv || !diskDiv || !backendUptimeDiv || !systemUptimeDiv) {
+                return;
+            }
+
+            function showNotice(msg, type = 'info') {
+                noticeDiv.innerHTML = `<div class="p-3 rounded border ${type === 'error' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-green-100 border-green-300 text-green-700'}">${msg}</div>`;
+                setTimeout(() => {
+                    if (noticeDiv.innerHTML) noticeDiv.innerHTML = '';
+                }, 5000);
+            }
+
+            function highestRankIndex(perms) {
+                const idx = perms.map((p) => RANKS.indexOf(p)).filter((i) => i >= 0);
+                return idx.length ? Math.max(...idx) : -1;
+            }
+
+            function renderActor(actor) {
+                const actorRank = highestRankIndex(actor.permissions || []);
+                const actorRankName = actorRank >= 0 ? RANKS[actorRank] : 'yok';
+                actorDiv.innerHTML = `Siz: <strong>${actor.name}</strong> (${actor.id}/${actorRankName})`;
+            }
+
+            function formatBytes(value) {
+                const num = Number(value);
+                if (!Number.isFinite(num) || num < 0) return '-';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                let size = num;
+                let idx = 0;
+                while (size >= 1024 && idx < units.length - 1) {
+                    size /= 1024;
+                    idx += 1;
+                }
+                const fixed = size >= 100 || idx === 0 ? 0 : 2;
+                return `${size.toFixed(fixed)} ${units[idx]}`;
+            }
+
+            function formatSeconds(raw) {
+                const sec = Number(raw);
+                if (!Number.isFinite(sec) || sec < 0) return '-';
+                const d = Math.floor(sec / 86400);
+                const h = Math.floor((sec % 86400) / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const s = Math.floor(sec % 60);
+                const parts = [];
+                if (d) parts.push(`${d}g`);
+                if (h || d) parts.push(`${h}s`);
+                if (m || h || d) parts.push(`${m}d`);
+                parts.push(`${s}sn`);
+                return parts.join(' ');
+            }
+
+            function safe(v) {
+                if (v === null || v === undefined || v === '') return '-';
+                return String(v);
+            }
+
+            function renderSystem(data) {
+                const platform = data.platform || {};
+                const runtime = data.runtime || {};
+                const cpu = data.cpu || {};
+                const load = cpu.load_average || {};
+                const memory = data.memory || {};
+                const memorySystem = memory.system || {};
+                const disk = data.disk || {};
+
+                const backendUptime = formatSeconds(data.process_uptime_seconds);
+                const hostUptime = formatSeconds(data.host_uptime_seconds);
+                backendUptimeDiv.textContent = backendUptime;
+                systemUptimeDiv.textContent = hostUptime;
+                summaryDiv.textContent = `Sunucu saati: ${safe(data.server_time_iso)}`;
+
+                platformDiv.textContent = [
+                    `Host: ${safe(platform.hostname)}`,
+                    `OS: ${safe(platform.system)} ${safe(platform.release)}`,
+                    `Mimari: ${safe(platform.machine)}`,
+                    `Python: ${safe(platform.python)}`,
+                ].join('\n');
+
+                runtimeDiv.textContent = [
+                    `LOCKDOWN: ${runtime.lockdown ? 'True' : 'False'}`,
+                    `BOARD_LOCKDOWN: ${runtime.board_lockdown ? 'True' : 'False'}`,
+                    `Aktif thread: ${safe(runtime.active_threads)}`,
+                    `Auto updater thread: ${runtime.update_thread_alive ? 'Alive' : 'Dead'}`,
+                    `Passkey register challenge: ${safe(runtime.cached_challenges?.passkey_register)}`,
+                    `Passkey login challenge: ${safe(runtime.cached_challenges?.passkey_login)}`,
+                    `Board login approval: ${safe(runtime.cached_challenges?.board_login)}`,
+                    `Spotify OAuth state: ${safe(runtime.cached_challenges?.spotify_oauth_states)}`,
+                ].join('\n');
+
+                cpuDiv.textContent = [
+                    `Logical cores: ${safe(cpu.logical_cores)}`,
+                    `Load avg (1m): ${safe(load.one)}`,
+                    `Load avg (5m): ${safe(load.five)}`,
+                    `Load avg (15m): ${safe(load.fifteen)}`,
+                ].join('\n');
+
+                memoryDiv.textContent = [
+                    `Process peak RSS: ${formatBytes(memory.process_peak_rss_bytes)}`,
+                    `System used: ${formatBytes(memorySystem.used_bytes)} (${safe(memorySystem.used_percent)}%)`,
+                    `System available: ${formatBytes(memorySystem.available_bytes)}`,
+                    `System total: ${formatBytes(memorySystem.total_bytes)}`,
+                ].join('\n');
+
+                const diskLines = [];
+                ['backend', 'root'].forEach((key) => {
+                    const entry = disk[key];
+                    if (!entry || !entry.available) {
+                        diskLines.push(`${key}: bilgi yok`);
+                        return;
+                    }
+                    diskLines.push(`${key} (${safe(entry.path)}): ${formatBytes(entry.used_bytes)} / ${formatBytes(entry.total_bytes)} (${safe(entry.used_percent)}%)`);
+                    diskLines.push(`  Boş: ${formatBytes(entry.free_bytes)}`);
+                });
+                diskDiv.textContent = diskLines.join('\n');
+            }
+
+            async function loadActor() {
+                const token = localStorage.getItem('jwt_token') || '';
+                const res = await fetch(`${API_URL}/me`, { headers: { 'X-Session-ID': token } });
+                if (!res.ok) {
+                    throw new Error('Kullanici bilgisi alinamadi.');
+                }
+                const actor = await res.json();
+                renderActor(actor);
+            }
+
+            async function loadSystem() {
+                const token = localStorage.getItem('jwt_token') || '';
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = 'Yukleniyor...';
+                try {
+                    const res = await fetch(`${API_URL}/admin/system`, { headers: { 'X-Session-ID': token } });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        showNotice(data.detail || 'Sistem bilgisi alinamadi.', 'error');
+                        return;
+                    }
+                    renderSystem(data);
+                } catch (err) {
+                    showNotice(err?.message || 'Sunucu hatasi.', 'error');
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = 'Yenile';
+                }
+            }
+
+            refreshBtn.addEventListener('click', loadSystem);
+
+            (async () => {
+                try {
+                    await loadActor();
+                    await loadSystem();
+                } catch (err) {
+                    showNotice(err?.message || 'Sayfa yuklenemedi.', 'error');
+                }
+            })();
+        });
+    </script>
+</Layout>
+
+

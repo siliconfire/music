@@ -4,6 +4,8 @@ import json
 import time
 import uuid
 import threading
+import platform
+import resource
 import requests
 
 from dotenv import load_dotenv
@@ -56,6 +58,7 @@ content_logger.propagate = False
 
 load_dotenv()
 app = FastAPI()
+APP_STARTED_AT = time.time()
 
 
 def _clip_value(value: str | None, max_len: int = 200) -> str | None:
@@ -64,6 +67,128 @@ def _clip_value(value: str | None, max_len: int = 200) -> str | None:
     if len(value) <= max_len:
         return value
     return value[:max_len] + "..."
+
+
+def _read_proc_meminfo_bytes() -> dict:
+    mem_total = None
+    mem_available = None
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8") as handle:
+            for raw in handle:
+                key, _, rest = raw.partition(":")
+                if key == "MemTotal":
+                    mem_total = int(rest.strip().split()[0]) * 1024
+                elif key == "MemAvailable":
+                    mem_available = int(rest.strip().split()[0]) * 1024
+                if mem_total is not None and mem_available is not None:
+                    break
+    except Exception:
+        return {}
+
+    if mem_total is None or mem_available is None:
+        return {}
+
+    used = max(mem_total - mem_available, 0)
+    used_pct = round((used / mem_total) * 100, 2) if mem_total else None
+    return {
+        "total_bytes": mem_total,
+        "available_bytes": mem_available,
+        "used_bytes": used,
+        "used_percent": used_pct,
+    }
+
+
+def _read_disk_usage(path: str) -> dict:
+    try:
+        fs = os.statvfs(path)
+    except Exception:
+        return {"path": path, "available": False}
+
+    total = fs.f_blocks * fs.f_frsize
+    free = fs.f_bavail * fs.f_frsize
+    used = max(total - free, 0)
+    used_pct = round((used / total) * 100, 2) if total else None
+    return {
+        "path": path,
+        "available": True,
+        "total_bytes": total,
+        "free_bytes": free,
+        "used_bytes": used,
+        "used_percent": used_pct,
+    }
+
+
+def _read_host_uptime_seconds() -> float | None:
+    try:
+        with open("/proc/uptime", "r", encoding="utf-8") as handle:
+            raw = handle.read().strip().split()
+        if not raw:
+            return None
+        return round(float(raw[0]), 2)
+    except Exception:
+        return None
+
+
+def _collect_system_info() -> dict:
+    now = time.time()
+    process_uptime = round(max(now - APP_STARTED_AT, 0), 2)
+    host_uptime = _read_host_uptime_seconds()
+    load_averages = None
+    try:
+        one, five, fifteen = os.getloadavg()
+        load_averages = {
+            "one": round(one, 2),
+            "five": round(five, 2),
+            "fifteen": round(fifteen, 2),
+        }
+    except Exception:
+        load_averages = None
+
+    process_mem = None
+    try:
+        # Linux reports ru_maxrss in KiB; convert to bytes for consistency.
+        process_mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+    except Exception:
+        process_mem = None
+
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    return {
+        "server_time_unix": round(now, 3),
+        "server_time_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+        "process_uptime_seconds": process_uptime,
+        "host_uptime_seconds": host_uptime,
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine(),
+            "python": platform.python_version(),
+            "hostname": platform.node(),
+        },
+        "cpu": {
+            "logical_cores": os.cpu_count(),
+            "load_average": load_averages,
+        },
+        "memory": {
+            "process_peak_rss_bytes": process_mem,
+            "system": _read_proc_meminfo_bytes(),
+        },
+        "disk": {
+            "backend": _read_disk_usage(backend_dir),
+            "root": _read_disk_usage("/"),
+        },
+        "runtime": {
+            "lockdown": LOCKDOWN,
+            "board_lockdown": BOARD_LOCKDOWN,
+            "active_threads": threading.active_count(),
+            "update_thread_alive": bool(_update_thread and _update_thread.is_alive()),
+            "cached_challenges": {
+                "passkey_register": len(PASSKEY_REGISTER_CHALLENGES),
+                "passkey_login": len(PASSKEY_LOGIN_CHALLENGES),
+                "board_login": len(BOARD_LOGIN_APPROVALS),
+                "spotify_oauth_states": len(SPOTIFY_OAUTH_STATES),
+            },
+        },
+    }
 
 
 @app.middleware("http")
@@ -971,6 +1096,13 @@ def admin_update_status(payload: dict = Depends(get_current_user)):
     if not users.check_user_perm(payload.get("sub"), "admin"):
         raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
     return updater.get_status()
+
+
+@app.get("/admin/system")
+def admin_system_info(payload: dict = Depends(get_current_user)):
+    if not users.check_user_perm(payload.get("sub"), "admin"):
+        raise HTTPException(status_code=403, detail="'admin' yetkisine sahip değilsiniz.")
+    return _collect_system_info()
 
 
 @app.get("/admin/logs")
