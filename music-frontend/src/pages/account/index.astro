@@ -18,7 +18,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
         <div class="flex flex-wrap gap-5 mt-4 max-w-full overflow-x-hidden">
             <div id="user-info" class="border board-theme-border board-theme-card p-5 inline-block min-w-[18rem] board-theme-text-primary">Kullanıcı verileri yükleniyor...</div>
 
-            <div class="border board-theme-border board-theme-card p-5 inline-block">
+            <div class="border board-theme-border board-theme-card p-2 inline-block">
                 <SetPasswordPanel themed={true} />
             </div>
 
@@ -28,7 +28,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro'
                 <button id="passkey-enroll-btn" class="border board-theme-border px-3 py-2">Passkey oluştur</button>
                 <div id="passkey-status" class="text-sm board-theme-text-secondary"></div>
             </div>
-                <div class="text-xs board-theme-text-secondary mt-2">Eğer cihazınız kullanımını destekliyorsa (çok büyük ihtimalle destekliyordur), giriş yaparken şifreniz yerine oluşturduğunuz passkey'i kullanabilirsiniz.</div>
+                <div class="text-xs board-theme-text-secondary mt-2">Eğer cihazınız kullanımını destekliyorsa (çok büyük ihtimalle destekliyordur), giriş yaparken şifreniz yerine cihazınıza atanacak bir passkey'i kullanabilirsiniz.</div>
                 <div class="text-xs board-theme-text-secondary mt-2">Şu anlık yanlızca 1 tane passkey ekleyebilirsiniz, yeni bir tane eklerseniz eskisi silinir.</div>
                 <div class="text-xs board-theme-text-secondary mt-2">Passkey kullanımı hakkında daha fazla bilgi için <a class="board-theme-text-primary" href="/help/passkeys">buraya</a> tıklayın.</div>
             </div>
