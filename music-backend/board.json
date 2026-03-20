@@ -78,44 +78,48 @@
         }
     ],
     "updated_by": "0",
-    "updated_at": "2026-03-20T19:10:57.449556+00:00",
+    "updated_at": "2026-03-20T20:05:30.713236+00:00",
     "confetti_trigger": {
-        "id": "2026-03-20T19:10:57.449556+00:00",
-        "created_at": "2026-03-20T19:10:57.449556+00:00",
+        "id": "2026-03-20T19:54:17.597451+00:00",
+        "created_at": "2026-03-20T19:54:17.597451+00:00",
         "config": {
-            "particleCount": 10000,
-            "sizeScale": 10.0
+            "particleCount": 100,
+            "durationMs": 3000,
+            "spawnDurationMs": 1200,
+            "spread": 0.5,
+            "sizeScale": 4.0,
+            "upwardBoost": 2.0
         },
-        "created_by": "0"
+        "created_by": "100000"
     },
     "restart_trigger": {
-        "id": "2026-03-20T18:44:41.741488+00:00",
-        "created_at": "2026-03-20T18:44:41.741488+00:00",
+        "id": "2026-03-20T19:44:21.014538+00:00",
+        "created_at": "2026-03-20T19:44:21.014538+00:00",
         "created_by": "100000"
     },
     "debug_passkeys": [],
-    "theme_key": "gruvbox_dark",
+    "theme_key": "deep_forest",
     "theme": {
-        "key": "gruvbox_dark",
-        "label": "Lidya Sarısı",
+        "key": "deep_forest",
+        "label": "Yeşil Madde",
         "colors": {
-            "textPrimary": "#ebdbb2",
-            "textSecondary": "#a89984",
-            "background": "#1d2021",
-            "cardBackground": "#282828",
-            "cardBorder": "#3c3836",
-            "cardPinnedBackground": "#32302f",
-            "cardPinnedBorder": "#fabd2f",
-            "qrButtonBackground": "#3c3836",
-            "qrButtonBorder": "#504945",
-            "qrButtonText": "#fabd2f",
+            "textPrimary": "#ecfdf5",
+            "textSecondary": "#a7f3d0",
+            "background": "#061612",
+            "cardBackground": "#0c221d",
+            "cardBorder": "#164e41",
+            "cardPinnedBackground": "#14532d",
+            "cardPinnedBorder": "#4ade80",
+            "qrButtonBackground": "#0c221d",
+            "qrButtonBorder": "#164e41",
+            "qrButtonText": "#4ade80",
             "confettiColors": [
-                "#fb4934",
-                "#b8bb26",
-                "#fabd2f",
-                "#83a598",
-                "#d3869b",
-                "#8ec07c"
+                "#065f46",
+                "#059669",
+                "#10b981",
+                "#34d399",
+                "#6ee7b7",
+                "#a7f3d0"
             ]
         }
     },
@@ -470,8 +474,13 @@
         }
     ],
     "background_image_url": null,
-    "background_image_key": null,
+    "background_image_key": "conway-life",
     "background_catalog": [
+        {
+            "key": "conway-life",
+            "label": "Conway (arka plan)",
+            "url": null
+        },
         {
             "key": "yellow-flowers",
             "label": "Yellow Flowers",
@@ -479,5 +488,6 @@
         }
     ],
     "backdrop_blur_px": 0,
-    "card_blur_px": 8
+    "card_blur_px": 8,
+    "conway_trigger_mode": "hover"
 }

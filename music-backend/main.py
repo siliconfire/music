@@ -379,6 +379,7 @@ class BoardUpdateRequest(BaseModel):
     background_image_url: str | None = None
     backdrop_blur_px: int | None = None
     card_blur_px: int | None = None
+    conway_trigger_mode: str | None = None
 
 
 class BoardPollVoteRequest(BaseModel):
@@ -1383,7 +1384,8 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
         background_image_url=req.background_image_url,
         background_image_key=req.background_image_key,
         backdrop_blur_px=req.backdrop_blur_px,
-        card_blur_px=req.card_blur_px
+        card_blur_px=req.card_blur_px,
+        conway_trigger_mode=req.conway_trigger_mode,
     )
     server_log.log_board_edit(
         "board_update",
@@ -1396,6 +1398,7 @@ def update_board(req: BoardUpdateRequest, payload: dict = Depends(get_current_us
         background_image_url=_clip_value(req.background_image_url, 300),
         backdrop_blur_px=req.backdrop_blur_px,
         card_blur_px=req.card_blur_px,
+        conway_trigger_mode=req.conway_trigger_mode,
     )
     return updated_board
 

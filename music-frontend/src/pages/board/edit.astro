@@ -63,6 +63,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 </fieldset>
                 <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
                     <legend class="board-theme-text-primary">Arkaplan ve Bulanıklık</legend>
+                    <p class="text-sm board-theme-text-secondary">(Conway hakkında daha fazla bilgi için <a class="board-theme-text-primary" href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">buraya</a> tıklayın.)</p>
                     <div class="mt-1 flex flex-wrap gap-2 items-center">
                         <label for="board-background-image" class="text-sm board-theme-text-secondary">Arkaplan</label>
                         <select id="board-background-image" class="border board-theme-border p-2 text-sm min-w-[18rem]"></select>
@@ -119,6 +120,22 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                     <legend class="board-theme-text-primary">Debug</legend>
                     <button id="board-debug-screen-btn" class="border board-theme-border p-2 board-card-bg ml-2">Dokunmatik kontrol aracını başlat</button>
                     <p class="mx-3 mt-4 text-sm board-theme-text-secondary">Dokunmatik ekranların dokunmatik kapasitesini test etmek için kullanılan bir araç. Zararı yok.</p>
+                </fieldset>
+                <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
+                    <legend class="board-theme-text-primary">Gelişmiş seçenekler</legend>
+                    <details class="m-2 p-3 border board-theme-border inline-block">
+                        <summary class="board-theme-text-primary">Conway</summary>
+                        <div class="mt-3 flex flex-wrap gap-2 items-center">
+                            <label for="board-conway-trigger-mode" class="text-sm board-theme-text-secondary">Etkileşim modu</label>
+                            <select id="board-conway-trigger-mode" class="border board-theme-border p-2 text-sm min-w-[12rem]">
+                                <option value="click">click</option>
+                                <option value="hover">hover</option>
+                            </select>
+                            <button id="board-conway-trigger-save" class="border board-theme-border p-2">kaydet</button>
+                        </div>
+                        <p class="mt-2 text-sm board-theme-text-secondary">click modunda dokununca (yani click), hover modunda üzerinden kaydırınca (yani hover) conway etkilenir.</p>
+                    </details>
+                    <p class="board-theme-text-secondary text-sm mx-3 mt-2">Buradaki ayarları anlamamanız normal, açıklamakla uğraşmak istemediğim için buradalar zaten.</p>
                 </fieldset>
                 <fieldset class="p-5 border board-theme-border board-theme-card inline-block w-full mt-10">
                     <legend class="board-theme-text-primary">Yardım</legend>
@@ -182,6 +199,8 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
         const cardBlurEl = document.getElementById('board-card-blur') as HTMLInputElement | null;
         const cardBlurValueEl = document.getElementById('board-card-blur-value');
         const cardBlurSaveEl = document.getElementById('board-card-blur-save');
+        const conwayTriggerModeEl = document.getElementById('board-conway-trigger-mode') as HTMLSelectElement | null;
+        const conwayTriggerSaveEl = document.getElementById('board-conway-trigger-save');
         const debugScreenBtnEl = document.getElementById('board-debug-screen-btn');
 
         function normalizeBackgroundImageKey(value) {
@@ -204,6 +223,12 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
             return Math.round(num);
         }
 
+        function normalizeConwayTriggerMode(value) {
+            const cleaned = String(value || '').trim().toLowerCase();
+            if (cleaned === 'hover') return 'hover';
+            return 'click';
+        }
+
         function renderBackdropBlurValue() {
             if (!backdropBlurValueEl || !backdropBlurEl) return;
             backdropBlurValueEl.textContent = `${normalizeBackdropBlur(backdropBlurEl.value)}px`;
@@ -216,7 +241,10 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
 
         function syncBackgroundInput() {
             if (!backgroundInputEl || !boardData) return;
-            const catalog = Array.isArray(boardData.background_catalog) ? boardData.background_catalog : [];
+            const catalog = Array.isArray(boardData.background_catalog) ? [...boardData.background_catalog] : [];
+            if (!catalog.some((entry) => entry?.key === 'conway-life')) {
+                catalog.unshift({ key: 'conway-life', label: 'Conway (arka plan)', url: null });
+            }
             backgroundInputEl.innerHTML = '';
 
             const emptyOption = document.createElement('option');
@@ -244,6 +272,11 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
             if (!cardBlurEl || !boardData) return;
             cardBlurEl.value = String(normalizeCardBlur(boardData.card_blur_px));
             renderCardBlurValue();
+        }
+
+        function syncConwayTriggerInput() {
+            if (!conwayTriggerModeEl || !boardData) return;
+            conwayTriggerModeEl.value = normalizeConwayTriggerMode(boardData.conway_trigger_mode);
         }
 
         function showPermissionError(message) {
@@ -469,7 +502,8 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 theme_key: boardData.theme_key || null,
                 background_image_key: normalizeBackgroundImageKey(boardData.background_image_key),
                 backdrop_blur_px: normalizeBackdropBlur(boardData.backdrop_blur_px),
-                card_blur_px: normalizeCardBlur(boardData.card_blur_px)
+                card_blur_px: normalizeCardBlur(boardData.card_blur_px),
+                conway_trigger_mode: normalizeConwayTriggerMode(boardData.conway_trigger_mode),
             };
             const res = await fetch(`${API_URL}/board`, {
                 method: 'PUT',
@@ -850,6 +884,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 syncBackgroundInput();
                 syncBackdropBlurInput();
                 syncCardBlurInput();
+                syncConwayTriggerInput();
                 showStatus('Tema kaydedildi.');
             } catch (err) {
                 showStatus('Tema kaydedilemedi.', true);
@@ -882,6 +917,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 syncBackgroundInput();
                 syncBackdropBlurInput();
                 syncCardBlurInput();
+                syncConwayTriggerInput();
                 showStatus('Arkaplan kaydedildi.');
             } catch (err) {
                 showStatus('Arkaplan kaydedilemedi.', true);
@@ -912,6 +948,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 boardData = await res.json();
                 syncBackdropBlurInput();
                 syncCardBlurInput();
+                syncConwayTriggerInput();
                 showStatus('Bulanıklık kaydedildi.');
             } catch (err) {
                 showStatus('Bulanıklık kaydedilemedi.', true);
@@ -942,9 +979,39 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 boardData = await res.json();
                 syncBackdropBlurInput();
                 syncCardBlurInput();
+                syncConwayTriggerInput();
                 showStatus('Kart bulanıklığı kaydedildi.');
             } catch (err) {
                 showStatus('Kart bulanıklığı kaydedilemedi.', true);
+            }
+        }
+
+        async function saveConwayTriggerMode() {
+            if (!boardData) return;
+            clearStatus();
+            try {
+                const nextValue = normalizeConwayTriggerMode(conwayTriggerModeEl ? conwayTriggerModeEl.value : 'click');
+                const res = await fetch(`${API_URL}/board`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': token
+                    },
+                    body: JSON.stringify({ conway_trigger_mode: nextValue })
+                });
+                if (res.status === 403) {
+                    showPermissionError('Düzenlemek için yetkiniz yok.');
+                    return;
+                }
+                if (!res.ok) {
+                    showStatus('Conway ayarı kaydedilemedi.', true);
+                    return;
+                }
+                boardData = await res.json();
+                syncConwayTriggerInput();
+                showStatus('Conway ayarı kaydedildi.');
+            } catch (err) {
+                showStatus('Conway ayarı kaydedilemedi.', true);
             }
         }
 
@@ -989,6 +1056,7 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
                 syncBackgroundInput();
                 syncBackdropBlurInput();
                 syncCardBlurInput();
+                syncConwayTriggerInput();
             } catch (err) {
                 if (err && err.message === 'permission') {
                     showPermissionError('Düzenlemek için yetkiniz yok.');
@@ -1175,6 +1243,17 @@ import BoardThemeLoader from '../../components/BoardThemeLoader.astro';
 
          if (cardBlurSaveEl) {
              cardBlurSaveEl.addEventListener('click', saveCardBlur);
+         }
+
+         if (conwayTriggerModeEl) {
+             conwayTriggerModeEl.addEventListener('change', () => {
+                 if (!boardData) return;
+                 boardData.conway_trigger_mode = normalizeConwayTriggerMode(conwayTriggerModeEl.value);
+             });
+         }
+
+         if (conwayTriggerSaveEl) {
+             conwayTriggerSaveEl.addEventListener('click', saveConwayTriggerMode);
          }
 
          init();

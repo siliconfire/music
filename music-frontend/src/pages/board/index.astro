@@ -159,8 +159,24 @@ import LightsOut from '../../components/LightsOut.astro';
         let lastBackgroundKey = null;
         let lastBackdropBlur = null;
         let lastCardBlur = null;
+        let lastConwayTriggerMode = null;
         let themeConfettiColors = null;
         let initialConfettiShown = false;
+        const CONWAY_BACKGROUND_KEY = 'conway-life';
+        let conwayCanvas = null;
+        let conwayCtx = null;
+        let conwayCells = [];
+        let conwayRows = 0;
+        let conwayCols = 0;
+        let conwayCellSize = 22;
+        let conwayStepTimer = null;
+        let conwayAnimationFrame = null;
+        let conwayPointerDown = false;
+        let conwayPointerHandlersBound = false;
+        let conwayAliveColor = 'rgba(148, 163, 184, 0.35)';
+        let conwayDeadColor = 'rgba(15, 23, 42, 0.08)';
+        let conwayEnabled = false;
+        let conwayTriggerMode = 'click';
         const restartStorageKey = 'board.restartTriggerId';
         let lastRestartId = sessionStorage.getItem(restartStorageKey);
         const redirectStorageKey = 'board.redirectTriggerId';
@@ -476,7 +492,14 @@ import LightsOut from '../../components/LightsOut.astro';
             if (!pick) return;
 
             // Apply locally immediately
-            applyTheme(pick, boardData?.background_image_url || null);
+            applyTheme(
+                pick,
+                boardData?.background_image_url || null,
+                boardData?.backdrop_blur_px || 0,
+                boardData?.card_blur_px || 12,
+                boardData?.background_image_key || null,
+                boardData?.conway_trigger_mode || 'click'
+            );
             lastThemeKey = pick.key;
 
             try {
@@ -767,9 +790,10 @@ import LightsOut from '../../components/LightsOut.astro';
                 const backgroundKey = data?.background_image_key || data?.background_image_url || null;
                 const backdropBlur = Number.isFinite(Number(data?.backdrop_blur_px)) ? Number(data?.backdrop_blur_px) : 0;
                 const cardBlur = Number.isFinite(Number(data?.card_blur_px)) ? Number(data?.card_blur_px) : 12;
+                const conwayMode = data?.conway_trigger_mode === 'hover' ? 'hover' : 'click';
                 const hadBoardData = Boolean(boardData);
                 const widgetsChanged = widgetStamp !== lastWidgetStamp;
-                const visualsChanged = themeKey !== lastThemeKey || backgroundKey !== lastBackgroundKey || backdropBlur !== lastBackdropBlur || cardBlur !== lastCardBlur;
+                const visualsChanged = themeKey !== lastThemeKey || backgroundKey !== lastBackgroundKey || backdropBlur !== lastBackdropBlur || cardBlur !== lastCardBlur || conwayMode !== lastConwayTriggerMode;
 
                 if (hadBoardData && !widgetsChanged && !visualsChanged) {
                     clearStatus();
@@ -793,8 +817,16 @@ import LightsOut from '../../components/LightsOut.astro';
                 lastBackgroundKey = backgroundKey;
                 lastBackdropBlur = backdropBlur;
                 lastCardBlur = cardBlur;
+                lastConwayTriggerMode = conwayMode;
                 if (!hadBoardData || visualsChanged) {
-                    applyTheme(data?.theme || null, data?.background_image_url || null, backdropBlur, cardBlur);
+                    applyTheme(
+                        data?.theme || null,
+                        data?.background_image_url || null,
+                        backdropBlur,
+                        cardBlur,
+                        data?.background_image_key || null,
+                        conwayMode
+                    );
                 }
                 if (!hadBoardData || widgetsChanged) {
                     renderBoard();
@@ -844,6 +876,168 @@ import LightsOut from '../../components/LightsOut.astro';
                 confettiCanvas.height = window.innerHeight;
             });
             return canvas;
+        }
+
+        function conwayIndex(row, col) {
+            return row * conwayCols + col;
+        }
+
+        function clearConwayTimers() {
+            if (conwayStepTimer) {
+                clearInterval(conwayStepTimer);
+                conwayStepTimer = null;
+            }
+            if (conwayAnimationFrame) {
+                cancelAnimationFrame(conwayAnimationFrame);
+                conwayAnimationFrame = null;
+            }
+        }
+
+        function ensureConwayCanvas() {
+            if (conwayCanvas) return conwayCanvas;
+            if (!themeBackdropEl) return null;
+            const canvas = document.createElement('canvas');
+            canvas.id = 'board-conway-canvas';
+            canvas.className = 'absolute inset-0 w-full h-full pointer-events-none';
+            canvas.style.zIndex = '0';
+            themeBackdropEl.appendChild(canvas);
+            conwayCanvas = canvas;
+            conwayCtx = canvas.getContext('2d');
+            return conwayCanvas;
+        }
+
+        function resizeConwayGrid(reseed = false) {
+            const canvas = ensureConwayCanvas();
+            if (!canvas || !conwayCtx) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const cols = Math.max(10, Math.ceil(canvas.width / conwayCellSize));
+            const rows = Math.max(8, Math.ceil(canvas.height / conwayCellSize));
+            const nextSize = rows * cols;
+            if (reseed || rows !== conwayRows || cols !== conwayCols || conwayCells.length !== nextSize) {
+                conwayRows = rows;
+                conwayCols = cols;
+                conwayCells = new Array(nextSize).fill(false).map(() => Math.random() < 0.28);
+            }
+        }
+
+        function randomizeConwayAt(clientX, clientY) {
+            if (!conwayEnabled || !conwayCanvas || !conwayCols || !conwayRows) return;
+            const rect = conwayCanvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const col = Math.floor(x / conwayCellSize);
+            const row = Math.floor(y / conwayCellSize);
+            if (col < 0 || col >= conwayCols || row < 0 || row >= conwayRows) return;
+
+            for (let rr = row - 1; rr <= row + 1; rr += 1) {
+                for (let cc = col - 1; cc <= col + 1; cc += 1) {
+                    if (rr < 0 || rr >= conwayRows || cc < 0 || cc >= conwayCols) continue;
+                    conwayCells[conwayIndex(rr, cc)] = Math.random() < 0.75;
+                }
+            }
+        }
+
+        function stepConway() {
+            if (!conwayEnabled || !conwayCols || !conwayRows) return;
+            const next = new Array(conwayCells.length).fill(false);
+            for (let row = 0; row < conwayRows; row += 1) {
+                for (let col = 0; col < conwayCols; col += 1) {
+                    let neighbors = 0;
+                    for (let dr = -1; dr <= 1; dr += 1) {
+                        for (let dc = -1; dc <= 1; dc += 1) {
+                            if (dr === 0 && dc === 0) continue;
+                            const nr = row + dr;
+                            const nc = col + dc;
+                            if (nr < 0 || nr >= conwayRows || nc < 0 || nc >= conwayCols) continue;
+                            if (conwayCells[conwayIndex(nr, nc)]) neighbors += 1;
+                        }
+                    }
+                    const idx = conwayIndex(row, col);
+                    const alive = conwayCells[idx];
+                    next[idx] = alive ? (neighbors === 2 || neighbors === 3) : neighbors === 3;
+                }
+            }
+            conwayCells = next;
+        }
+
+        function drawConway() {
+            if (!conwayEnabled || !conwayCanvas || !conwayCtx) return;
+            conwayCtx.clearRect(0, 0, conwayCanvas.width, conwayCanvas.height);
+            conwayCtx.fillStyle = conwayDeadColor;
+            conwayCtx.fillRect(0, 0, conwayCanvas.width, conwayCanvas.height);
+
+            conwayCtx.fillStyle = conwayAliveColor;
+            for (let row = 0; row < conwayRows; row += 1) {
+                for (let col = 0; col < conwayCols; col += 1) {
+                    if (!conwayCells[conwayIndex(row, col)]) continue;
+                    conwayCtx.fillRect(col * conwayCellSize + 1, row * conwayCellSize + 1, Math.max(1, conwayCellSize - 2), Math.max(1, conwayCellSize - 2));
+                }
+            }
+
+            conwayAnimationFrame = requestAnimationFrame(drawConway);
+        }
+
+        function onConwayPointerDown(event) {
+            conwayPointerDown = true;
+            randomizeConwayAt(event.clientX, event.clientY);
+        }
+
+        function onConwayPointerMove(event) {
+            if (conwayTriggerMode !== 'hover' && !conwayPointerDown) return;
+            randomizeConwayAt(event.clientX, event.clientY);
+        }
+
+        function onConwayPointerUp() {
+            conwayPointerDown = false;
+        }
+
+        function onConwayResize() {
+            if (!conwayEnabled) return;
+            resizeConwayGrid(true);
+        }
+
+        function bindConwayPointerHandlers() {
+            if (conwayPointerHandlersBound) return;
+            conwayPointerHandlersBound = true;
+            window.addEventListener('pointerdown', onConwayPointerDown, { passive: true });
+            window.addEventListener('pointermove', onConwayPointerMove, { passive: true });
+            window.addEventListener('pointerup', onConwayPointerUp, { passive: true });
+            window.addEventListener('pointercancel', onConwayPointerUp, { passive: true });
+            window.addEventListener('resize', onConwayResize, { passive: true });
+        }
+
+        function unbindConwayPointerHandlers() {
+            if (!conwayPointerHandlersBound) return;
+            conwayPointerHandlersBound = false;
+            window.removeEventListener('pointerdown', onConwayPointerDown);
+            window.removeEventListener('pointermove', onConwayPointerMove);
+            window.removeEventListener('pointerup', onConwayPointerUp);
+            window.removeEventListener('pointercancel', onConwayPointerUp);
+            window.removeEventListener('resize', onConwayResize);
+        }
+
+        function stopConwayBackground() {
+            conwayEnabled = false;
+            clearConwayTimers();
+            unbindConwayPointerHandlers();
+            conwayPointerDown = false;
+            if (conwayCanvas) {
+                conwayCanvas.classList.add('hidden');
+            }
+        }
+
+        function startConwayBackground() {
+            const canvas = ensureConwayCanvas();
+            if (!canvas || !conwayCtx) return;
+            conwayEnabled = true;
+            canvas.classList.remove('hidden');
+            bindConwayPointerHandlers();
+            resizeConwayGrid(conwayCells.length === 0);
+            clearConwayTimers();
+            conwayStepTimer = setInterval(stepConway, 170);
+            drawConway();
         }
 
         function popConfetti(options = {}) {
@@ -920,8 +1114,9 @@ import LightsOut from '../../components/LightsOut.astro';
             upwardBoost: 2
         };
 
-        function applyTheme(theme, backgroundImageUrl = null, backdropBlur = 0, cardBlur = 12) {
+        function applyTheme(theme, backgroundImageUrl = null, backdropBlur = 0, cardBlur = 12, backgroundKey = null, nextConwayTriggerMode = 'click') {
             const colors = theme?.colors || {};
+            conwayTriggerMode = nextConwayTriggerMode === 'hover' ? 'hover' : 'click';
             const style = document.documentElement.style;
             style.setProperty('--board-text-primary', colors.textPrimary || '#0f172a');
             style.setProperty('--board-text-secondary', colors.textSecondary || '#475569');
@@ -941,10 +1136,13 @@ import LightsOut from '../../components/LightsOut.astro';
             style.setProperty('--board-qr-text', colors.qrButtonText || '#0f172a');
             const cardBlurPx = Number.isFinite(Number(cardBlur)) ? Math.max(0, Math.min(30, Number(cardBlur))) : 12;
             style.setProperty('--board-card-blur', `${cardBlurPx}px`);
+            conwayAliveColor = hexToRgba(colors.cardBorder || colors.textSecondary || '#94a3b8', 0.45);
+            conwayDeadColor = hexToRgba(colors.background || '#0f172a', 0.18);
             if (themeBackdropEl) {
                 themeBackdropEl.style.backgroundColor = colors.background || '#f8fafc';
                 const imageUrl = typeof backgroundImageUrl === 'string' ? backgroundImageUrl.trim() : '';
-                if (imageUrl) {
+                const useConway = backgroundKey === CONWAY_BACKGROUND_KEY;
+                if (imageUrl && !useConway) {
                     const safeUrl = imageUrl.replace(/"/g, '\\"');
                     themeBackdropEl.style.backgroundImage = `url("${safeUrl}")`;
                     themeBackdropEl.style.backgroundSize = 'cover';
@@ -961,6 +1159,11 @@ import LightsOut from '../../components/LightsOut.astro';
                 const blurPx = Number.isFinite(Number(backdropBlur)) ? Math.max(0, Math.min(40, Number(backdropBlur))) : 0;
                 themeBackdropEl.style.filter = blurPx > 0 ? `blur(${blurPx}px)` : '';
                 themeBackdropEl.style.transform = blurPx > 0 ? 'scale(1.04)' : '';
+                if (useConway) {
+                    startConwayBackground();
+                } else {
+                    stopConwayBackground();
+                }
             }
             themeConfettiColors = Array.isArray(colors.confettiColors) ? colors.confettiColors : null;
             if (!initialConfettiShown) {

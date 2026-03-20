@@ -27,6 +27,13 @@ WALLPAPER_DIR_CANDIDATES = [
     Path(__file__).resolve().parents[1] / "music-frontend" / "public" / "wallpapers",
     Path(__file__).resolve().parent / "public" / "wallpapers",
 ]
+CONWAY_BACKGROUND_ENTRY = {
+    "key": "conway-life",
+    "label": "Conway (arka plan)",
+    "url": None,
+}
+CONWAY_TRIGGER_MODES = {"click", "hover"}
+DEFAULT_CONWAY_TRIGGER_MODE = "click"
 THEME_PRESETS = {
     "classic": {
         "key": "classic",
@@ -429,6 +436,15 @@ def _normalize_card_blur_px(value):
     return number
 
 
+def _normalize_conway_trigger_mode(value):
+    if not isinstance(value, str):
+        return DEFAULT_CONWAY_TRIGGER_MODE
+    cleaned = value.strip().lower()
+    if cleaned not in CONWAY_TRIGGER_MODES:
+        return DEFAULT_CONWAY_TRIGGER_MODE
+    return cleaned
+
+
 def _resolve_wallpaper_dir():
     for candidate in WALLPAPER_DIR_CANDIDATES:
         if candidate.exists() and candidate.is_dir():
@@ -437,12 +453,12 @@ def _resolve_wallpaper_dir():
 
 
 def _background_catalog_entries():
+    entries = [dict(CONWAY_BACKGROUND_ENTRY)]
+    used_keys = {CONWAY_BACKGROUND_ENTRY["key"]}
+
     wallpapers_dir = _resolve_wallpaper_dir()
     if not wallpapers_dir.exists() or not wallpapers_dir.is_dir():
-        return []
-
-    entries = []
-    used_keys = set()
+        return entries
 
     for path in sorted(wallpapers_dir.iterdir(), key=lambda p: p.name.lower()):
         if not path.is_file():
@@ -534,7 +550,8 @@ def load_board():
             "background_image_key": None,
             "background_image_url": None,
             "backdrop_blur_px": 0,
-            "card_blur_px": 12
+            "card_blur_px": 12,
+            "conway_trigger_mode": DEFAULT_CONWAY_TRIGGER_MODE,
         }
         save_board(data)
         return data
@@ -555,6 +572,7 @@ def load_board():
     data["background_catalog"] = _background_catalog_payload()
     data["backdrop_blur_px"] = _normalize_backdrop_blur_px(data.get("backdrop_blur_px"))
     data["card_blur_px"] = _normalize_card_blur_px(data.get("card_blur_px"))
+    data["conway_trigger_mode"] = _normalize_conway_trigger_mode(data.get("conway_trigger_mode"))
     data["theme"] = _theme_payload(theme_key)
     data["theme_presets"] = _theme_presets_payload()
     return data
@@ -565,7 +583,7 @@ def save_board(data):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None, theme_key=None, background_image_url=None, background_image_key=None, backdrop_blur_px=None, card_blur_px=None):
+def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None, theme_key=None, background_image_url=None, background_image_key=None, backdrop_blur_px=None, card_blur_px=None, conway_trigger_mode=None):
     data = load_board()
 
     if widgets is not None:
@@ -660,10 +678,14 @@ def update_board(widgets=None, order_ids=None, pinned_ids=None, updated_by=None,
     if card_blur_px is not None:
         data["card_blur_px"] = _normalize_card_blur_px(card_blur_px)
 
+    if conway_trigger_mode is not None:
+        data["conway_trigger_mode"] = _normalize_conway_trigger_mode(conway_trigger_mode)
+
     data["theme"] = _theme_payload(data.get("theme_key"))
     data["background_catalog"] = _background_catalog_payload()
     data["backdrop_blur_px"] = _normalize_backdrop_blur_px(data.get("backdrop_blur_px"))
     data["card_blur_px"] = _normalize_card_blur_px(data.get("card_blur_px"))
+    data["conway_trigger_mode"] = _normalize_conway_trigger_mode(data.get("conway_trigger_mode"))
     data["theme_presets"] = _theme_presets_payload()
     data["updated_by"] = updated_by
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
