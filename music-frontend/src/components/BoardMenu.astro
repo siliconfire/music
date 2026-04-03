@@ -1,0 +1,391 @@
+<button
+    id="board-menu-launcher"
+    data-action="board-menu-open"
+    class="fixed bottom-4 right-4 z-40 border border-white/20 bg-white/10 px-4 py-2 text-sm text-(--board-text-primary) backdrop-blur-[18px] backdrop-saturate-[1.2] rounded-none"
+    type="button"
+>
+    Menü
+</button>
+
+<div
+    id="board-menu-panel"
+    class="hidden fixed bottom-4 right-4 z-50 h-112 w-88 flex-col overflow-hidden border border-white/15 bg-white/5 text-(--board-text-primary) backdrop-blur-[18px] backdrop-saturate-[1.2] rounded-none"
+    aria-hidden="true"
+>
+    <div id="board-menu-topbar" class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/15 bg-white/10 px-3 py-2 rounded-none">
+        <button id="board-menu-back" class="invisible h-7 w-7 justify-self-start border-0 bg-transparent p-0 text-(--board-text-primary) rounded-none" type="button" aria-label="Go back" title="Go back">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M14 6 8 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </button>
+        <div id="board-menu-title" class="justify-self-center text-[0.9rem] font-semibold tracking-[0.04em]">Menü</div>
+        <button id="board-menu-close" class="h-7 w-7 justify-self-end border-0 bg-transparent p-0 text-(--board-text-primary) rounded-none" type="button" aria-label="Close menu" title="Close menu">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="m6 6 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                <path d="M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div id="board-menu-body" class="flex-1 overflow-auto p-4 rounded-none">
+        <section id="board-menu-page-main" class="min-h-full">
+            <button id="board-menu-show-qr" data-action="board-qr-open-menu" class="inline-flex w-full items-center gap-2 border border-white/20 bg-white/10 px-3 py-2 text-left text-(--board-text-primary) rounded-none" type="button">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" class="shrink-0">
+                    <path fill="currentColor" d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h2v2h-2v-2Zm2 2h2v2h-2v-2Zm2-2h2v2h-2v-2Zm-4 4h2v2h-2v-2Zm4 0h2v2h-2v-2Zm2 2h2v2h-2v-2Zm-4 2h2v2h-2v-2Z" />
+                </svg>
+                <span>Karekodu göster</span>
+            </button>
+            <button id="board-menu-show-speedtest" class="mt-2 inline-flex w-full items-center gap-2 border border-white/20 bg-white/10 px-3 py-2 text-left text-(--board-text-primary) rounded-none transition-opacity" type="button">
+                <svg id="board-speedtest-btn-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" class="shrink-0">
+                    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 1-6.88 17.24M2 12h4m14.24-6.24-2.83 2.83M12 6v2"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <svg id="board-speedtest-btn-lock" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" class="hidden shrink-0">
+                    <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span id="board-speedtest-btn-label">Hız testi</span>
+            </button>
+            <button id="board-menu-show-about" data-action="board-about-open-menu" class="mt-2 inline-flex w-full items-center gap-2 border border-white/20 bg-white/10 px-3 py-2 text-left text-(--board-text-primary) rounded-none" type="button">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" class="shrink-0">
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                    <circle cx="12" cy="8" r="1.2" fill="currentColor"></circle>
+                    <path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                </svg>
+                <span>Hakkında</span>
+            </button>
+        </section>
+
+        <section id="board-menu-page-qr" class="hidden min-h-full flex-col items-center">
+            <div class="text-sm board-theme-text-secondary">Telefonunuz ile tarayın:</div>
+            <img id="board-qr-img" alt="QR" src="/loading.svg" class="mt-3 h-64 w-64" style="border: 1px solid var(--board-card-border); background: transparent;" />
+            <div id="board-qr-label" class="mt-3 text-sm board-theme-text-secondary"></div>
+        </section>
+
+        <section id="board-menu-page-speedtest" class="hidden min-h-full flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2">
+                <div class="flex flex-col items-center gap-1 border border-white/15 bg-white/5 px-2 py-3">
+                    <span class="text-[0.65rem] uppercase tracking-widest opacity-60">Ping</span>
+                    <span id="board-speedtest-ping" class="text-xl font-semibold tabular-nums">—</span>
+                    <span class="text-[0.65rem] opacity-50">ms</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 border border-white/15 bg-white/5 px-2 py-3">
+                    <span class="text-[0.65rem] uppercase tracking-widest opacity-60">İndirme</span>
+                    <span id="board-speedtest-dl" class="text-xl font-semibold tabular-nums">—</span>
+                    <span class="text-[0.65rem] opacity-50">Mbps</span>
+                </div>
+            </div>
+            <div id="board-speedtest-status" class="text-center text-sm opacity-60"></div>
+        </section>
+
+        <section id="board-menu-page-about" class="hidden min-h-full flex-col">
+            <p class="text-2xl board-theme-text-primary">Bartın Lisesi Müzik sistemi</p>
+            <p class="text-lg board-theme-text-secondary">Çınar Mert Çeçen tarafından hazırlandı</p>
+            <div class="mt-3">
+                <p class="text-lg board-theme-text-primary">Özel teşekkürler</p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">
+                    Deniz Aktaş
+                    <svg height="15" class="inline-block" viewBox="0 0 24 24" fill="#FFD700" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
+                    </svg>
+                </p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">Ali Efe Aktuğ</p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">İdris Varol</p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">Çınar Mert Çeçen</p>
+                <p class="text-sm board-theme-text-secondary">Mert Ali Aydemir</p>
+                <p class="text-sm board-theme-text-secondary">Deniz Köse</p>
+                <p class="text-sm board-theme-text-secondary">Emeği geçen diğer herkes</p>
+                <p class="text-sm board-theme-text-secondary">(Ve daha önemlisi siz)</p>
+
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    import { API_URL } from '../lib/constants';
+    const menuLauncherEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-launcher'));
+    const menuPanelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-panel'));
+    const menuMainPageEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-page-main'));
+    const menuQrPageEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-page-qr'));
+    const menuAboutPageEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-page-about'));
+    const menuSpeedtestPageEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-page-speedtest'));
+    const menuBackEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-back'));
+    const menuCloseEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-close'));
+    const menuShowQrEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-show-qr'));
+    const menuShowAboutEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-show-about'));
+    const menuShowSpeedtestEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-menu-show-speedtest'));
+    const menuTitleEl = /** @type {HTMLElement|null} */ (document.getElementById('board-menu-title'));
+    const qrImgEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-qr-img'));
+    const qrLabelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-label'));
+
+    // Speed test elements
+    const speedtestBtnIconEl = document.getElementById('board-speedtest-btn-icon');
+    const speedtestBtnLockEl = document.getElementById('board-speedtest-btn-lock');
+    const speedtestBtnLabelEl = document.getElementById('board-speedtest-btn-label');
+    const speedtestPingEl = document.getElementById('board-speedtest-ping');
+    const speedtestDlEl = document.getElementById('board-speedtest-dl');
+    const speedtestStatusEl = document.getElementById('board-speedtest-status');
+
+    const hideQrButtonKey = 'board.hideQrButton';
+    const speedTestLastRunKey = 'board.speedTestLastRun';
+    const SPEEDTEST_COOLDOWN_MS = 60_000;
+
+    let qrReady = false;
+    let menuLauncherHidden = false;
+    let menuOpen = false;
+    let menuPage = 'main';
+    let speedTestRunning = false;
+    let cooldownIntervalId = /** @type {number|null} */ (null);
+
+    function trackBoardAction(event, props = {}) {
+        if (window.posthog?.capture) {
+            window.posthog.capture(event, props);
+        }
+    }
+
+    function getBoardDomain() {
+        return window.location.host;
+    }
+
+    // --- Speed test cooldown ---
+
+    function getCooldownRemaining() {
+        const last = parseInt(localStorage.getItem(speedTestLastRunKey) || '0', 10);
+        const elapsed = Date.now() - last;
+        return Math.max(0, SPEEDTEST_COOLDOWN_MS - elapsed);
+    }
+
+    function updateSpeedtestButtonState() {
+        if (!menuShowSpeedtestEl || !speedtestBtnIconEl || !speedtestBtnLockEl || !speedtestBtnLabelEl) return;
+        const remaining = getCooldownRemaining();
+        if (remaining > 0) {
+            const secs = Math.ceil(remaining / 1000);
+            menuShowSpeedtestEl.disabled = true;
+            menuShowSpeedtestEl.style.opacity = '0.45';
+            menuShowSpeedtestEl.style.cursor = 'not-allowed';
+            speedtestBtnIconEl.classList.add('hidden');
+            speedtestBtnLockEl.classList.remove('hidden');
+            speedtestBtnLabelEl.textContent = `Hız testi — ${secs}s`;
+        } else {
+            menuShowSpeedtestEl.disabled = false;
+            menuShowSpeedtestEl.style.opacity = '';
+            menuShowSpeedtestEl.style.cursor = '';
+            speedtestBtnIconEl.classList.remove('hidden');
+            speedtestBtnLockEl.classList.add('hidden');
+            speedtestBtnLabelEl.textContent = 'Hız testi';
+            if (cooldownIntervalId !== null) {
+                clearInterval(cooldownIntervalId);
+                cooldownIntervalId = null;
+            }
+        }
+    }
+
+    function startCooldownTick() {
+        if (cooldownIntervalId !== null) clearInterval(cooldownIntervalId);
+        cooldownIntervalId = window.setInterval(() => {
+            updateSpeedtestButtonState();
+            if (getCooldownRemaining() === 0 && cooldownIntervalId !== null) {
+                clearInterval(cooldownIntervalId);
+                cooldownIntervalId = null;
+            }
+        }, 1000);
+    }
+
+    // --- Speed test logic ---
+
+    function setSpeedtestRunning(running) {
+        speedTestRunning = running;
+    }
+
+    async function measurePing() {
+        // Server measures its own RTT to the internet and returns it
+        const resp = await fetch(`${API_URL}/speedtest/ping`, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(await resp.text());
+        const { ping_ms } = await resp.json();
+        return ping_ms;
+    }
+
+    async function measureDownload() {
+        // Server proxies a remote download and streams it — bottleneck is internet speed
+        const t0 = performance.now();
+        const resp = await fetch(`${API_URL}/speedtest/download?bytes=10000000`, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(await resp.text());
+        const buf = await resp.arrayBuffer();
+        const elapsed = (performance.now() - t0) / 1000;
+        return (buf.byteLength * 8) / elapsed / 1_000_000; // Mbps
+    }
+
+    async function runSpeedTest() {
+        if (speedTestRunning || getCooldownRemaining() > 0) return;
+
+        setSpeedtestRunning(true);
+        if (speedtestPingEl) speedtestPingEl.textContent = '…';
+        if (speedtestDlEl) speedtestDlEl.textContent = '…';
+        if (speedtestStatusEl) speedtestStatusEl.textContent = 'Ping ölçülüyor…';
+
+        try {
+            const ping = await measurePing();
+            if (speedtestPingEl) speedtestPingEl.textContent = String(ping);
+
+            if (speedtestStatusEl) speedtestStatusEl.textContent = 'İndirme hızı ölçülüyor…';
+            const dl = await measureDownload();
+            if (speedtestDlEl) speedtestDlEl.textContent = dl.toFixed(1);
+
+            if (speedtestStatusEl) speedtestStatusEl.textContent = 'Test tamamlandı.';
+            trackBoardAction('board_speedtest_completed', { ping, download_mbps: Math.round(dl * 10) / 10 });
+            localStorage.setItem(speedTestLastRunKey, String(Date.now()));
+            updateSpeedtestButtonState();
+            startCooldownTick();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (speedtestStatusEl) speedtestStatusEl.textContent = `Test başarısız: ${msg}`;
+            if (speedtestPingEl && speedtestPingEl.textContent === '…') speedtestPingEl.textContent = '—';
+            if (speedtestDlEl && speedtestDlEl.textContent === '…') speedtestDlEl.textContent = '—';
+        }
+
+        setSpeedtestRunning(false);
+    }
+
+    // --- Menu navigation ---
+
+    function setMenuPage(page) {
+        menuPage = ['qr', 'about', 'speedtest'].includes(page) ? page : 'main';
+        if (menuMainPageEl) menuMainPageEl.classList.toggle('hidden', menuPage !== 'main');
+
+        if (menuQrPageEl) {
+            menuQrPageEl.classList.toggle('hidden', menuPage !== 'qr');
+            menuQrPageEl.classList.toggle('flex', menuPage === 'qr');
+        }
+        if (menuAboutPageEl) {
+            menuAboutPageEl.classList.toggle('hidden', menuPage !== 'about');
+            menuAboutPageEl.classList.toggle('flex', menuPage === 'about');
+        }
+        if (menuSpeedtestPageEl) {
+            menuSpeedtestPageEl.classList.toggle('hidden', menuPage !== 'speedtest');
+            menuSpeedtestPageEl.classList.toggle('flex', menuPage === 'speedtest');
+        }
+
+        if (menuBackEl) {
+            const showBack = menuPage !== 'main';
+            menuBackEl.classList.toggle('invisible', !showBack);
+            menuBackEl.setAttribute('aria-hidden', showBack ? 'false' : 'true');
+        }
+        if (menuTitleEl) {
+            const titles = { qr: 'Karekod', about: 'Hakkında', speedtest: 'Hız Testi' };
+            menuTitleEl.textContent = titles[menuPage] ?? 'Menü';
+        }
+    }
+
+    async function ensureBoardQr() {
+        if (!(qrImgEl instanceof HTMLImageElement) || qrReady) return;
+        try {
+            const { default: QRCode } = await import('qrcode');
+            qrImgEl.src = await QRCode.toDataURL(getBoardDomain());
+            qrReady = true;
+        } catch {
+            qrImgEl.removeAttribute('src');
+        }
+        if (qrLabelEl) {
+            qrLabelEl.textContent = getBoardDomain();
+        }
+    }
+
+    function openBoardMenu() {
+        if (!menuPanelEl || menuLauncherHidden) return;
+        menuOpen = true;
+        menuPanelEl.classList.remove('hidden');
+        menuPanelEl.classList.add('flex');
+        menuPanelEl.setAttribute('aria-hidden', 'false');
+        setMenuPage('main');
+        if (menuLauncherEl) {
+            menuLauncherEl.classList.add('hidden');
+        }
+        trackBoardAction('board_menu_toggled', { state: 'shown' });
+    }
+
+    function closeBoardMenu(reason = 'manual') {
+        menuOpen = false;
+        setMenuPage('main');
+        if (menuPanelEl) {
+            menuPanelEl.classList.remove('flex');
+            menuPanelEl.classList.add('hidden');
+            menuPanelEl.setAttribute('aria-hidden', 'true');
+        }
+        if (menuLauncherEl && !menuLauncherHidden) {
+            menuLauncherEl.classList.remove('hidden');
+        }
+        trackBoardAction('board_menu_toggled', { state: 'hidden', reason });
+    }
+
+    function openQrPageInMenu() {
+        if (!menuOpen) openBoardMenu();
+        setMenuPage('qr');
+        ensureBoardQr();
+        trackBoardAction('board_qr_toggled', { state: 'shown', reason: 'menu' });
+    }
+
+    function openAboutPageInMenu() {
+        if (!menuOpen) openBoardMenu();
+        setMenuPage('about');
+        trackBoardAction('board_about_toggled', { state: 'shown', reason: 'menu' });
+    }
+
+    function openSpeedtestPageInMenu() {
+        if (!menuOpen) openBoardMenu();
+        setMenuPage('speedtest');
+        trackBoardAction('board_speedtest_opened');
+        runSpeedTest();
+    }
+
+    function handleMenuBack() {
+        if (menuPage === 'qr') {
+            setMenuPage('main');
+            trackBoardAction('board_qr_toggled', { state: 'hidden', reason: 'back' });
+            return;
+        }
+        if (menuPage === 'about') {
+            setMenuPage('main');
+            trackBoardAction('board_about_toggled', { state: 'hidden', reason: 'back' });
+            return;
+        }
+        if (menuPage === 'speedtest') {
+            setMenuPage('main');
+            trackBoardAction('board_speedtest_closed', { reason: 'back' });
+        }
+    }
+
+    function setQrButtonHidden(hidden) {
+        menuLauncherHidden = Boolean(hidden);
+        if (!menuLauncherEl) return;
+        menuLauncherEl.classList.toggle('hidden', menuLauncherHidden || menuOpen);
+        if (hidden) {
+            closeBoardMenu('hidden-setting');
+        }
+    }
+
+    if (menuLauncherEl) menuLauncherEl.addEventListener('click', openBoardMenu);
+    if (menuShowQrEl) menuShowQrEl.addEventListener('click', openQrPageInMenu);
+    if (menuShowAboutEl) menuShowAboutEl.addEventListener('click', openAboutPageInMenu);
+    if (menuShowSpeedtestEl) menuShowSpeedtestEl.addEventListener('click', openSpeedtestPageInMenu);
+    if (menuBackEl) menuBackEl.addEventListener('click', handleMenuBack);
+    if (menuCloseEl) menuCloseEl.addEventListener('click', () => closeBoardMenu('manual'));
+
+    setMenuPage('main');
+    setQrButtonHidden(localStorage.getItem(hideQrButtonKey) === 'true');
+    updateSpeedtestButtonState();
+    if (getCooldownRemaining() > 0) startCooldownTick();
+
+    window.addEventListener('boardQrButtonVisibilityChange', (event) => {
+        let hidden = false;
+        if (event instanceof CustomEvent) {
+            hidden = Boolean(event.detail?.hidden);
+        }
+        setQrButtonHidden(hidden);
+    });
+</script>

@@ -16,7 +16,7 @@
                 {
                     "id": "O2tlXIcrSdEHaQ1fOQitl1x13uBc245FJxCG60I0ZSlEANHGNRBQ1fKhocMScPRL",
                     "public_key": "pQECAyYgASFYIDtrZVyHK0nRB2kNXzn9KE4lQHH6QrQ91kIVeyYPp93cIlggOEJiFSojxAsD-2W3AgqzcJJW-m10bGdfSupQFDvoB2c",
-                    "sign_count": 6,
+                    "sign_count": 12,
                     "created_at": "2026-03-20T10:23:52.573180+00:00",
                     "label": "Yubikey 5",
                     "transports": [
@@ -94,7 +94,7 @@
                 "set_password": "disabled",
                 "valid_until": null
             },
-            "lights_out_score": 12
+            "lights_out_score": 29
         }
     }
 }

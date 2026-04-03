@@ -9,7 +9,8 @@ import resource
 import requests
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Header, Security, Request
+from fastapi import FastAPI, Depends, HTTPException, Header, Security, Request, Query
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth, CacheFileHandler
@@ -1456,3 +1457,41 @@ def trigger_board_restart(payload: dict = Depends(get_current_user)):
     server_log.log_board_edit("board_restart", user_id=user_id)
     return {"ok": True, "trigger": trigger}
 
+
+
+# --- Speed test endpoints (no auth required) ---
+# These proxy through the server so the internet connection is the bottleneck,
+# not the loopback between frontend and backend (both run on the same machine).
+
+_SPEEDTEST_REMOTE = "https://speed.cloudflare.com"
+
+@app.get("/speedtest/ping")
+def speedtest_ping():
+    """Returns server-measured average RTT to the internet in ms."""
+    times = []
+    for _ in range(3):
+        t0 = time.time()
+        try:
+            requests.get(f"{_SPEEDTEST_REMOTE}/__down?bytes=1", timeout=5)
+            times.append((time.time() - t0) * 1000)
+        except Exception:
+            pass
+    if not times:
+        raise HTTPException(status_code=503, detail="Ping hedefine ulaşılamıyor.")
+    return {"ok": True, "ping_ms": round(sum(times) / len(times))}
+
+@app.get("/speedtest/download")
+def speedtest_download(bytes: int = Query(default=10_000_000, ge=1, le=50_000_000)):
+    """Streams a download from a remote server through this machine so internet speed is measured."""
+    try:
+        r = requests.get(f"{_SPEEDTEST_REMOTE}/__down?bytes={bytes}", stream=True, timeout=30)
+        r.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Uzak sunucuya bağlanılamıyor: {e}")
+
+    def generate():
+        for chunk in r.iter_content(chunk_size=65536):
+            if chunk:
+                yield chunk
+
+    return StreamingResponse(generate(), media_type="application/octet-stream")

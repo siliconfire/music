@@ -4,6 +4,7 @@ import NowPlaying from '../../components/NowPlaying.astro';
 import Queue from '../../components/Queue.astro';
 import BoardDebugPanel from '../../components/BoardDebugPanel.astro';
 import LightsOut from '../../components/LightsOut.astro';
+import BoardMenu from '../../components/BoardMenu.astro';
 ---
 
 <Layout title="Bartın Lisesi (/board)">
@@ -11,14 +12,7 @@ import LightsOut from '../../components/LightsOut.astro';
     <BoardDebugPanel />
     <div id="board-theme-backdrop" class="fixed inset-0 -z-10"></div>
 
-    <button id="board-qr-toggle" data-action="board-qr-toggle" class="fixed bottom-4 right-4 z-40 board-qr-button px-3 py-2 text-sm">QR kodu göster</button>
-    <div id="board-qr-overlay" class="hidden fixed bottom-16 right-4 z-50" style="background: transparent;">
-        <div class="board-qr-card p-4 text-center shadow-lg board-theme-text-primary" style="background: rgba(255,255,255,0.04); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); border: 1px solid rgba(255,255,255,0.08);">
-            <div class="text-sm board-theme-text-secondary">Telefonunuz ile tarayın:</div>
-            <img id="board-qr-img" alt="QR" class="mt-2 h-64 w-64" style="border: 1px solid var(--board-card-border); background: transparent;" />
-            <div id="board-qr-label" class="mt-2 text-sm board-theme-text-secondary"></div>
-        </div>
-    </div>
+    <BoardMenu />
 
     <div class="m-5 lg:m-10">
         <div id="board-auth-warning" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -137,21 +131,8 @@ import LightsOut from '../../components/LightsOut.astro';
         const retryingMiniEl = /** @type {HTMLElement|null} */ (document.getElementById('div-retrying-mini'));
         /** @type {HTMLElement|null} */
         const errorMiniEl = /** @type {HTMLElement|null} */ (document.getElementById('board-error-mini'));
-        /** @type {HTMLButtonElement|null} */
-        const qrToggleEl = /** @type {HTMLButtonElement|null} */ (document.getElementById('board-qr-toggle'));
-        /** @type {HTMLElement|null} */
-        const qrOverlayEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-overlay'));
-        /** @type {HTMLImageElement|null} */
-        const qrImgEl = /** @type {HTMLImageElement|null} */ (document.getElementById('board-qr-img'));
-        /** @type {HTMLElement|null} */
-        const qrLabelEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-label'));
-        /** @type {HTMLElement|null} */
-        const qrHideEl = /** @type {HTMLElement|null} */ (document.getElementById('board-qr-hide'));
         /** @type {HTMLElement|null} */
         const themeBackdropEl = /** @type {HTMLElement|null} */ (document.getElementById('board-theme-backdrop'));
-        const hideQrButtonKey = 'board.hideQrButton';
-        let qrReady = false;
-        let qrAutoHideTimer = null;
         let confettiCanvas = null;
         let confettiActive = false;
         let lastConfettiId = null;
@@ -315,18 +296,13 @@ import LightsOut from '../../components/LightsOut.astro';
             { tryAfter: 5, text: 'Hâla bağlanmayı deniyorum.' },
             { tryAfter: 6, text: 'Hâla bağlanmayı deniyorum..' },
             { tryAfter: 7, text: 'Hâla bağlanmayı deniyorum...' },
-            { tryAfter: 9, text: 'Sunucuya bağlanabileceğimize inanıyorum.' },
-            { tryAfter: 11, text: 'Sunucu? Neredesin??' },
-            { tryAfter: 12, text: 'Sunucuya bağlanacağız. Umudum yüksek.' },
-            { tryAfter: 14, text: 'Sunucuya bağlanacağız. Umudum yüksek (değil)' },
-            { tryAfter: 16, text: 'Sayın sunucu lütfen kapıyı açar mısınız?' },
-            { tryAfter: 18, text: 'Son birkaç kere daha bağlanmayı deneyelim.' },
-            { tryAfter: 20, text: 'Son 3...' },
-            { tryAfter: 21, text: 'Son 2...' },
-            { tryAfter: 22, text: 'Son 1...' },
-            { tryAfter: 23, text: '' }
+            { tryAfter: 9, text: 'Biraz daha bağlanmayı deneyebilirim.' },
+            { tryAfter: 11, text: 'Son 3...' },
+            { tryAfter: 12, text: 'Son 2...' },
+            { tryAfter: 13, text: 'Son 1...' },
+            { tryAfter: 14, text: '' }
         ];
-        const bigErrorThreshold = 24; // when to switch to the big error card (inclusive)
+        const bigErrorThreshold = 15; // when to switch to the big error card (inclusive)
 
         function getMiniRetryText(count) {
             if (!Array.isArray(miniRetryStages) || miniRetryStages.length === 0) {
@@ -1262,83 +1238,6 @@ import LightsOut from '../../components/LightsOut.astro';
             refreshTimer = setInterval(refreshBoard, 2000);
         })();
 
-        function getBoardDomain() {
-            return window.location.host;
-        }
-
-        function updateQrToggleLabel() {
-            if (!qrToggleEl || !qrOverlayEl) return;
-            const isHidden = qrOverlayEl.classList.contains('hidden');
-            qrToggleEl.textContent = isHidden ? 'QR kodu göster' : 'Gizle';
-        }
-
-        async function ensureBoardQr() {
-            if (!qrImgEl || qrReady) return;
-            try {
-                const { default: QRCode } = await import('qrcode');
-                const dataUri = await QRCode.toDataURL(getBoardDomain());
-                qrImgEl.src = dataUri;
-                qrReady = true;
-            } catch (err) {
-                qrImgEl.removeAttribute('src');
-            }
-            if (qrLabelEl) {
-                qrLabelEl.textContent = getBoardDomain();
-            }
-        }
-
-        function showBoardQr() {
-            if (!qrOverlayEl) return;
-            qrOverlayEl.classList.remove('hidden');
-            updateQrToggleLabel();
-            ensureBoardQr();
-            trackBoardAction('board_qr_toggled', { state: 'shown', reason: 'manual' });
-            if (qrAutoHideTimer) {
-                clearTimeout(qrAutoHideTimer);
-            }
-            qrAutoHideTimer = setTimeout(() => hideBoardQr('timeout'), 120000);
-        }
-
-        function hideBoardQr(reason = 'manual') {
-            if (!qrOverlayEl) return;
-            qrOverlayEl.classList.add('hidden');
-            updateQrToggleLabel();
-            trackBoardAction('board_qr_toggled', { state: 'hidden', reason });
-            if (qrAutoHideTimer) {
-                clearTimeout(qrAutoHideTimer);
-                qrAutoHideTimer = null;
-            }
-        }
-
-        function toggleBoardQr() {
-            if (!qrOverlayEl) return;
-            if (qrOverlayEl.classList.contains('hidden')) {
-                showBoardQr();
-            } else {
-                hideBoardQr('manual');
-            }
-        }
-
-        function setQrButtonHidden(hidden) {
-            if (!qrToggleEl) return;
-            qrToggleEl.classList.toggle('hidden', hidden);
-            if (hidden) {
-                hideBoardQr('manual');
-            }
-        }
-
-        if (qrToggleEl) {
-            updateQrToggleLabel();
-            qrToggleEl.addEventListener('click', toggleBoardQr);
-        }
-
-        const storedHideQr = localStorage.getItem(hideQrButtonKey) === 'true';
-        setQrButtonHidden(storedHideQr);
-
-        window.addEventListener('boardQrButtonVisibilityChange', (event) => {
-            const hidden = Boolean(event?.detail?.hidden);
-            setQrButtonHidden(hidden);
-        });
     </script>
 
     <style>
@@ -1418,17 +1317,7 @@ import LightsOut from '../../components/LightsOut.astro';
             color: var(--board-text-secondary);
         }
 
-        :global(.board-qr-button) {
-            border: 1px solid var(--board-qr-border);
-            background: var(--board-qr-bg);
-            color: var(--board-qr-text);
-        }
-
-        :global(.board-qr-card) {
-            border: 1px solid var(--board-card-border);
-            background: var(--board-card-bg);
-            color: var(--board-text-primary);
-        }
+        /* Menu-specific styles are owned by BoardMenu.astro */
     </style>
 
     <script>
@@ -1499,7 +1388,7 @@ import LightsOut from '../../components/LightsOut.astro';
                 }
             });
 
-            tl.from("#board-qr-toggle", {
+            tl.from("#board-menu-launcher", {
                 opacity: 0,
                 x: -500,
                 y: -200,
