@@ -1,11 +1,24 @@
+import os
+import sys
 from datetime import datetime, timedelta, timezone
 
+from dotenv import load_dotenv
 from fastapi import Security, HTTPException, Depends
 from fastapi.security import APIKeyHeader
 from jose import jwt, JWTError
 from starlette.status import HTTP_403_FORBIDDEN
 
-SECRET_KEY = "arnsisnrsethlfuqphqfwuphuwqfhpqwlfhuplshrtnzxrseanthwfuypllhwpfwuphurhstrnesvnvvnsethulflphuwplfwphluhello"
+load_dotenv()
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    print(
+        "\n[ERROR] JWT_SECRET_KEY is not set.\n"
+        "Add it to your music-backend/.env file:\n\n"
+        "    JWT_SECRET_KEY=<your-secret-key>\n",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
