@@ -4,5 +4,9 @@ music-backend/node_modules/
 music-backend/.env
 music-backend/dist/
 music-backend/.spotify-cache
+music-backend/__pycache__/
+music-backend/**/__pycache__/
+music-backend/*.log
+music-backend/logs/
 
 .env
